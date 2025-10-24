@@ -167,8 +167,20 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const savedCart = localStorage.getItem('tac-cart')
     const savedFavorites = localStorage.getItem('tac-favorites')
-    if (savedCart) setCart(JSON.parse(savedCart))
-    if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
+    if (savedCart) {
+      try {
+        setCart(JSON.parse(savedCart))
+      } catch (error) {
+        console.error('Error parsing cart from localStorage:', error)
+      }
+    }
+    if (savedFavorites) {
+      try {
+        setFavorites(JSON.parse(savedFavorites))
+      } catch (error) {
+        console.error('Error parsing favorites from localStorage:', error)
+      }
+    }
   }, [])
 
   // Save cart and favorites to localStorage

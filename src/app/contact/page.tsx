@@ -159,9 +159,9 @@ export default function ContactPage() {
               <span className="text-foreground">Us</span>
             </h1>
             <p className="text-xl text-muted-foreground luxury-text leading-relaxed">
-              We'd love to hear from you! Whether you have questions about our jewellery, 
+              We&apos;d love to hear from you! Whether you have questions about our jewellery, 
               need help with an order, or want to learn more about our cultural significance, 
-              we're here to help.
+              we&apos;re here to help.
             </p>
           </motion.div>
         </div>
@@ -183,7 +183,7 @@ export default function ContactPage() {
                     Send us a Message
                   </CardTitle>
                   <CardDescription className="luxury-text">
-                    Fill out the form below and we'll get back to you as soon as possible.
+                    Fill out the form below and we&apos;ll get back to you as soon as possible.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -198,7 +198,7 @@ export default function ContactPage() {
                         Message Sent!
                       </h3>
                       <p className="text-muted-foreground luxury-text">
-                        Thank you for contacting us. We'll get back to you within 24 hours.
+                        Thank you for contacting us. We&apos;ll get back to you within 24 hours.
                       </p>
                     </motion.div>
                   ) : (
@@ -261,7 +261,7 @@ export default function ContactPage() {
                             onChange={handleInputChange}
                             required
                             className="h-12"
-                            placeholder="What's this about?"
+                            placeholder="What&apos;s this about?"
                           />
                         </div>
                       </div>

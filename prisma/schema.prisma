@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -16,12 +16,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -81,13 +81,13 @@ model Product {
   id          String        @id @default(cuid())
   name        String
   slug        String        @unique
-  description String        @db.Text
+  description String
   shortDescription String?
-  price       Decimal       @db.Decimal(10, 2)
-  comparePrice Decimal?     @db.Decimal(10, 2)
+  price       Float
+  comparePrice Float?
   sku         String        @unique
   stock       Int           @default(0)
-  weight      Decimal?      @db.Decimal(8, 2)
+  weight      Float?
   dimensions  String? // JSON string for length, width, height
   material    String?
   color       String?
@@ -125,7 +125,7 @@ model ProductVariant {
   id        String  @id @default(cuid())
   name      String
   value     String
-  price     Decimal? @db.Decimal(10, 2)
+  price     Float?
   stock     Int     @default(0)
   sku       String?
   productId String
@@ -138,7 +138,7 @@ model Review {
   id        String   @id @default(cuid())
   rating    Int      // 1-5 stars
   title     String?
-  comment   String?  @db.Text
+  comment   String?
   isVerified Boolean @default(false)
   userId    String
   user      User     @relation(fields: [userId], references: [id])
@@ -192,16 +192,16 @@ model Order {
   id              String      @id @default(cuid())
   orderNumber     String      @unique
   status          OrderStatus @default(PENDING)
-  subtotal        Decimal     @db.Decimal(10, 2)
-  tax             Decimal     @db.Decimal(10, 2)
-  shipping        Decimal     @db.Decimal(10, 2)
-  total           Decimal     @db.Decimal(10, 2)
+  subtotal        Float
+  tax             Float
+  shipping        Float
+  total           Float
   currency        String      @default("USD")
   paymentMethod   String?
   paymentStatus   PaymentStatus @default(PENDING)
   shippingMethod  String?
   trackingNumber  String?
-  notes           String?     @db.Text
+  notes           String?
   userId          String
   user            User        @relation(fields: [userId], references: [id])
   shippingAddressId String
@@ -219,7 +219,7 @@ model Order {
 model OrderItem {
   id        String  @id @default(cuid())
   quantity  Int
-  price     Decimal @db.Decimal(10, 2)
+  price     Float
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
@@ -231,12 +231,12 @@ model OrderItem {
 
 model Payment {
   id            String        @id @default(cuid())
-  amount        Decimal       @db.Decimal(10, 2)
+  amount        Float
   currency      String        @default("USD")
   method        PaymentMethod
   status        PaymentStatus @default(PENDING)
   transactionId String?
-  gatewayResponse String?     @db.Text
+  gatewayResponse String?
   orderId       String
   order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt     DateTime      @default(now())
@@ -258,8 +258,8 @@ model Coupon {
   code        String     @unique
   description String?
   type        CouponType
-  value       Decimal    @db.Decimal(10, 2)
-  minAmount   Decimal?   @db.Decimal(10, 2)
+  value       Float
+  minAmount   Float?
   maxUses     Int?
   usedCount   Int        @default(0)
   isActive    Boolean    @default(true)

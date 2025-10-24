@@ -465,7 +465,7 @@ export default function AboutPage() {
               Have More <span className="afro-text-gradient">Questions</span>?
             </h2>
             <p className="text-xl text-muted-foreground luxury-text mb-8">
-              We're here to help! Contact us for any questions about our jewellery, 
+              We&apos;re here to help! Contact us for any questions about our jewellery, 
               cultural significance, or custom orders.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

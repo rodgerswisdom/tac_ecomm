@@ -57,7 +57,11 @@ export default function CheckoutPage() {
   useEffect(() => {
     const savedCart = localStorage.getItem('tac-cart')
     if (savedCart) {
-      setCartItems(JSON.parse(savedCart))
+      try {
+        setCartItems(JSON.parse(savedCart))
+      } catch (error) {
+        console.error('Error parsing cart from localStorage:', error)
+      }
     }
   }, [])
 
