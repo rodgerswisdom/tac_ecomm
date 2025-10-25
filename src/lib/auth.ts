@@ -13,18 +13,19 @@ export const authOptions = {
     }),
     EmailProvider({
       server: {
-        host: process.env.EMAIL_SERVER_HOST,
+        host: process.env.EMAIL_SERVER_HOST || "smtp.resend.com",
         port: parseInt(process.env.EMAIL_SERVER_PORT || "587"),
         auth: {
-          user: process.env.EMAIL_SERVER_USER,
-          pass: process.env.EMAIL_SERVER_PASSWORD,
+          user: process.env.EMAIL_SERVER_USER || "resend",
+          pass: process.env.EMAIL_SERVER_PASSWORD || process.env.RESEND_API_KEY,
         },
       },
-      from: process.env.EMAIL_FROM,
+      from: process.env.EMAIL_FROM || "noreply@tacaccessories.com",
     }),
   ],
   session: {
     strategy: "jwt" as const,
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
     async jwt({ token, user }: any) {
@@ -45,4 +46,6 @@ export const authOptions = {
     signIn: "/auth/signin",
     signUp: "/auth/signup",
   },
+  debug: process.env.NODE_ENV === "development",
+  secret: process.env.NEXTAUTH_SECRET,
 }
