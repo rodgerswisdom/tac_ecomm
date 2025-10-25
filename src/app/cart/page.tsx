@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { useCart } from "@/contexts/CartContext";
 import { patternAssets } from "@/lib/patterns";
+import { featuredProducts } from "@/data/content";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
 export default function CartPage() {
@@ -186,6 +187,58 @@ export default function CartPage() {
                     Secure payment · Artisan thank-you awaits
                   </p>
                 </div>
+              </motion.div>
+            </div>
+
+            {/* Recommended Products */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+              className="mt-16"
+            >
+              <div className="text-center mb-8">
+                <h3 className="font-heading text-2xl text-brand-umber mb-2">
+                  Complete Your Look
+                </h3>
+                <p className="text-brand-umber/70">
+                  Discover pieces that complement your selection
+                </p>
+              </div>
+              
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {featuredProducts.slice(0, 3).map((product) => (
+                  <div key={product.id} className="group">
+                    <div className="aspect-square overflow-hidden rounded-2xl mb-4">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                    </div>
+                    <h4 className="font-heading text-lg text-brand-umber mb-2">
+                      {product.name}
+                    </h4>
+                    <p className="text-sm text-brand-umber/70 mb-3">
+                      {product.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-brand-umber">
+                        ${product.price.toLocaleString()}
+                      </span>
+                      <Button size="sm" variant="outline">
+                        Add to Cart
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-center mt-8">
+                <Button variant="outline" asChild>
+                  <Link href="/collections">View All Collections</Link>
+                </Button>
+              </div>
               </motion.div>
             </div>
           ) : (

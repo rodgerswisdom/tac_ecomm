@@ -95,6 +95,9 @@ model Product {
   isActive    Boolean       @default(true)
   isFeatured  Boolean       @default(false)
   isDigital   Boolean       @default(false)
+  isBespoke   Boolean       @default(false)
+  isCorporateGift Boolean   @default(false)
+  productType ProductType   @default(READY_TO_WEAR)
   categoryId  String
   category    Category      @relation(fields: [categoryId], references: [id])
   images      ProductImage[]
@@ -102,12 +105,19 @@ model Product {
   reviews     Review[]
   orderItems  OrderItem[]
   cartItems   CartItem[]
+  matchingSets ProductSet[]
+  artisanId   String?
+  artisan     Artisan?      @relation(fields: [artisanId], references: [id])
+  communityImpact String?
+  sourcingStory String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([categoryId])
   @@index([isActive])
   @@index([isFeatured])
+  @@index([isBespoke])
+  @@index([productType])
 }
 
 model ProductImage {
@@ -279,11 +289,44 @@ model Wishlist {
   @@index([userId])
 }
 
+model Artisan {
+  id          String    @id @default(cuid())
+  name        String
+  region      String
+  regionLabel String
+  craft       String
+  quote       String
+  portrait    String
+  video       String?
+  bio         String?
+  community   String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ProductSet {
+  id        String   @id @default(cuid())
+  name      String
+  description String?
+  products  Product[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Enums
 enum UserRole {
   CUSTOMER
   ADMIN
   MODERATOR
+}
+
+enum ProductType {
+  READY_TO_WEAR
+  BESPOKE
+  CORPORATE_GIFT
+  MATCHING_SET
 }
 
 enum OrderStatus {

@@ -35,6 +35,12 @@ export interface ProductCardData {
   description: string;
   origin: string;
   materials: string[];
+  category?: string;
+  subcategory?: string;
+  productType?: string;
+  isCorporateGift?: boolean;
+  communityImpact?: string;
+  sourcingStory?: string;
   artisan: {
     name: string;
     region: keyof typeof regionPalettes;

@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Sparkles, Star, Heart, Users, Globe, Award, HandHeart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -162,32 +162,85 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-brand-gold/45 bg-white/85 p-6" style={{ background: artisanPalette.background }}>
-                <p className="caps-spacing text-xs text-brand-umber/60">
-                  Artisan
-                </p>
-                <div className="mt-4 flex items-center gap-4">
-                  <div className="relative h-16 w-16 overflow-hidden rounded-full border border-brand-gold/60">
-                    <Image
-                      src={product.artisan.portrait}
-                      alt={product.artisan.name}
-                      fill
-                      sizes="112px"
-                      className="object-cover"
-                    />
+              {/* Enhanced Artisan Section */}
+              <div className="space-y-6">
+                <div className="rounded-[2rem] border border-brand-gold/45 bg-white/85 p-6" style={{ background: artisanPalette.background }}>
+                  <p className="caps-spacing text-xs text-brand-umber/60">
+                    Master Artisan
+                  </p>
+                  <div className="mt-4 flex items-center gap-4">
+                    <div className="relative h-16 w-16 overflow-hidden rounded-full border border-brand-gold/60">
+                      <Image
+                        src={product.artisan.portrait}
+                        alt={product.artisan.name}
+                        fill
+                        sizes="112px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-heading text-2xl text-brand-umber">
+                        {product.artisan.name}
+                      </p>
+                      <p className="text-sm" style={{ color: artisanPalette.text }}>
+                        {product.artisan.regionLabel}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-heading text-2xl text-brand-umber">
-                      {product.artisan.name}
-                    </p>
-                    <p className="text-sm" style={{ color: artisanPalette.text }}>
-                      {product.artisan.regionLabel}
-                    </p>
-                  </div>
+                  <blockquote className="mt-4 border-l-2 border-brand-gold/40 pl-4 text-sm text-brand-umber/70">
+                    "{product.artisan.quote}"
+                  </blockquote>
                 </div>
-                <blockquote className="mt-4 border-l-2 border-brand-gold/40 pl-4 text-sm text-brand-umber/70">
-                  “{product.artisan.quote}”
-                </blockquote>
+
+                {/* Community Impact */}
+                {product.communityImpact && (
+                  <div className="rounded-[2rem] border border-brand-teal/25 bg-brand-jade/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-brand-teal/20 rounded-full flex items-center justify-center">
+                        <Users className="h-5 w-5 text-brand-teal" />
+                      </div>
+                      <h3 className="font-heading text-lg text-brand-umber">Community Impact</h3>
+                    </div>
+                    <p className="text-sm text-brand-umber/70 mb-3">
+                      {product.communityImpact}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-brand-teal">
+                      <Globe className="h-3 w-3" />
+                      <span>Supporting sustainable artisan communities</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sourcing Story */}
+                {product.sourcingStory && (
+                  <div className="rounded-[2rem] border border-brand-gold/25 bg-brand-gold/10 p-6">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-brand-gold/20 rounded-full flex items-center justify-center">
+                        <HandHeart className="h-5 w-5 text-brand-gold" />
+                      </div>
+                      <h3 className="font-heading text-lg text-brand-umber">Sourcing Story</h3>
+                    </div>
+                    <p className="text-sm text-brand-umber/70">
+                      {product.sourcingStory}
+                    </p>
+                  </div>
+                )}
+
+                {/* Corporate Gift Badge */}
+                {product.isCorporateGift && (
+                  <div className="rounded-[2rem] border border-brand-coral/25 bg-brand-coral/10 p-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-10 h-10 bg-brand-coral/20 rounded-full flex items-center justify-center">
+                        <Award className="h-5 w-5 text-brand-coral" />
+                      </div>
+                      <h3 className="font-heading text-lg text-brand-umber">Corporate Gift</h3>
+                    </div>
+                    <p className="text-sm text-brand-umber/70">
+                      Perfect for executive gifting, client appreciation, and corporate events. 
+                      Includes custom packaging and certificate of authenticity.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Button size="lg" className="w-full" onClick={handleAddToCart}>

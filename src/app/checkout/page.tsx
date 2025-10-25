@@ -131,9 +131,14 @@ export default function CheckoutPage() {
           <p className="text-muted-foreground mb-8">
             Add some items to your cart before checking out.
           </p>
-          <Button asChild>
-            <Link href="/products">Continue Shopping</Link>
-          </Button>
+          <div className="space-y-4">
+            <Button asChild className="w-full">
+              <Link href="/collections">Continue Shopping</Link>
+            </Button>
+            <Button variant="outline" asChild className="w-full">
+              <Link href="/bespoke">Explore Bespoke Studio</Link>
+            </Button>
+          </div>
         </div>
       </div>
     )
