@@ -42,13 +42,21 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Afrocentric colors
-        gold: "var(--gold)",
-        ebony: "var(--ebony)",
-        ivory: "var(--ivory)",
-        emerald: "var(--emerald)",
-        bronze: "var(--bronze)",
-        copper: "var(--copper)",
+        brand: {
+          jade: "var(--color-jade)",
+          coral: "var(--color-coral)",
+          umber: "var(--color-umber)",
+          gold: "var(--color-gold)",
+          teal: "var(--color-teal)",
+          beige: "var(--color-beige)",
+        },
+        ivory: "#F1E7D4",
+        gold: "var(--color-gold)",
+        terracotta: "var(--color-coral)",
+        charcoal: "var(--color-umber)",
+        sand: "var(--color-jade)",
+        emerald: "var(--color-teal)",
+        bronze: "#A86B4A",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -56,8 +64,11 @@ const config: Config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "sans-serif"],
-        serif: ["var(--font-playfair)", "serif"],
+        sans: ["var(--font-kumbh-sans)", "sans-serif"],
+        heading: ["var(--font-cormorant)", "serif"],
+      },
+      backgroundImage: {
+        "golden-gradient": "linear-gradient(to right, #DFA053, #DD4C3A)",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-in-out",

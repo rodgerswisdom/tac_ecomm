@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CustomDropdown } from '@/components/ui/custom-dropdown'
-import { Crown, ArrowLeft, CreditCard, MapPin, Truck, Shield, CheckCircle, Lock, Mail, Phone, User, Heart, ShoppingBag } from 'lucide-react'
+import { Crown, ArrowLeft, CreditCard, MapPin, Truck, Shield, CheckCircle, Lock, Mail, Phone, User } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -122,16 +123,7 @@ export default function CheckoutPage() {
   if (cartItems.length === 0 && !isCompleted) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="sticky top-0 w-full bg-background/90 backdrop-blur-md border-b border-border z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <Crown className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold luxury-heading afro-text-gradient">
-                TAC Jewellery
-              </span>
-            </Link>
-          </div>
-        </nav>
+        <Navbar />
 
         <div className="container mx-auto px-4 py-16 text-center">
           <Crown className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
@@ -150,16 +142,7 @@ export default function CheckoutPage() {
   if (isCompleted) {
     return (
       <div className="min-h-screen bg-background">
-        <nav className="sticky top-0 w-full bg-background/90 backdrop-blur-md border-b border-border z-50">
-          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-2">
-              <Crown className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold luxury-heading afro-text-gradient">
-                TAC Jewellery
-              </span>
-            </Link>
-          </div>
-        </nav>
+        <Navbar />
 
         <div className="container mx-auto px-4 py-16">
           <motion.div
@@ -195,34 +178,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="sticky top-0 w-full bg-background/90 backdrop-blur-md border-b border-border z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Crown className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold luxury-heading afro-text-gradient">
-              TAC Jewellery
-            </span>
-          </Link>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/favorites">
-                <Heart className="h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/cart">
-                <ShoppingBag className="h-5 w-5" />
-              </Link>
-            </Button>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <Lock className="h-4 w-4" />
-              <span>Secure Checkout</span>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
@@ -243,6 +199,10 @@ export default function CheckoutPage() {
           <h1 className="text-3xl md:text-4xl font-bold luxury-heading">
             Secure <span className="afro-text-gradient">Checkout</span>
           </h1>
+          <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            Transactions are encrypted and protected end-to-end.
+          </p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
@@ -612,7 +572,7 @@ export default function CheckoutPage() {
                 Order <span className="afro-text-gradient">Complete!</span>
               </h3>
               <p className="text-muted-foreground mb-6">
-                Create an account to track your orders, save your favorites, and enjoy faster checkout next time.
+                Create an account to track your orders, receive bespoke recommendations, and enjoy faster checkout next time.
               </p>
               <div className="space-y-3">
                 <Button className="afro-button w-full" asChild>

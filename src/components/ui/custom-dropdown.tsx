@@ -60,25 +60,24 @@ export function CustomDropdown({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={cn(
-          "w-full px-4 py-3 text-left bg-background border rounded-lg",
-          "focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
+          "w-full rounded-full border border-brand-umber bg-brand-umber px-4 py-3 text-left text-brand-beige",
+          "focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal",
           "transition-all duration-200 ease-in-out",
           "flex items-center justify-between",
-          "hover:border-primary/50",
-          error && "border-destructive focus:ring-destructive",
+          error && "border-brand-coral focus:ring-brand-coral",
           disabled && "opacity-50 cursor-not-allowed",
-          isOpen && "border-primary ring-2 ring-primary/20"
+          isOpen && "ring-2 ring-brand-teal/30"
         )}
       >
         <div className="flex items-center space-x-2">
           {selectedOption?.icon && (
-            <span className="text-muted-foreground">
+            <span className="text-brand-beige/80">
               {selectedOption.icon}
             </span>
           )}
           <span className={cn(
-            "text-foreground",
-            !selectedOption && "text-muted-foreground"
+            "text-brand-beige",
+            !selectedOption && "text-brand-beige/70"
           )}>
             {selectedOption?.label || placeholder}
           </span>
@@ -87,7 +86,7 @@ export function CustomDropdown({
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-4 w-4 text-brand-beige/70" />
         </motion.div>
       </button>
 
@@ -98,7 +97,7 @@ export function CustomDropdown({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-[99999] w-full mt-2 bg-background/95 backdrop-blur-md border border-border/50 rounded-lg shadow-2xl overflow-hidden"
+          className="absolute z-[99999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-brand-umber/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option, index) => (
@@ -109,20 +108,21 @@ export function CustomDropdown({
                   transition={{ duration: 0.1, delay: index * 0.05 }}
                   onClick={() => handleSelect(option.value)}
                   className={cn(
-                    "w-full px-4 py-3 text-left flex items-center justify-between",
-                    "hover:bg-gradient-to-r hover:from-primary/10 hover:to-emerald/10 transition-all duration-200",
-                    "focus:outline-none focus:bg-gradient-to-r focus:from-primary/10 focus:to-emerald/10",
-                    "border-b border-border/30 last:border-b-0",
-                    value === option.value && "bg-gradient-to-r from-primary/20 to-emerald/20 text-primary font-semibold"
+                    "flex w-full items-center justify-between px-4 py-3 text-left",
+                    "transition-all duration-200",
+                    "border-b border-white/10 last:border-b-0",
+                    "hover:bg-brand-teal/20",
+                    "focus:outline-none focus:bg-brand-teal/25",
+                    value === option.value && "bg-brand-teal/30 text-brand-beige font-semibold"
                   )}
                 >
                   <div className="flex items-center space-x-2">
                     {option.icon && (
-                      <span className="text-muted-foreground">
+                      <span className="text-brand-beige/70">
                         {option.icon}
                       </span>
                     )}
-                    <span className="text-foreground">{option.label}</span>
+                    <span className="text-brand-beige">{option.label}</span>
                   </div>
                   {value === option.value && (
                     <motion.div
@@ -130,7 +130,7 @@ export function CustomDropdown({
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Check className="h-4 w-4 text-primary" />
+                      <Check className="h-4 w-4 text-brand-beige" />
                     </motion.div>
                   )}
                 </motion.button>

@@ -1,0 +1,18 @@
+:root {
+  --color-jade: #abcdc1;
+  --color-coral: #dd4c3a;
+  --color-umber: #4a2b28;
+  --color-gold: #dfa053;
+  --color-teal: #4b9286;
+  --color-beige: #dabf8f;
+
+  --shadow-soft: rgba(74, 43, 40, 0.15);
+  --shadow-strong: rgba(74, 43, 40, 0.22);
+  --shadow-focus: rgba(75, 146, 134, 0.35);
+
+  --border-soft: rgba(74, 43, 40, 0.1);
+  --border-strong: rgba(74, 43, 40, 0.18);
+
+  --grad-desert: linear-gradient(90deg, #dabf8f 0%, #dfa053 50%, #abcdc1 100%);
+  --grad-tealgold: linear-gradient(120deg, #4b9286 0%, #dfa053 100%);
+}

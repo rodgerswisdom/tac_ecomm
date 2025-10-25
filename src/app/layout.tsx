@@ -1,38 +1,35 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Cormorant_Garamond, Kumbh_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import { SessionProvider } from "next-auth/react";
 
-const inter = Inter({
-  variable: "--font-inter",
+const cormorantGaramond = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700"],
 });
 
-const playfairDisplay = Playfair_Display({
-  variable: "--font-playfair",
+const kumbhSans = Kumbh_Sans({
+  variable: "--font-kumbh-sans",
   subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "TAC Accessories - Afrocentric Jewelry & Accessories",
-  description: "Discover our exquisite collection of handcrafted Afrocentric jewelry and accessories. Celebrating African heritage through modern luxury.",
-  keywords: ["afrocentric jewelry", "african accessories", "handcrafted jewelry", "cultural jewelry", "african heritage"],
-  authors: [{ name: "TAC Accessories" }],
-  creator: "TAC Accessories",
-  publisher: "TAC Accessories",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
+  title: "TAC Accessories — The African Gallery Experience",
+  description:
+    "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. TAC Accessories blends African modernism with luxury minimalism.",
   metadataBase: new URL("https://tacaccessories.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "TAC Accessories - Afrocentric Jewelry & Accessories",
-    description: "Discover our exquisite collection of handcrafted Afrocentric jewelry and accessories. Celebrating African heritage through modern luxury.",
+    title: "TAC Accessories — The African Gallery Experience",
+    description:
+      "A luxurious African art eCommerce destination celebrating heritage craftsmanship through contemporary design.",
     url: "https://tacaccessories.com",
     siteName: "TAC Accessories",
     images: [
@@ -40,7 +37,7 @@ export const metadata: Metadata = {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "TAC Accessories - Afrocentric Jewelry",
+        alt: "TAC Accessories hero imagery",
       },
     ],
     locale: "en_US",
@@ -48,21 +45,14 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TAC Accessories - Afrocentric Jewelry & Accessories",
-    description: "Discover our exquisite collection of handcrafted Afrocentric jewelry and accessories. Celebrating African heritage through modern luxury.",
+    title: "TAC Accessories — The African Gallery Experience",
+    description:
+      "Experience premium African artistry reimagined for the modern world.",
     images: ["/og-image.jpg"],
-    creator: "@tacaccessories",
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
   },
 };
 
@@ -74,7 +64,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${playfairDisplay.variable} antialiased`}
+        className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar bg-texture-linen`}
       >
         <SessionProvider>
           <CartProvider>

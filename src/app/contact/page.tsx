@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Crown, Mail, Phone, MapPin, Clock, Send, CheckCircle, MessageSquare, Heart, Award } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle, MessageSquare, Heart, Award } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -103,35 +104,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="sticky top-0 w-full bg-background/90 backdrop-blur-md border-b border-border z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2">
-            <Crown className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold luxury-heading afro-text-gradient">
-              TAC Jewellery
-            </span>
-          </Link>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/favorites">
-                <Heart className="h-5 w-5" />
-              </Link>
-            </Button>
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/cart">
-                <Crown className="h-5 w-5" />
-              </Link>
-            </Button>
-            <Button className="afro-button" asChild>
-              <Link href="/auth/signin">
-                Sign In
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
