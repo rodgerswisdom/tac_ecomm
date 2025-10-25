@@ -375,7 +375,7 @@ export default function AboutPage() {
                 variant={selectedCategory === category.id ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(category.id)}
-                className={selectedCategory === category.id ? "afro-button" : ""}
+                className={selectedCategory === category.id ? "bg-brand-umber text-brand-beige" : ""}
               >
                 {category.name}
               </Button>
@@ -442,7 +442,7 @@ export default function AboutPage() {
               cultural significance, or custom orders.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="afro-button text-lg px-8 py-6" asChild>
+              <Button size="lg" className="text-lg px-8 py-6" asChild>
                 <Link href="/contact">
                   <Heart className="mr-2 h-5 w-5" />
                   Contact Us

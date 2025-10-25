@@ -258,7 +258,7 @@ export default function ContactPage() {
                       <Button
                         type="submit"
                         disabled={isSubmitting}
-                        className="afro-button w-full h-12 text-lg"
+                        className="w-full h-12 text-lg"
                       >
                         {isSubmitting ? (
                           <>
@@ -397,7 +397,7 @@ export default function ContactPage() {
               pieces that speak to your soul.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="afro-button text-lg px-8 py-6" asChild>
+              <Button size="lg" className="text-lg px-8 py-6" asChild>
                 <Link href="/products">
                   <Award className="mr-2 h-5 w-5" />
                   Browse Collection

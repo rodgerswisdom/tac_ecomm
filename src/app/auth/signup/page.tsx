@@ -203,7 +203,7 @@ export default function SignUpPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="afro-button w-full h-12 text-lg bg-gradient-to-r from-primary to-emerald hover:from-primary/90 hover:to-emerald/90 shadow-xl hover:shadow-2xl transition-all duration-300"
+                  className="w-full h-12 text-lg bg-gradient-to-r from-primary to-emerald hover:from-primary/90 hover:to-emerald/90 shadow-xl hover:shadow-2xl transition-all duration-300"
                 >
                   {isLoading ? (
                     <>

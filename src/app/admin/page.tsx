@@ -334,7 +334,7 @@ export default function AdminPage() {
                 View Store
               </Link>
             </Button>
-            <Button className="afro-button">
+            <Button>
               <Crown className="mr-2 h-4 w-4" />
               Admin User
             </Button>
@@ -530,7 +530,7 @@ export default function AdminPage() {
                   placeholder="Filter by status"
                 />
               </div>
-              <Button className="afro-button">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Add Product
               </Button>

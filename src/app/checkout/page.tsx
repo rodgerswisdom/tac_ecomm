@@ -131,7 +131,7 @@ export default function CheckoutPage() {
           <p className="text-muted-foreground mb-8">
             Add some items to your cart before checking out.
           </p>
-          <Button className="afro-button" asChild>
+          <Button asChild>
             <Link href="/products">Continue Shopping</Link>
           </Button>
         </div>
@@ -159,7 +159,7 @@ export default function CheckoutPage() {
               Thank you for your purchase! Your order has been successfully placed and you will receive a confirmation email shortly.
             </p>
             <div className="space-y-4">
-              <Button className="afro-button text-lg px-8 py-6" asChild>
+              <Button className="text-lg px-8 py-6" asChild>
                 <Link href="/products">
                   Continue Shopping
                 </Link>
@@ -459,7 +459,7 @@ export default function CheckoutPage() {
               <Button
                 type="submit"
                 disabled={isProcessing}
-                className="afro-button w-full h-14 text-lg bg-gradient-to-r from-primary to-emerald hover:from-primary/90 hover:to-emerald/90 shadow-xl hover:shadow-2xl transition-all duration-300"
+                className="w-full h-14 text-lg bg-gradient-to-r from-primary to-emerald hover:from-primary/90 hover:to-emerald/90 shadow-xl hover:shadow-2xl transition-all duration-300"
               >
                 {isProcessing ? (
                   <>
@@ -575,7 +575,7 @@ export default function CheckoutPage() {
                 Create an account to track your orders, receive bespoke recommendations, and enjoy faster checkout next time.
               </p>
               <div className="space-y-3">
-                <Button className="afro-button w-full" asChild>
+                <Button className="w-full" asChild>
                   <Link href="/auth/signup">
                     Create Account
                   </Link>

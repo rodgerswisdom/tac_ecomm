@@ -45,13 +45,21 @@ const HeroComponent = () => {
     <section
       className="relative overflow-hidden py-28 text-brand-umber md:py-36"
       style={{
-        backgroundImage: `linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(218, 191, 143, 0.55)), url(${activeImage.src})`,
+        backgroundImage: `linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(218, 191, 143, 0.55))`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
       <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
       <div className="absolute inset-0 bg-texture-linen opacity-35" />
+      <div 
+        className="absolute inset-0 opacity-10"
+        style={{
+          backgroundImage: `url(${activeImage.src})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
 
       {floatingParticles.map((particle, index) => (
         <motion.span
@@ -115,7 +123,7 @@ const HeroComponent = () => {
               <Button
                 size="lg"
                 variant="outline"
-                className="px-10 border-brand-umber text-brand-umber shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
+                className="px-10 shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
                 asChild
               >
                 <Link href="/collections">Shop the Gallery</Link>
@@ -167,22 +175,18 @@ const HeroComponent = () => {
             className="relative mx-auto w-full max-w-[520px]"
           >
             <div className="group relative overflow-hidden rounded-[3rem] border border-brand-teal/20 bg-brand-beige/60 shadow-[0_30px_70px_rgba(74,43,40,0.18)]">
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-umber/30 via-transparent to-transparent mix-blend-multiply" />
-              <AnimatePresence mode="sync">
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-umber/30 via-transparent to-transparent mix-blend-multiply z-10" />
+              <AnimatePresence mode="wait">
                 <motion.div
                   key={activeImage.src}
-                  initial={{ opacity: 0, x: 120 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -120 }}
-                  transition={{ duration: 0.9, ease: [0.25, 0.8, 0.25, 1] }}
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.8, ease: [0.25, 0.8, 0.25, 1] }}
                   className="relative aspect-[5/6] w-full overflow-hidden"
                 >
-                  <motion.div
+                  <div
                     className="absolute inset-0"
-                    initial={{ x: 50 }}
-                    animate={{ x: 0 }}
-                    exit={{ x: -50 }}
-                    transition={{ duration: 0.9, ease: [0.25, 0.8, 0.25, 1] }}
                     style={{
                       backgroundImage: `url(${activeImage.src})`,
                       backgroundSize: "cover",
@@ -203,11 +207,11 @@ const HeroComponent = () => {
               </div>
             </div>
 
-            <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-3 sm:right-6 lg:right-[-3.5rem]">
+            <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-3 sm:right-6 lg:right-[-3.5rem] z-20">
               {heroImages.map((image, index) => {
                 const isActive = index === activeIndex;
                 return (
-                  <button
+                  <motion.button
                     key={image.src}
                     type="button"
                     onClick={() => setActiveIndex(index)}
@@ -222,6 +226,8 @@ const HeroComponent = () => {
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                     }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     <span
                       className={`absolute inset-0 bg-brand-umber/60 transition-opacity ${
@@ -232,7 +238,7 @@ const HeroComponent = () => {
                     <span className="relative text-xs font-semibold text-white">
                       {index + 1}
                     </span>
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>

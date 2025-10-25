@@ -72,10 +72,10 @@ export const Navbar = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden hover:bg-transparent hover:text-brand-umber"
+                  className="lg:hidden"
                   aria-label="Open navigation menu"
                 >
-                  <Menu className="h-5 w-5 text-brand-umber" />
+                  <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
@@ -111,13 +111,13 @@ export const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative hover:bg-transparent hover:text-brand-teal"
+              className="relative"
               asChild
             >
               <Link href="/cart" aria-label="View cart">
-                <ShoppingBag className="h-5 w-5 text-brand-teal transition-colors" />
+                <ShoppingBag className="h-5 w-5 transition-colors" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-gold text-[10px] font-semibold text-brand-umber transition-colors">
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-gold text-[10px] font-semibold text-white transition-colors">
                     {cartCount}
                   </span>
                 )}

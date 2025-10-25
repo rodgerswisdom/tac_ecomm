@@ -10,15 +10,15 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-brand-umber text-brand-beige hover:bg-brand-umber/90 hover:shadow-[0_16px_36px_rgba(74,43,40,0.25)]",
-        destructive: "bg-brand-coral text-brand-beige hover:bg-brand-coral/90",
+        destructive: "bg-brand-coral text-white hover:bg-brand-coral/90",
         outline:
-          "border border-brand-umber bg-brand-umber text-brand-beige hover:border-brand-umber hover:bg-brand-umber/90 hover:text-brand-beige",
-        secondary: "bg-brand-jade/40 text-brand-umber hover:bg-brand-jade/55",
+          "border border-brand-umber bg-transparent text-brand-umber hover:bg-brand-umber hover:text-brand-beige",
+        secondary: "bg-brand-jade text-brand-umber hover:bg-brand-jade/80",
         ghost:
-          "bg-transparent text-brand-teal hover:bg-brand-coral hover:text-white focus-visible:ring-brand-teal",
+          "bg-transparent text-brand-umber hover:bg-brand-umber/10 hover:text-brand-umber focus-visible:ring-brand-teal",
         link: "text-brand-teal underline-offset-4 hover:text-brand-coral",
         gold:
-          "bg-brand-gold text-brand-umber hover:bg-brand-coral/90 hover:text-brand-beige",
+          "bg-brand-gold text-white hover:bg-brand-gold/90",
       },
       size: {
         default: "h-11 px-6",
