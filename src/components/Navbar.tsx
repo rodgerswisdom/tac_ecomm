@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -40,6 +40,37 @@ export const Navbar = () => {
   const { getCartItemCount } = useCart();
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleDropdownMouseEnter = (href: string) => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setActiveDropdown(href);
+  };
+
+  const handleDropdownMouseLeave = (event: MouseEvent<HTMLDivElement>) => {
+    const relatedTarget = event.relatedTarget as Node | null;
+
+    if (!relatedTarget || !event.currentTarget.contains(relatedTarget)) {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+      closeTimeoutRef.current = setTimeout(() => {
+        setActiveDropdown(null);
+        closeTimeoutRef.current = null;
+      }, 120);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
@@ -71,8 +102,8 @@ export const Navbar = () => {
                   <div
                     key={link.href}
                     className="relative"
-                    onMouseEnter={() => setActiveDropdown(link.href)}
-                    onMouseLeave={() => setActiveDropdown(null)}
+                    onMouseEnter={() => handleDropdownMouseEnter(link.href)}
+                    onMouseLeave={handleDropdownMouseLeave}
                   >
                     <Link
                       href={link.href}
@@ -91,8 +122,8 @@ export const Navbar = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
                         className="absolute top-full left-0 mt-2 w-72 rounded-lg border border-brand-umber/10 bg-white/95 p-4 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl z-50"
-                        onMouseEnter={() => setActiveDropdown(link.href)}
-                        onMouseLeave={() => setActiveDropdown(null)}
+                        onMouseEnter={() => handleDropdownMouseEnter(link.href)}
+                        onMouseLeave={handleDropdownMouseLeave}
                       >
                         <div className="space-y-2">
                           {link.submenu.map((subLink) => (
@@ -100,6 +131,7 @@ export const Navbar = () => {
                               key={subLink.href}
                               href={subLink.href}
                               className="block rounded-md px-3 py-2 text-sm text-brand-umber/80 transition-colors hover:bg-brand-jade/10 hover:text-brand-umber whitespace-nowrap"
+                              onClick={() => setActiveDropdown(null)}
                             >
                               {subLink.label}
                             </Link>

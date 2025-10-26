@@ -13,13 +13,16 @@ interface ArtisanGalleryProps {
 const heightVariants = ["h-96", "h-72", "h-80", "h-[22rem]"];
 
 const ArtisanGalleryComponent = ({ artisans }: ArtisanGalleryProps) => {
-  const cards = useMemo(
+  const primaryArtisans = useMemo(() => artisans.slice(0, 3), [artisans]);
+  const secondaryArtisans = useMemo(() => artisans.slice(3), [artisans]);
+
+  const primaryCards = useMemo(
     () =>
-      artisans.map((artisan, index) => ({
+      primaryArtisans.map((artisan, index) => ({
         artisan,
         heightClass: heightVariants[index % heightVariants.length],
       })),
-    [artisans],
+    [primaryArtisans],
   );
 
   return (
@@ -41,7 +44,7 @@ const ArtisanGalleryComponent = ({ artisans }: ArtisanGalleryProps) => {
         </div>
 
         <div className="mt-16 grid gap-8 md:grid-cols-2 xl:grid-cols-3">
-          {cards.map(({ artisan, heightClass }, index) => {
+          {primaryCards.map(({ artisan, heightClass }, index) => {
             const theme = regionPalettes[artisan.region] ?? {
               background: "rgba(201,146,51,0.18)",
               text: "#C99233",
@@ -107,6 +110,70 @@ const ArtisanGalleryComponent = ({ artisans }: ArtisanGalleryProps) => {
             );
           })}
         </div>
+
+        {secondaryArtisans.length > 0 && (
+          <div className="mt-16 space-y-6 rounded-[2.5rem] border border-white/10 bg-white/5 p-8 shadow-[0_24px_60px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+            <div className="flex flex-col gap-2 text-left text-brand-beige sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <span className="caps-spacing text-xs text-brand-gold/70">
+                  Additional Voices
+                </span>
+                <h3 className="font-heading text-2xl text-brand-beige">
+                  More artisans in the TAC constellation
+                </h3>
+              </div>
+              <p className="max-w-xl text-sm text-brand-beige/70">
+                Browse the extended collective and request bespoke collaborations with our broader network of makers.
+              </p>
+            </div>
+
+            <div className="-mx-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-2 pb-2">
+              {secondaryArtisans.map((artisan) => {
+                const theme = regionPalettes[artisan.region] ?? {
+                  background: "rgba(201,146,51,0.18)",
+                  text: "#C99233",
+                };
+
+                return (
+                  <motion.div
+                    key={artisan.id}
+                    className="group flex min-w-[240px] snap-start items-center gap-4 rounded-3xl border border-white/10 bg-white/10 p-4 transition hover:bg-white/15"
+                    initial={{ opacity: 0, y: 18 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-80px" }}
+                    transition={{ duration: 0.45, ease: [0.33, 1, 0.68, 1] }}
+                  >
+                    <div
+                      className="relative h-16 w-16 overflow-hidden rounded-2xl border border-brand-gold/50"
+                      style={{
+                        boxShadow: `0 12px 30px ${theme.background}`,
+                      }}
+                    >
+                      <Image
+                        src={artisan.portrait}
+                        alt={artisan.name}
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 text-brand-beige">
+                      <span className="text-sm font-semibold leading-tight">
+                        {artisan.name}
+                      </span>
+                      <span className="text-[11px] uppercase tracking-[0.25em] text-brand-gold/70">
+                        {artisan.region.toUpperCase()}
+                      </span>
+                      <p className="text-xs text-brand-beige/70">
+                        “{artisan.quote}”
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -9,7 +9,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { CategoryDropdown, SortDropdown } from "@/components/ui/custom-dropdown";
 import { featuredProducts, featuredCollections } from "@/data/content";
-import { Filter, Grid, List, X } from "lucide-react";
+import { Filter, Grid, List, Users, Globe, Sparkles, X } from "lucide-react";
 
 const capsuleEditions = featuredProducts.slice(0, 3);
 const curatedContinuum = featuredProducts.slice(3);
@@ -249,7 +249,7 @@ export default function CollectionsPage() {
           </div>
 
           <motion.div
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-120px" }}
@@ -263,29 +263,50 @@ export default function CollectionsPage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <Link
-                  href={`/collections/${collection.slug}`}
-                  className="block group"
-                >
-                  <div className="relative aspect-square overflow-hidden rounded-2xl border border-brand-teal/20 shadow-[0_20px_40px_rgba(74,43,40,0.1)] transition-all duration-300 group-hover:shadow-[0_30px_60px_rgba(74,43,40,0.2)] group-hover:border-brand-teal/40">
+                <Link href={`/collections/${collection.slug}`} className="group block h-full">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-brand-teal/20 shadow-[0_20px_40px_rgba(74,43,40,0.1)] transition-all duration-300 group-hover:shadow-[0_30px_60px_rgba(74,43,40,0.2)] group-hover:border-brand-teal/40">
                     <img
                       src={collection.image}
                       alt={collection.name}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-brand-umber/20 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                    <div className="absolute inset-0 flex flex-col justify-end p-6 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      <h3 className="font-heading text-xl mb-2">{collection.name}</h3>
-                      <p className="text-sm opacity-90">{collection.itemCount} pieces</p>
-                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/40 via-brand-umber/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                   </div>
-                  <div className="mt-4 text-center">
-                    <h3 className="font-heading text-lg text-brand-umber group-hover:text-brand-teal transition-colors">
-                      {collection.name}
-                    </h3>
-                    <p className="text-sm text-brand-umber/70 mt-1">
-                      {collection.description}
-                    </p>
+                  <div className="mt-6 flex h-full flex-col justify-between gap-4 rounded-3xl bg-white/80 p-6 backdrop-blur-sm transition-colors group-hover:bg-white">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.28em] text-brand-umber/50">
+                        <span className="flex items-center gap-2 tracking-[0.18em]">
+                          <Users className="h-3 w-3" />
+                          {collection.artisanCount} artisans
+                        </span>
+                        <span className="flex items-center gap-2 tracking-[0.18em]">
+                          <Sparkles className="h-3 w-3" />
+                          {collection.itemCount} pieces
+                        </span>
+                      </div>
+                      <h3 className="font-heading text-xl text-brand-umber transition-colors group-hover:text-brand-teal">
+                        {collection.name}
+                      </h3>
+                      <p className="text-sm leading-relaxed text-brand-umber/70">
+                        {collection.description}
+                      </p>
+                    </div>
+                    <div className="space-y-3 text-sm text-brand-umber/70">
+                      <div className="flex items-start gap-2">
+                        <Globe className="mt-0.5 h-4 w-4 text-brand-teal" />
+                        <span>{collection.featuredRegions.join(" • ")}</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {collection.subcategories.map((subcategory) => (
+                          <span
+                            key={subcategory}
+                            className="rounded-full bg-brand-jade/20 px-3 py-1 text-xs text-brand-umber/80 capitalize"
+                          >
+                            {subcategory}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </Link>
               </motion.div>
