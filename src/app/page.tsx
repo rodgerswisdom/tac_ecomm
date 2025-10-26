@@ -5,14 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
-import { ShowcaseCard } from "@/components/ShowcaseCard";
+import { CategoryCard } from "@/components/CategoryCard";
 import { InteractiveRing } from "@/components/InteractiveRing";
 import { ArtisanGallery } from "@/components/ArtisanGallery";
 import { LegacyTimeline } from "@/components/LegacyTimeline";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import {
-  featuredProducts,
+  featuredCollections,
   artisanSpotlight,
   legacyMilestones,
 } from "@/data/content";
@@ -51,18 +51,18 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
           >
             <span className="caps-spacing text-xs text-brand-teal">
-              Curated Masterpieces
+              Curated Collections
             </span>
             <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber md:text-5xl">
-              A handpicked gallery where heritage meets contemporary couture.
+              Discover our carefully curated categories of African craftsmanship.
             </h2>
             <p className="max-w-2xl text-base text-brand-umber/70">
-              Explore limited pieces from artisans across the continent. Each item is catalogued like fine art, ready for your private collection.
+              Each collection represents a distinct category of jewelry and accessories, showcasing the diversity and artistry of African craftsmanship across different regions and traditions.
             </p>
           </motion.div>
 
           <motion.div
-            className="mt-14 grid grid-masonry place-items-center"
+            className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 place-items-center"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-120px" }}
@@ -75,14 +75,14 @@ export default function HomePage() {
               },
             }}
           >
-            {featuredProducts.map((product) => (
+            {featuredCollections.map((collection) => (
               <motion.div
-                key={product.id}
+                key={collection.id}
                 variants={{ hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
                 className="w-full"
               >
-                <ShowcaseCard product={product} />
+                <CategoryCard category={collection} />
               </motion.div>
             ))}
           </motion.div>
@@ -97,7 +97,7 @@ export default function HomePage() {
               <Link href="/collections">View the Full Collection</Link>
             </Button>
             <span className="text-xs uppercase tracking-[0.4em] text-brand-umber/50">
-              +11 new arrivals this month
+              6 curated collections • 100+ artisan pieces
             </span>
           </div>
         </div>

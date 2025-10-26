@@ -245,6 +245,94 @@ export const artisanSpotlight: ArtisanProfile[] = [
   },
 ];
 
+export interface CollectionCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  itemCount: number;
+  featuredRegions: string[];
+  artisanCount: number;
+  category: string;
+  subcategories: string[];
+}
+
+export const featuredCollections: CollectionCategory[] = [
+  {
+    id: 1,
+    name: "Necklaces & Chains",
+    slug: "necklaces",
+    description: "Sculptural collars, ceremonial chains, and contemporary pendants that honor African metalwork traditions.",
+    image: "https://images.unsplash.com/photo-1603188470169-6f7e80e2e6c2?auto=format&fit=crop&w=900&q=80",
+    itemCount: 24,
+    featuredRegions: ["Kenya", "Ghana", "Mali"],
+    artisanCount: 8,
+    category: "necklaces",
+    subcategories: ["collars", "pendants", "chains", "ceremonial"]
+  },
+  {
+    id: 2,
+    name: "Rings & Signets",
+    slug: "rings",
+    description: "Hand-carved signets featuring Adinkra symbols, traditional wedding bands, and contemporary statement rings.",
+    image: "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=900&q=80",
+    itemCount: 18,
+    featuredRegions: ["Ghana", "Morocco", "Zimbabwe"],
+    artisanCount: 6,
+    category: "rings",
+    subcategories: ["signets", "wedding", "statement", "ceremonial"]
+  },
+  {
+    id: 3,
+    name: "Bracelets & Bangles",
+    slug: "bracelets",
+    description: "Stackable bangles, architectural cuffs, and woven bracelets that celebrate diverse African craftsmanship.",
+    image: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=900&q=80",
+    itemCount: 22,
+    featuredRegions: ["Mali", "Zimbabwe", "South Africa"],
+    artisanCount: 7,
+    category: "bracelets",
+    subcategories: ["bangles", "cuffs", "woven", "stackable"]
+  },
+  {
+    id: 4,
+    name: "Earrings & Hoops",
+    slug: "earrings",
+    description: "Lightweight hoops, statement drops, and traditional studs crafted with recycled materials and contemporary flair.",
+    image: "https://images.unsplash.com/photo-1562157873-818bc0726f2e?auto=format&fit=crop&w=900&q=80",
+    itemCount: 20,
+    featuredRegions: ["South Africa", "Kenya", "Ghana"],
+    artisanCount: 5,
+    category: "earrings",
+    subcategories: ["hoops", "drops", "studs", "statement"]
+  },
+  {
+    id: 5,
+    name: "Hair Accessories",
+    slug: "hair-accessories",
+    description: "Hand-loomed shawls, decorative combs, and ceremonial headpieces that blend tradition with modern style.",
+    image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+    itemCount: 15,
+    featuredRegions: ["Morocco", "Kenya", "Mali"],
+    artisanCount: 4,
+    category: "hair-accessories",
+    subcategories: ["shawls", "combs", "headpieces", "ceremonial"]
+  },
+  {
+    id: 6,
+    name: "Matching Sets",
+    slug: "matching-sets",
+    description: "Curated collections that tell complete cultural stories through harmoniously matched pieces.",
+    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=900&q=80",
+    itemCount: 12,
+    featuredRegions: ["All Regions"],
+    artisanCount: 12,
+    category: "sets",
+    subcategories: ["heritage", "ceremonial", "contemporary", "corporate"]
+  }
+];
+
 export const legacyMilestones: LegacyMilestone[] = [
   {
     id: 1,
