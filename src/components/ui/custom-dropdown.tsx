@@ -49,7 +49,6 @@ export function CustomDropdown({
   }, [])
 
   const handleSelect = (optionValue: string) => {
-    console.log('Dropdown selection:', optionValue);
     onChange(optionValue);
     setIsOpen(false);
   }

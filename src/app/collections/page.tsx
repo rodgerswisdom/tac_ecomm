@@ -21,9 +21,6 @@ export default function CollectionsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Debug logging
-  console.log('Collections page state:', { selectedCategory, sortBy, viewMode });
-
   // Filter and sort products
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = allProducts;
