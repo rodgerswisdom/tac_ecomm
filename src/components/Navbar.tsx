@@ -90,7 +90,9 @@ export const Navbar = () => {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: 10 }}
-                        className="absolute top-full left-0 mt-2 w-72 rounded-lg border border-brand-umber/10 bg-white/95 p-4 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl"
+                        className="absolute top-full left-0 mt-2 w-72 rounded-lg border border-brand-umber/10 bg-white/95 p-4 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl z-50"
+                        onMouseEnter={() => setActiveDropdown(link.href)}
+                        onMouseLeave={() => setActiveDropdown(null)}
                       >
                         <div className="space-y-2">
                           {link.submenu.map((subLink) => (

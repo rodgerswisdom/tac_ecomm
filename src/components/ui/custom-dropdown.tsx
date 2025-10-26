@@ -49,21 +49,29 @@ export function CustomDropdown({
   }, [])
 
   const handleSelect = (optionValue: string) => {
-    onChange(optionValue)
-    setIsOpen(false)
+    console.log('Dropdown selection:', optionValue);
+    onChange(optionValue);
+    setIsOpen(false);
   }
 
   return (
     <div ref={dropdownRef} className={cn("relative z-[100]", className)}>
       <button
         type="button"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled) {
+            setIsOpen(!isOpen);
+          }
+        }}
         disabled={disabled}
         className={cn(
           "w-full rounded-full border border-brand-umber bg-brand-umber px-4 py-3 text-left text-brand-beige",
           "focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-brand-teal",
           "transition-all duration-200 ease-in-out",
-          "flex items-center justify-between",
+          "flex items-center justify-between cursor-pointer",
+          "touch-manipulation", // Improves touch responsiveness
           error && "border-brand-coral focus:ring-brand-coral",
           disabled && "opacity-50 cursor-not-allowed",
           isOpen && "ring-2 ring-brand-teal/30"
@@ -97,7 +105,7 @@ export function CustomDropdown({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-[99999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-brand-umber/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
+          className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-brand-umber/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option, index) => (
@@ -106,15 +114,21 @@ export function CustomDropdown({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.1, delay: index * 0.05 }}
-                  onClick={() => handleSelect(option.value)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSelect(option.value);
+                  }}
                   className={cn(
-                    "flex w-full items-center justify-between px-4 py-3 text-left",
+                    "flex w-full items-center justify-between px-4 py-3 text-left cursor-pointer",
                     "transition-all duration-200",
                     "border-b border-white/10 last:border-b-0",
-                    "hover:bg-brand-teal/20",
+                    "hover:bg-brand-teal/20 active:bg-brand-teal/30",
                     "focus:outline-none focus:bg-brand-teal/25",
+                    "touch-manipulation", // Improves touch responsiveness
                     value === option.value && "bg-brand-teal/30 text-brand-beige font-semibold"
                   )}
+                  type="button"
                 >
                   <div className="flex items-center space-x-2">
                     {option.icon && (
