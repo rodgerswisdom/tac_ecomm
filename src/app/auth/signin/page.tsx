@@ -33,6 +33,12 @@ export default function SignInPage() {
     setIsLoading(true)
     setError('')
 
+    if (!formData.email.trim() || !formData.password) {
+      setError('Please enter both email and password')
+      setIsLoading(false)
+      return
+    }
+
     try {
       const result = await signIn('credentials', {
         email: formData.email,
@@ -41,7 +47,7 @@ export default function SignInPage() {
       })
 
       if (result?.error) {
-        setError('Invalid email or password')
+        setError(result.error || 'Invalid email or password')
       } else {
         router.push('/admin')
       }

@@ -16,14 +16,15 @@ export function generateStaticParams(): Array<{ slug: string }> {
 }
 
 interface CollectionPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
-export default function CollectionPage({ params }: CollectionPageProps) {
+export default async function CollectionPage({ params }: CollectionPageProps) {
+  const { slug } = await params;
   const collection = featuredCollections.find(
-    (item) => item.slug === params.slug
+    (item) => item.slug === slug
   ) as CollectionCategory | undefined;
 
   if (!collection || RESERVED_SLUGS.has(collection.slug)) {

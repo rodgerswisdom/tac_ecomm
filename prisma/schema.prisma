@@ -43,6 +43,7 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  hashedPassword String?
   role          UserRole  @default(CUSTOMER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

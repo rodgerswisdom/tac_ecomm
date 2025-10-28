@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Crown, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User, Phone } from 'lucide-react'
+import { Crown, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, User } from 'lucide-react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
@@ -13,11 +13,14 @@ import { useRouter } from 'next/navigation'
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
     name: '',
-    email: ''
+    email: '',
+    password: '',
+    confirmPassword: ''
   })
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
   const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,25 +36,54 @@ export default function SignUpPage() {
     setIsLoading(true)
     setError('')
 
+    const name = formData.name.trim()
+    const email = formData.email.trim()
+    const password = formData.password
+    const confirmPassword = formData.confirmPassword
+
+    if (!name || !email || !password || !confirmPassword) {
+      setError('Please complete all required fields')
+      setIsLoading(false)
+      return
+    }
+
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long')
+      setIsLoading(false)
+      return
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
     try {
-      // Create user account
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
+          name,
+          email,
+          password,
         }),
       })
 
       if (response.ok) {
-        setSuccess(true)
-        // Redirect to sign in after successful registration
-        setTimeout(() => {
-          router.push('/auth/signin')
-        }, 2000)
+        const signInResult = await signIn('credentials', {
+          email,
+          password,
+          redirect: false,
+        })
+
+        if (signInResult?.error) {
+          setError(signInResult.error || 'Account created, but we could not sign you in. Please try logging in.')
+        } else {
+          router.push('/admin')
+        }
       } else {
         const data = await response.json()
         setError(data.message || 'Registration failed')
@@ -65,36 +97,13 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true)
+    setError('')
     try {
       await signIn('google', { callbackUrl: '/admin' })
     } catch (error) {
       setError('Failed to sign up with Google')
       setIsLoading(false)
     }
-  }
-
-  if (success) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Crown className="h-10 w-10 text-emerald-600" />
-          </div>
-          <h1 className="text-2xl font-bold luxury-heading mb-4">
-            Account <span className="afro-text-gradient">Created</span>!
-          </h1>
-          <p className="text-muted-foreground mb-6">
-            Welcome to TAC Jewellery! Redirecting you to the admin dashboard...
-          </p>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-        </motion.div>
-      </div>
-    )
   }
 
   return (
@@ -198,7 +207,62 @@ export default function SignUpPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
+                      placeholder="Create a secure password"
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Must be at least 8 characters and include a mix of letters and numbers.
+                  </p>
+                </div>
 
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2">
+                    Confirm Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
+                      placeholder="Re-enter your password"
+                      minLength={8}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
 
                 <Button
                   type="submit"
