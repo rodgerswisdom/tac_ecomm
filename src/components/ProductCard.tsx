@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import { ShoppingBag, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
-import { regionPalettes } from "@/lib/patterns";
 
 export interface ProductCardData {
   id: number;
@@ -43,7 +42,7 @@ export interface ProductCardData {
   sourcingStory?: string;
   artisan: {
     name: string;
-    region: keyof typeof regionPalettes;
+    region: string;
     regionLabel: string;
     quote: string;
     portrait: string;
@@ -59,11 +58,6 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
   const [showRipple, setShowRipple] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
-
-  const regionTheme = regionPalettes[product.artisan.region] ?? {
-    background: "rgba(201,146,51,0.12)",
-    text: "#C99233",
-  };
 
   useEffect(() => {
     if (!isDialogOpen) {
@@ -179,39 +173,6 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
                     </div>
                   </div>
 
-                  <div
-                    className="rounded-2xl border border-brand-gold/45 bg-white/85 p-4"
-                    style={{
-                      background: `linear-gradient(135deg, ${regionTheme.background}, rgba(218,191,143,0.75))`,
-                    }}
-                  >
-                    <p className="caps-spacing text-xs text-brand-umber/60">
-                      Artisan
-                    </p>
-                    <div className="mt-3 flex items-center gap-3">
-                      <div className="relative h-14 w-14 overflow-hidden rounded-full border border-brand-gold/60">
-                        <Image
-                          src={product.artisan.portrait}
-                          alt={product.artisan.name}
-                          fill
-                          sizes="56px"
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <p className="font-heading text-lg text-brand-umber">
-                          {product.artisan.name}
-                        </p>
-                        <p className="text-sm" style={{ color: regionTheme.text }}>
-                          {product.artisan.regionLabel}
-                        </p>
-                      </div>
-                    </div>
-                    <blockquote className="mt-4 border-l-2 border-brand-gold/45 pl-4 text-sm text-brand-umber/70">
-                      “{product.artisan.quote}”
-                    </blockquote>
-                  </div>
-
                   <Button size="lg" onClick={handleAddToCart}>
                     <ShoppingBag className="mr-2 h-5 w-5" />
                     Add to Basket
@@ -220,9 +181,6 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
               </DialogHeader>
             </DialogContent>
           </Dialog>
-          <span className="caps-spacing text-xs text-brand-umber/60">
-            {product.origin}
-          </span>
         </CardHeader>
 
         <CardContent className="flex flex-col items-center space-y-4 px-6 pb-8 text-center">

@@ -5,13 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Sparkles, Star, Heart, Users, Globe, Award, HandHeart } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Sparkles, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { featuredProducts } from "@/data/content";
-import { patternAssets, regionPalettes } from "@/lib/patterns";
+import { Product360Viewer } from "@/components/Product360Viewer";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -30,15 +30,10 @@ export default function ProductDetailPage() {
     [slug],
   );
 
-  const [activeImage, setActiveImage] = useState(0);
-
   if (!product) {
     router.push("/collections");
     return null;
   }
-
-  const artisanPalette =
-    regionPalettes[product.artisan.region] ?? regionPalettes.kenya;
 
   const handleAddToCart = () => {
     addToCart({
@@ -65,53 +60,17 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="grid gap-16 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-6">
-              <motion.div
-                className="relative overflow-hidden rounded-[2.5rem] border border-brand-teal/20 bg-white shadow-[0_35px_80px_rgba(74,43,40,0.18)]"
-                initial={{ opacity: 0, y: 32 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
-              >
-                <Image
-                  src={product.gallery[activeImage] ?? product.image}
-                  alt={product.name}
-                  width={960}
-                  height={720}
-                  className="h-[520px] w-full rounded-[2.5rem] object-cover"
-                  priority
-                />
-                <Image
-                  src={patternAssets.beadCircles}
-                  alt="Pattern overlay"
-                  width={160}
-                  height={160}
-                  className="absolute -right-8 -top-8 hidden opacity-60 lg:block"
-                />
-              </motion.div>
-
-              <div className="flex gap-4 overflow-x-auto pb-2">
-                {product.gallery.map((image, index) => (
-                  <button
-                    key={`${product.id}-thumb-${index}`}
-                    type="button"
-                    onClick={() => setActiveImage(index)}
-                    className={`relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border transition ${
-                      activeImage === index
-                        ? "border-brand-gold shadow-[0_12px_30px_rgba(223,160,83,0.28)]"
-                        : "border-brand-teal/20"
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`${product.name} view ${index + 1}`}
-                      fill
-                      sizes="112px"
-                      className="object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 32 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
+            >
+              <Product360Viewer
+                images={product.gallery}
+                productName={product.name}
+                fallbackImage={product.image}
+              />
+            </motion.div>
 
             <motion.div
               className="space-y-10 rounded-[2.5rem] border border-brand-teal/20 bg-brand-beige/85 p-10 backdrop-blur-sm shadow-[0_28px_70px_rgba(74,43,40,0.16)]"
@@ -160,87 +119,6 @@ export default function ProductDetailPage() {
                     </span>
                   ))}
                 </div>
-              </div>
-
-              {/* Enhanced Artisan Section */}
-              <div className="space-y-6">
-                <div className="rounded-[2rem] border border-brand-gold/45 bg-white/85 p-6" style={{ background: artisanPalette.background }}>
-                  <p className="caps-spacing text-xs text-brand-umber/60">
-                    Master Artisan
-                  </p>
-                  <div className="mt-4 flex items-center gap-4">
-                    <div className="relative h-16 w-16 overflow-hidden rounded-full border border-brand-gold/60">
-                      <Image
-                        src={product.artisan.portrait}
-                        alt={product.artisan.name}
-                        fill
-                        sizes="112px"
-                        className="object-cover"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-heading text-2xl text-brand-umber">
-                        {product.artisan.name}
-                      </p>
-                      <p className="text-sm" style={{ color: artisanPalette.text }}>
-                        {product.artisan.regionLabel}
-                      </p>
-                    </div>
-                  </div>
-                  <blockquote className="mt-4 border-l-2 border-brand-gold/40 pl-4 text-sm text-brand-umber/70">
-                    "{product.artisan.quote}"
-                  </blockquote>
-                </div>
-
-                {/* Community Impact */}
-                {product.communityImpact && (
-                  <div className="rounded-[2rem] border border-brand-teal/25 bg-brand-jade/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-brand-teal/20 rounded-full flex items-center justify-center">
-                        <Users className="h-5 w-5 text-brand-teal" />
-                      </div>
-                      <h3 className="font-heading text-lg text-brand-umber">Community Impact</h3>
-                    </div>
-                    <p className="text-sm text-brand-umber/70 mb-3">
-                      {product.communityImpact}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-brand-teal">
-                      <Globe className="h-3 w-3" />
-                      <span>Supporting sustainable artisan communities</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Sourcing Story */}
-                {product.sourcingStory && (
-                  <div className="rounded-[2rem] border border-brand-gold/25 bg-brand-gold/10 p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-brand-gold/20 rounded-full flex items-center justify-center">
-                        <HandHeart className="h-5 w-5 text-brand-gold" />
-                      </div>
-                      <h3 className="font-heading text-lg text-brand-umber">Sourcing Story</h3>
-                    </div>
-                    <p className="text-sm text-brand-umber/70">
-                      {product.sourcingStory}
-                    </p>
-                  </div>
-                )}
-
-                {/* Corporate Gift Badge */}
-                {product.isCorporateGift && (
-                  <div className="rounded-[2rem] border border-brand-coral/25 bg-brand-coral/10 p-6">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 bg-brand-coral/20 rounded-full flex items-center justify-center">
-                        <Award className="h-5 w-5 text-brand-coral" />
-                      </div>
-                      <h3 className="font-heading text-lg text-brand-umber">Corporate Gift</h3>
-                    </div>
-                    <p className="text-sm text-brand-umber/70">
-                      Perfect for executive gifting, client appreciation, and corporate events. 
-                      Includes custom packaging and certificate of authenticity.
-                    </p>
-                  </div>
-                )}
               </div>
 
               <Button size="lg" className="w-full" onClick={handleAddToCart}>

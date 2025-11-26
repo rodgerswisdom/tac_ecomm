@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Eye, ImageOff } from "lucide-react";
-import { regionPalettes } from "@/lib/patterns";
 import { useCart } from "@/contexts/CartContext";
 
 interface ShowcaseProduct {
@@ -29,7 +28,7 @@ interface ShowcaseProduct {
   materials: string[];
   artisan: {
     name: string;
-    region: keyof typeof regionPalettes;
+    region: string;
     regionLabel: string;
     quote: string;
     portrait: string;
@@ -62,9 +61,6 @@ const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
 
     return () => clearInterval(timer);
   }, [isDialogOpen, product.gallery.length]);
-
-  const regionTheme =
-    regionPalettes[product.artisan.region] ?? regionPalettes.kenya;
 
   const handleOpenChange = (open: boolean) => {
     setIsDialogOpen(open);
@@ -179,39 +175,6 @@ const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
                     </span>
                   ))}
                 </div>
-              </div>
-
-              <div
-                className="rounded-2xl border border-brand-gold/45 bg-white/85 p-4"
-                style={{
-                  background: `linear-gradient(135deg, ${regionTheme.background}, rgba(218,191,143,0.75))`,
-                }}
-              >
-                <p className="caps-spacing text-xs text-brand-umber/60">
-                  Artisan
-                </p>
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="relative h-14 w-14 overflow-hidden rounded-full border border-brand-gold/60">
-                    <Image
-                      src={product.artisan.portrait}
-                      alt={product.artisan.name}
-                      fill
-                      sizes="56px"
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-heading text-lg text-brand-umber">
-                      {product.artisan.name}
-                    </p>
-                    <p className="text-sm" style={{ color: regionTheme.text }}>
-                      {product.artisan.regionLabel}
-                    </p>
-                  </div>
-                </div>
-                <blockquote className="mt-4 border-l-2 border-brand-gold/45 pl-4 text-sm text-brand-umber/70">
-                  “{product.artisan.quote}”
-                </blockquote>
               </div>
 
               <Button

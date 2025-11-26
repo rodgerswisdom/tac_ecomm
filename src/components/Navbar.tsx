@@ -12,6 +12,7 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
 } from "@/components/ui/sheet";
 
 const navLinks = [
@@ -30,8 +31,7 @@ const navLinks = [
     ]
   },
   { href: "/bespoke", label: "Bespoke Studio" },
-  { href: "/#artisans", label: "Artisans" },
-  { href: "/#legacy", label: "Our Legacy" },
+  { href: "/artisans", label: "Artisans" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -171,6 +171,7 @@ export const Navbar = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="mt-8 flex flex-col gap-4 text-brand-umber">
                   <span className="caps-spacing text-xs text-brand-umber/70">
                     Menu

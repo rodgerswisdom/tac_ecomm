@@ -49,9 +49,6 @@ const CategoryCardComponent = ({ category }: CategoryCardProps) => {
           <h3 className="text-lg font-heading text-brand-umber transition-colors group-hover:text-brand-teal">
             {category.name}
           </h3>
-          <p className="text-xs uppercase tracking-[0.35em] text-brand-umber/50">
-            {category.itemCount} pieces
-          </p>
         </div>
       </Link>
     </motion.div>
