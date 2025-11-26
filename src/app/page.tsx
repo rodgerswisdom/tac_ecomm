@@ -68,18 +68,14 @@ export default function HomePage() {
             ))}
           </motion.div>
 
-          <div className="mt-16 flex flex-col items-center gap-4 text-center">
+          <div className="mt-16 flex justify-center">
             <Button
               size="lg"
-              variant="outline"
-              className="border-brand-umber text-brand-umber"
+              className="px-10 py-6"
               asChild
             >
-              <Link href="/collections">View the Full Collection</Link>
+              <Link href="/collections">View All Collections</Link>
             </Button>
-            <span className="text-xs uppercase tracking-[0.4em] text-brand-umber/50">
-              6 curated collections • 100+ artisan pieces
-            </span>
           </div>
         </div>
       </section>
@@ -124,17 +120,14 @@ export default function HomePage() {
             ))}
           </motion.div>
 
-          <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex justify-center">
             <Button
               size="lg"
-              className="px-8 py-6"
+              className="px-10 py-6"
               asChild
             >
-              <Link href="/collections">Browse the full gallery</Link>
+              <Link href="/collections">Shop All Products</Link>
             </Button>
-            <span className="text-xs uppercase tracking-[0.4em] text-brand-umber/50">
-              Updated weekly with new artisan arrivals
-            </span>
           </div>
         </div>
       </section>

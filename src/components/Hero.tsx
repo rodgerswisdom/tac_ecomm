@@ -118,32 +118,15 @@ const HeroComponent = () => {
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-wrap items-center justify-center gap-4 lg:justify-start"
+              className="flex justify-center lg:justify-start"
             >
               <Button
                 size="lg"
-                variant="outline"
-                className="px-10 shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
+                className="px-10 py-6 shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
                 asChild
               >
-                <Link href="/collections">Shop the Gallery</Link>
+                <Link href="/collections">Shop Collections</Link>
               </Button>
-              <Link
-                href="/about"
-                className="group relative inline-flex items-center gap-2 overflow-hidden rounded-full border border-brand-umber px-6 py-3 text-sm font-semibold text-brand-umber transition-all duration-300"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Meet the artisans
-                  <motion.span
-                    aria-hidden
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-brand-umber/40 text-xs text-brand-umber transition"
-                    whileHover={{ x: 4 }}
-                  >
-                    →
-                  </motion.span>
-                </span>
-                <span className="absolute inset-0 bg-white" />
-              </Link>
             </motion.div>
 
             <motion.div
