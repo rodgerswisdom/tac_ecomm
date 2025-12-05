@@ -48,7 +48,8 @@ export function Product360Viewer({
 
     const deltaX = clientX - startX;
     const sensitivity = 2; // Adjust rotation sensitivity
-    const deltaRotation = (deltaX / containerRef.current?.offsetWidth || 1) * 360 * sensitivity;
+    const containerWidth = containerRef.current?.offsetWidth ?? 1;
+    const deltaRotation = (deltaX / containerWidth) * 360 * sensitivity;
 
     let newRotation = rotation + deltaRotation;
     newRotation = ((newRotation % 360) + 360) % 360; // Normalize to 0-360
