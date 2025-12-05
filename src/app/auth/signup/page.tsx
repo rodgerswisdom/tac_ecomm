@@ -82,7 +82,8 @@ export default function SignUpPage() {
         if (signInResult?.error) {
           setError(signInResult.error || 'Account created, but we could not sign you in. Please try logging in.')
         } else {
-          router.push('/admin')
+          // Redirect based on user role or to home page
+          router.push('/')
         }
       } else {
         const data = await response.json()
@@ -99,7 +100,7 @@ export default function SignUpPage() {
     setIsLoading(true)
     setError('')
     try {
-      await signIn('google', { callbackUrl: '/admin' })
+      await signIn('google', { callbackUrl: '/' })
     } catch (error) {
       setError('Failed to sign up with Google')
       setIsLoading(false)
@@ -150,7 +151,7 @@ export default function SignUpPage() {
               </motion.div>
               
               <CardTitle className="text-2xl luxury-heading">
-                Join <span className="afro-text-gradient">TAC Jewellery</span>
+                Join <span className="afro-text-gradient">Tac Accessories</span>
               </CardTitle>
               <CardDescription className="luxury-text">
                 Create your admin account to manage the store

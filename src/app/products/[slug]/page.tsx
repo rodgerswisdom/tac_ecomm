@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Sparkles, Star } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -25,10 +25,54 @@ export default function ProductDetailPage() {
     [slug],
   );
 
-  const related = useMemo(
-    () => featuredProducts.filter((item) => item.slug !== slug).slice(0, 3),
-    [slug],
-  );
+  const related = useMemo(() => {
+    if (!product) return [];
+
+    const otherProducts = featuredProducts.filter((item) => item.slug !== slug);
+    
+    // Score products based on relevance
+    const scored = otherProducts.map((item) => {
+      let score = 0;
+      
+      // Same category (high priority)
+      if (item.category === product.category) score += 10;
+      
+      // Same artisan (if available)
+      if (product.artisan && item.artisan && 
+          product.artisan.name === item.artisan.name) score += 8;
+      
+      // Similar materials (at least one matching)
+      const commonMaterials = product.materials.filter(m => 
+        item.materials.some(im => im.toLowerCase().includes(m.toLowerCase()) || 
+                                  m.toLowerCase().includes(im.toLowerCase()))
+      );
+      if (commonMaterials.length > 0) score += 5;
+      
+      // Similar price range (±30%)
+      const priceDiff = Math.abs(item.price - product.price) / product.price;
+      if (priceDiff <= 0.3) score += 3;
+      
+      // Same origin
+      if (item.origin === product.origin) score += 2;
+      
+      return { product: item, score };
+    });
+
+    // Sort by score and take top 6, then shuffle to add variety
+    const topScored = scored
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(item => item.product);
+
+    // Mix high-scored with some random variety
+    const highScored = topScored.slice(0, 4);
+    const variety = otherProducts
+      .filter(p => !highScored.includes(p))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 2);
+
+    return [...highScored, ...variety].slice(0, 6);
+  }, [slug, product]);
 
   if (!product) {
     router.push("/collections");
@@ -132,27 +176,32 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Every purchase supports TAC artisan scholarships.
+                  Every purchase supports Tac Accessories artisan scholarships.
                 </div>
               </div>
             </motion.div>
           </div>
 
-          <section className="mt-24 space-y-10">
-            <div className="flex flex-col gap-4 text-left">
-              <span className="caps-spacing text-xs text-brand-teal">
-                Curated for you
-              </span>
-              <h2 className="font-heading text-3xl text-brand-umber">
-                Discover more luminous pieces from this gallery.
-              </h2>
-            </div>
-            <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
-              {related.map((item) => (
-                <ProductSummary key={`related-${item.id}`} product={item} />
-              ))}
-            </div>
-          </section>
+          {related.length > 0 && (
+            <section className="mt-24 space-y-10">
+              <div className="flex flex-col gap-4 text-left">
+                <span className="caps-spacing text-xs text-brand-teal">
+                  You May Also Like
+                </span>
+                <h2 className="font-heading text-3xl text-brand-umber">
+                  Discover more luminous pieces from this gallery.
+                </h2>
+                <p className="text-base text-brand-umber/70 max-w-2xl">
+                  Handpicked selections that complement this piece, curated by our styling team.
+                </p>
+              </div>
+              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {related.map((item) => (
+                  <ProductSummary key={`related-${item.id}`} product={item} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </section>
       <Footer />
@@ -160,37 +209,104 @@ export default function ProductDetailPage() {
   );
 }
 
-const ProductSummary = ({
+function ProductSummary({
   product,
 }: {
   product: (typeof featuredProducts)[number];
-}) => {
+}) {
+  const { addToCart } = useCart();
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+    });
+  };
+
   return (
     <motion.article
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
-      className="group rounded-3xl border border-brand-teal/20 bg-white p-6 shadow-[0_20px_50px_rgba(74,43,40,0.14)] backdrop-blur-sm transition-colors hover:border-brand-teal/35 hover:shadow-[0_26px_60px_rgba(74,43,40,0.16)]"
+      className="group rounded-3xl border border-brand-teal/20 bg-white overflow-hidden shadow-[0_20px_50px_rgba(74,43,40,0.14)] backdrop-blur-sm transition-all duration-300 hover:border-brand-teal/35 hover:shadow-[0_26px_60px_rgba(74,43,40,0.16)]"
     >
-      <div className="relative overflow-hidden rounded-2xl">
-        <Image
-          src={product.image}
-          alt={product.name}
-          width={420}
-          height={320}
-          className="h-60 w-full object-cover transition duration-700 group-hover:scale-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/35 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-      </div>
-      <div className="mt-4 space-y-2">
-        <Link href={`/products/${product.slug}`} className="font-heading text-2xl text-brand-umber">
-          {product.name}
-        </Link>
-        <p className="text-sm text-brand-coral">
-          KES {product.price.toLocaleString()}
-        </p>
-      </div>
+      <Link href={`/products/${product.slug}`}>
+        <div className="relative overflow-hidden aspect-[4/5]">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover transition duration-700 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="bg-white/95 backdrop-blur-sm hover:bg-white"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = `/products/${product.slug}`;
+              }}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Quick View
+            </Button>
+            <Button
+              size="sm"
+              className="bg-brand-teal/95 backdrop-blur-sm hover:bg-brand-teal"
+              onClick={handleQuickAdd}
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Add to Cart
+            </Button>
+          </div>
+          {product.originalPrice && (
+            <div className="absolute top-3 left-3 bg-brand-coral text-white text-xs font-semibold px-2 py-1 rounded-full">
+              Sale
+            </div>
+          )}
+        </div>
+        <div className="p-6 space-y-3">
+          <div>
+            <h3 className="font-heading text-xl text-brand-umber group-hover:text-brand-teal transition-colors">
+              {product.name}
+            </h3>
+            {product.origin && (
+              <p className="text-xs text-brand-umber/60 mt-1">From {product.origin}</p>
+            )}
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-lg font-semibold text-brand-coral">
+                KES {product.price.toLocaleString()}
+              </p>
+              {product.originalPrice && (
+                <p className="text-sm text-brand-umber/40 line-through">
+                  KES {product.originalPrice.toLocaleString()}
+                </p>
+              )}
+            </div>
+            {product.materials.length > 0 && (
+              <div className="flex gap-1">
+                {product.materials.slice(0, 2).map((material, idx) => (
+                  <span
+                    key={idx}
+                    className="text-xs px-2 py-1 rounded-full bg-brand-jade/20 text-brand-umber/70"
+                  >
+                    {material.split(' ')[0]}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
     </motion.article>
   );
 };

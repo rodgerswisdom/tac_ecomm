@@ -19,25 +19,25 @@ const kumbhSans = Kumbh_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "TAC Accessories — The African Gallery Experience",
+  title: "Tac Accessories — The African Gallery Experience",
   description:
-    "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. TAC Accessories blends African modernism with luxury minimalism.",
+    "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. Tac Accessories blends African modernism with luxury minimalism.",
   metadataBase: new URL("https://tacaccessories.com"),
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "TAC Accessories — The African Gallery Experience",
+    title: "Tac Accessories — The African Gallery Experience",
     description:
       "A luxurious African art eCommerce destination celebrating heritage craftsmanship through contemporary design.",
     url: "https://tacaccessories.com",
-    siteName: "TAC Accessories",
+    siteName: "Tac Accessories",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "TAC Accessories hero imagery",
+        alt: "Tac Accessories hero imagery",
       },
     ],
     locale: "en_US",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "TAC Accessories — The African Gallery Experience",
+    title: "Tac Accessories — The African Gallery Experience",
     description:
       "Experience premium African artistry reimagined for the modern world.",
     images: ["/og-image.jpg"],

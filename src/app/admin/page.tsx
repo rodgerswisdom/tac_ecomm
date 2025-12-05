@@ -323,7 +323,7 @@ export default function AdminPage() {
           <Link href="/" className="flex items-center space-x-2">
             <Crown className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold luxury-heading afro-text-gradient">
-              TAC Jewellery Admin
+              Tac Accessories Admin
             </span>
           </Link>
           
@@ -354,7 +354,7 @@ export default function AdminPage() {
             Admin <span className="afro-text-gradient">Dashboard</span>
           </h1>
           <p className="text-muted-foreground luxury-text">
-            Manage your TAC Jewellery store with powerful analytics and tools.
+            Manage your Tac Accessories store with powerful analytics and tools.
           </p>
         </motion.div>
 

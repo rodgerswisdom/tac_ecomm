@@ -1,11 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProductCard } from "@/components/ProductCard";
 import { 
   Building2, 
   Users, 
@@ -17,9 +18,12 @@ import {
   ArrowRight,
   Award,
   HandHeart,
-  Sparkles
+  Sparkles,
+  Mail,
+  Phone
 } from "lucide-react";
 import Link from "next/link";
+import { featuredProducts } from "@/data/content";
 
 const corporateCollections = [
   {
@@ -113,6 +117,22 @@ const testimonials = [
 
 export default function CorporateGiftsPage() {
   const [selectedCollection, setSelectedCollection] = useState<number | null>(null);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    companyName: "",
+    contactPerson: "",
+    email: "",
+    phone: "",
+    quantity: "",
+    budget: "",
+    requirements: "",
+  });
+
+  // Get corporate gift products
+  const corporateProducts = useMemo(
+    () => featuredProducts.filter((product) => product.isCorporateGift),
+    []
+  );
 
   return (
     <main className="relative overflow-hidden bg-brand-beige">
@@ -375,6 +395,49 @@ export default function CorporateGiftsPage() {
         </div>
       </section>
 
+      {/* Corporate Gift Products */}
+      {corporateProducts.length > 0 && (
+        <section className="section-spacing bg-white">
+          <div className="gallery-container">
+            <div className="text-center mb-16">
+              <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
+                Featured Corporate Gifts
+              </span>
+              <h2 className="font-heading text-4xl text-brand-umber mb-6">
+                Handpicked Pieces for Corporate Gifting
+              </h2>
+              <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto">
+                Each piece is carefully selected for its quality, authenticity, and presentation value.
+              </p>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              {corporateProducts.slice(0, 6).map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                >
+                  <ProductCard product={product} />
+                </motion.div>
+              ))}
+            </div>
+
+            {corporateProducts.length > 6 && (
+              <div className="mt-12 text-center">
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/collections?filter=corporate">
+                    View All Corporate Gifts
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* CTA Section */}
       <section className="section-spacing bg-white">
         <div className="gallery-container">
@@ -391,17 +454,156 @@ export default function CorporateGiftsPage() {
               Let us help you create meaningful business relationships through authentic African craftsmanship.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="px-8 py-6">
+              <Button 
+                size="lg" 
+                className="px-8 py-6"
+                onClick={() => setShowContactForm(true)}
+              >
                 Request Corporate Catalog
                 <Gift className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="px-8 py-6">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="px-8 py-6"
+                onClick={() => setShowContactForm(true)}
+              >
                 Schedule Consultation
               </Button>
             </div>
           </motion.div>
         </div>
       </section>
+
+      {/* Contact Form Modal */}
+      {showContactForm && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => setShowContactForm(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-heading text-2xl text-brand-umber">
+                Corporate Gift Inquiry
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowContactForm(false)}
+              >
+                ×
+              </Button>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Handle form submission
+                alert("Thank you for your inquiry! We'll contact you soon.");
+                setShowContactForm(false);
+              }}
+              className="space-y-4"
+            >
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Company Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactForm.companyName}
+                    onChange={(e) => setContactForm({ ...contactForm, companyName: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Contact Person *</label>
+                  <input
+                    type="text"
+                    required
+                    value={contactForm.contactPerson}
+                    onChange={(e) => setContactForm({ ...contactForm, contactPerson: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phone *</label>
+                  <input
+                    type="tel"
+                    required
+                    value={contactForm.phone}
+                    onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Estimated Quantity</label>
+                  <input
+                    type="text"
+                    value={contactForm.quantity}
+                    onChange={(e) => setContactForm({ ...contactForm, quantity: e.target.value })}
+                    placeholder="e.g., 50-100 pieces"
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Budget Range</label>
+                  <input
+                    type="text"
+                    value={contactForm.budget}
+                    onChange={(e) => setContactForm({ ...contactForm, budget: e.target.value })}
+                    placeholder="e.g., $5,000 - $10,000"
+                    className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Special Requirements</label>
+                <textarea
+                  value={contactForm.requirements}
+                  onChange={(e) => setContactForm({ ...contactForm, requirements: e.target.value })}
+                  rows={4}
+                  placeholder="Tell us about your specific needs, branding requirements, delivery timeline, etc."
+                  className="w-full px-4 py-2 rounded-lg border border-brand-umber/20 focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                />
+              </div>
+              <div className="flex gap-4 pt-4">
+                <Button type="submit" size="lg" className="flex-1">
+                  Submit Inquiry
+                  <Mail className="ml-2 h-5 w-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  onClick={() => setShowContactForm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
 
       <Footer />
     </main>

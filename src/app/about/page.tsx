@@ -23,7 +23,7 @@ export default function AboutPage() {
   const faqs: FAQ[] = [
     {
       id: 1,
-      question: "What makes TAC Jewellery authentic?",
+      question: "What makes Tac Accessories authentic?",
       answer: "Every piece in our collection is handcrafted by master artisans using traditional techniques passed down through generations. We work directly with artisans across Africa to ensure authenticity and fair trade practices. Each piece comes with a certificate of authenticity and tells the story of its cultural significance.",
       category: "authenticity"
     },
@@ -135,7 +135,7 @@ export default function AboutPage() {
               <span className="text-foreground">African Heritage</span>
             </h1>
             <p className="text-xl text-muted-foreground luxury-text leading-relaxed">
-              TAC Jewellery was born from a deep passion for African culture and a desire to share 
+              Tac Accessories was born from a deep passion for African culture and a desire to share 
               the beauty of traditional craftsmanship with the world. We believe that every piece 
               of jewellery tells a story, and our mission is to preserve and celebrate these stories 
               while supporting the communities that create them.
@@ -280,7 +280,7 @@ export default function AboutPage() {
               Meet Our <span className="afro-text-gradient">Artisans</span>
             </h2>
             <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              Behind every piece of TAC Jewellery are skilled artisans who have dedicated 
+              Behind every piece of Tac Accessories are skilled artisans who have dedicated 
               their lives to preserving traditional African craftsmanship.
             </p>
           </motion.div>

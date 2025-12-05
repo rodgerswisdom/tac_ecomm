@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown } from "lucide-react";
+import { ShoppingBag, Menu, ChevronDown, Search } from "lucide-react";
+import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
@@ -85,7 +86,7 @@ export const Navbar = () => {
             href="/"
             className="caps-spacing inline-flex items-center gap-2 text-[10px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
           >
-            TAC Accessories
+            Tac Accessories
           </Link>
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
@@ -158,7 +159,24 @@ export const Navbar = () => {
             })}
           </div>
 
+          <div className="hidden lg:block flex-1 max-w-md mx-4">
+            <SearchBar />
+          </div>
+
           <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
+            <div className="lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  // For mobile, we could open a search modal or navigate to search page
+                  // For now, just show search icon
+                }}
+                aria-label="Search"
+              >
+                <Search className="h-5 w-5" />
+              </Button>
+            </div>
             <Sheet>
               <SheetTrigger asChild>
                 <Button

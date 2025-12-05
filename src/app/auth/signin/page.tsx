@@ -49,7 +49,8 @@ export default function SignInPage() {
       if (result?.error) {
         setError(result.error || 'Invalid email or password')
       } else {
-        router.push('/admin')
+        // Redirect based on user role or to home page
+        router.push('/')
       }
     } catch (error) {
       setError('An error occurred. Please try again.')
@@ -61,7 +62,7 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn('google', { callbackUrl: '/admin' })
+      await signIn('google', { callbackUrl: '/' })
     } catch (error) {
       setError('Failed to sign in with Google')
       setIsLoading(false)
@@ -115,7 +116,7 @@ export default function SignInPage() {
                 Welcome <span className="afro-text-gradient">Back</span>
               </CardTitle>
               <CardDescription className="luxury-text">
-                Sign in to your TAC Jewellery admin account
+                Sign in to your Tac Accessories account
               </CardDescription>
             </CardHeader>
 

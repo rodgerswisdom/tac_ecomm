@@ -104,7 +104,7 @@ export function CustomDropdown({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-brand-umber/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
+          className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-white/98 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option, index) => (
@@ -125,17 +125,17 @@ export function CustomDropdown({
                     "hover:bg-brand-teal/20 active:bg-brand-teal/30",
                     "focus:outline-none focus:bg-brand-teal/25",
                     "touch-manipulation", // Improves touch responsiveness
-                    value === option.value && "bg-brand-teal/30 text-brand-beige font-semibold"
+                    value === option.value && "bg-brand-teal/30 text-brand-umber font-semibold"
                   )}
                   type="button"
                 >
                   <div className="flex items-center space-x-2">
                     {option.icon && (
-                      <span className="text-brand-beige/70">
+                      <span className="text-brand-umber/70">
                         {option.icon}
                       </span>
                     )}
-                    <span className="text-brand-beige">{option.label}</span>
+                    <span className="text-brand-umber">{option.label}</span>
                   </div>
                   {value === option.value && (
                     <motion.div
@@ -143,7 +143,7 @@ export function CustomDropdown({
                       animate={{ scale: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Check className="h-4 w-4 text-brand-beige" />
+                      <Check className="h-4 w-4 text-brand-umber" />
                     </motion.div>
                   )}
                 </motion.button>

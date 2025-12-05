@@ -54,7 +54,7 @@ export const Footer = () => {
           className="space-y-6"
         >
           <span className="caps-spacing text-xs text-brand-gold">
-            TAC Accessories
+            Tac Accessories
           </span>
           <h3 className="font-heading text-3xl leading-tight text-brand-gold">
             Where heritage breathes, and luxury lives.
@@ -96,7 +96,7 @@ export const Footer = () => {
 
         <div className="mt-16 flex flex-col gap-4 border-t border-white/20 pt-8 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
           <span className="caps-spacing">
-            © {new Date().getFullYear()} TAC Accessories. All Rights Reserved.
+            © {new Date().getFullYear()} Tac Accessories. All Rights Reserved.
           </span>
           <span className="caps-spacing">
             Crafted with honor across the African continent.

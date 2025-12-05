@@ -554,7 +554,7 @@ export const featuredCollections: CollectionCategory[] = [
     ],
     spotlight: {
       quote: "We curate sets so the wearer steps into the room with a complete story, not just an accessory.",
-      name: "TAC Styling Collective",
+      name: "Tac Accessories Styling Collective",
       role: "Creative Direction · Nairobi, Kenya",
       image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80"
     },
@@ -604,7 +604,7 @@ export const legacyMilestones: LegacyMilestone[] = [
     id: 4,
     year: "2024",
     region: "Global",
-    title: "TAC Gallery Experience",
+    title: "Tac Accessories Gallery Experience",
     description:
       "We unveil a digital gallery that honors artisan heritage while delivering a couture-level shopping journey.",
     image:

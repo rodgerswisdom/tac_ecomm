@@ -147,7 +147,7 @@ export default function BespokeStudioPage() {
               Bespoke Studio
             </h1>
             <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto mb-12">
-              Create custom pieces tailored to your vision with TAC Accessories.
+              Create custom pieces tailored to your vision with Tac Accessories.
             </p>
             
             {/* <div className="mb-12">

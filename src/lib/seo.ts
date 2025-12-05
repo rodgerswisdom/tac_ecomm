@@ -39,7 +39,7 @@ export class SEOService {
 
   constructor(defaultConfig: Partial<SEOConfig> = {}) {
     this.defaultConfig = {
-      siteName: 'TAC Accessories',
+      siteName: 'Tac Accessories',
       locale: 'en_US',
       type: 'website',
       ...defaultConfig
@@ -61,7 +61,7 @@ export class SEOService {
       'og:image': fullConfig.image || '/og-image.jpg',
       'og:url': fullConfig.url || '',
       'og:type': fullConfig.type || 'website',
-      'og:site_name': fullConfig.siteName || 'TAC Accessories',
+      'og:site_name': fullConfig.siteName || 'Tac Accessories',
       'og:locale': fullConfig.locale || 'en_US',
       'twitter:card': 'summary_large_image',
       'twitter:title': fullConfig.title,
@@ -85,7 +85,7 @@ export class SEOService {
       url: product.url,
       brand: {
         '@type': 'Brand',
-        name: product.brand || 'TAC Accessories'
+        name: product.brand || 'Tac Accessories'
       },
       sku: product.sku,
       category: product.category,
@@ -97,7 +97,7 @@ export class SEOService {
         condition: `https://schema.org/${product.condition || 'NewCondition'}`,
         seller: {
           '@type': 'Organization',
-          name: 'TAC Accessories'
+          name: 'Tac Accessories'
         }
       },
       aggregateRating: product.rating && product.reviewCount ? {
@@ -131,7 +131,7 @@ export class SEOService {
     return {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'TAC Accessories',
+      name: 'Tac Accessories',
       description: 'Afrocentric jewelry and accessories celebrating African heritage',
       url: 'https://tacaccessories.com',
       logo: 'https://tacaccessories.com/logo.png',
@@ -156,7 +156,7 @@ export class SEOService {
     return {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
-      name: 'TAC Accessories',
+      name: 'Tac Accessories',
       description: 'Afrocentric jewelry and accessories celebrating African heritage',
       url: 'https://tacaccessories.com',
       potentialAction: {
@@ -411,26 +411,26 @@ export function useSEO() {
 // Common SEO configurations
 export const SEO_PRESETS = {
   home: {
-    title: 'TAC Accessories - Afrocentric Jewelry & Accessories',
+    title: 'Tac Accessories - Afrocentric Jewelry & Accessories',
     description: 'Discover our exquisite collection of handcrafted Afrocentric jewelry and accessories. Celebrating African heritage through modern luxury.',
     keywords: ['afrocentric jewelry', 'african accessories', 'handcrafted jewelry', 'cultural jewelry']
   },
   
   products: {
-    title: 'Products - TAC Accessories',
+    title: 'Products - Tac Accessories',
     description: 'Browse our complete collection of Afrocentric jewelry and accessories. From gold necklaces to bronze bracelets, find your perfect piece.',
     keywords: ['afrocentric jewelry', 'gold jewelry', 'bronze jewelry', 'emerald jewelry']
   },
   
   about: {
-    title: 'About Us - TAC Accessories',
-    description: 'Learn about TAC Accessories and our mission to celebrate African heritage through beautiful, handcrafted jewelry and accessories.',
+    title: 'About Us - Tac Accessories',
+    description: 'Learn about Tac Accessories and our mission to celebrate African heritage through beautiful, handcrafted jewelry and accessories.',
     keywords: ['about tac accessories', 'african heritage', 'handcrafted jewelry', 'cultural mission']
   },
   
   contact: {
-    title: 'Contact Us - TAC Accessories',
-    description: 'Get in touch with TAC Accessories. We\'re here to help with your jewelry needs and answer any questions about our products.',
+    title: 'Contact Us - Tac Accessories',
+    description: 'Get in touch with Tac Accessories. We\'re here to help with your jewelry needs and answer any questions about our products.',
     keywords: ['contact tac accessories', 'customer service', 'jewelry support']
   }
 }
