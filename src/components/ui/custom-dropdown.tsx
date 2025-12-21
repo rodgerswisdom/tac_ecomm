@@ -104,7 +104,7 @@ export function CustomDropdown({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -10, scale: 0.95 }}
           transition={{ duration: 0.2 }}
-          className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-white/98 backdrop-blur-xl shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
+          className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-white shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         >
             <div className="max-h-60 overflow-y-auto">
               {options.map((option, index) => (

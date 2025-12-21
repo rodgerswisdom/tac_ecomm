@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         name: trimmedName,
         email: normalizedEmail,
         hashedPassword,
-        role: 'USER', // Set as regular user by default
+        role: 'CUSTOMER', // Set as customer by default
         emailVerified: null
       }
     }) as {

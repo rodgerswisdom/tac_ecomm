@@ -29,15 +29,6 @@ const heroImages = [
   },
   {
     type: "hero" as const,
-    src: "https://images.unsplash.com/photo-1713845784497-fe3d7ed176d8?auto=format&fit=crop&q=60&w=900",
-    alt: "Close-up of handcrafted African jewelry captured in soft teal light",
-    title: "Artisan Crafted",
-    subtitle: "Each Piece Tells a Story",
-    description: "Celebrating the artisans and the hands that craft African luxury.",
-    cta: { label: "Meet Our Artisans", href: "/artisans" },
-  },
-  {
-    type: "hero" as const,
     src: "https://images.unsplash.com/photo-1701884314987-09fb749e023b?auto=format&fit=crop&q=60&w=900",
     alt: "Half-body shot of an African muse wrapped in artisan textiles and gold accessories",
     title: "Limited Edition",

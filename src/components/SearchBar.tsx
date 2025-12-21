@@ -31,7 +31,7 @@ export function SearchBar() {
       const filtered = featuredProducts.filter((product) => {
         const nameMatch = product.name.toLowerCase().includes(searchTerm);
         const descMatch = product.description.toLowerCase().includes(searchTerm);
-        const categoryMatch = product.category.toLowerCase().includes(searchTerm);
+        const categoryMatch = product.category?.toLowerCase().includes(searchTerm) ?? false;
         const materialsMatch = product.materials.some((m) =>
           m.toLowerCase().includes(searchTerm)
         );
