@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface DropdownOption {
@@ -19,6 +19,7 @@ interface CustomDropdownProps {
   className?: string
   disabled?: boolean
   error?: boolean
+  searchable?: boolean
 }
 
 export function CustomDropdown({
@@ -28,12 +29,39 @@ export function CustomDropdown({
   placeholder = "Select an option",
   className,
   disabled = false,
-  error = false
+  error = false,
+  searchable = false
 }: CustomDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const selectedOption = options.find(option => option.value === value)
+
+  // Filter options based on search term
+  const filteredOptions = searchable && searchTerm
+    ? options.filter(option =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        option.value.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : options
+
+  // Reset search when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('')
+    }
+  }, [isOpen])
+
+  // Focus search input when dropdown opens and searchable
+  useEffect(() => {
+    if (isOpen && searchable && searchInputRef.current) {
+      setTimeout(() => {
+        searchInputRef.current?.focus()
+      }, 100)
+    }
+  }, [isOpen, searchable])
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,8 +134,32 @@ export function CustomDropdown({
           transition={{ duration: 0.2 }}
           className="absolute z-[9999] mt-2 w-full overflow-hidden rounded-3xl border border-brand-umber/25 bg-white shadow-[0_25px_60px_rgba(0,0,0,0.25)]"
         >
-            <div className="max-h-60 overflow-y-auto">
-              {options.map((option, index) => (
+          {searchable && (
+            <div className="p-3 border-b border-brand-umber/10">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-umber/50" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setSearchTerm(e.target.value)
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                  }}
+                  placeholder="Search..."
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-brand-umber/20 bg-white text-brand-umber placeholder:text-brand-umber/50 focus:outline-none focus:ring-2 focus:ring-brand-teal/30 focus:border-brand-teal"
+                />
+              </div>
+            </div>
+          )}
+          <div className={cn("overflow-y-auto", searchable ? "max-h-60" : "max-h-60")}>
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map((option, index) => (
                 <motion.button
                   key={option.value}
                   initial={{ opacity: 0, x: -10 }}
@@ -147,8 +199,13 @@ export function CustomDropdown({
                     </motion.div>
                   )}
                 </motion.button>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="px-4 py-8 text-center text-brand-umber/60">
+                <p className="text-sm">No results found</p>
+              </div>
+            )}
+          </div>
           </motion.div>
         )}
       </AnimatePresence>

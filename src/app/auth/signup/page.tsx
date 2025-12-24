@@ -40,9 +40,17 @@ export default function SignUpPage() {
     const email = formData.email.trim()
     const password = formData.password
     const confirmPassword = formData.confirmPassword
+    const normalizedEmail = email.toLowerCase()
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
     if (!name || !email || !password || !confirmPassword) {
       setError('Please complete all required fields')
+      setIsLoading(false)
+      return
+    }
+
+    if (!emailPattern.test(normalizedEmail)) {
+      setError('Please enter a valid email address')
       setIsLoading(false)
       return
     }
@@ -67,14 +75,14 @@ export default function SignUpPage() {
         },
         body: JSON.stringify({
           name,
-          email,
+          email: normalizedEmail,
           password,
         }),
       })
 
       if (response.ok) {
         const signInResult = await signIn('credentials', {
-          email,
+          email: normalizedEmail,
           password,
           redirect: false,
         })
@@ -154,7 +162,7 @@ export default function SignUpPage() {
                 Join <span className="afro-text-gradient">Tac Accessories</span>
               </CardTitle>
               <CardDescription className="luxury-text">
-                Create your admin account to manage the store
+                Create your account to shop and manage your orders
               </CardDescription>
             </CardHeader>
 
@@ -203,7 +211,7 @@ export default function SignUpPage() {
                       onChange={handleInputChange}
                       required
                       className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
-                      placeholder="admin@tacjewellery.com"
+                      placeholder="you@tacaccessories.com"
                     />
                   </div>
                 </div>

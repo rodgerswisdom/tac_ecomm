@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -23,8 +20,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -38,22 +34,21 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String     @unique
   emailVerified DateTime?
   image         String?
-  hashedPassword String?
-  role          UserRole  @default(CUSTOMER)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts Account[]
-  sessions Session[]
-  orders   Order[]
-  reviews  Review[]
-  addresses Address[]
-  cart     CartItem[]
+  role          UserRole   @default(CUSTOMER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  passwordHash  String?
+  accounts      Account[]
+  addresses     Address[]
+  cart          CartItem[]
+  orders        Order[]
+  reviews       Review[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -65,54 +60,56 @@ model VerificationToken {
 }
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
   description String?
   image       String?
   parentId    String?
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
   products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 }
 
 model Product {
-  id          String        @id @default(cuid())
-  name        String
-  slug        String        @unique
-  description String
+  id               String           @id @default(cuid())
+  name             String
+  slug             String           @unique
+  description      String
   shortDescription String?
-  price       Float
-  comparePrice Float?
-  sku         String        @unique
-  stock       Int           @default(0)
-  weight      Float?
-  dimensions  String? // JSON string for length, width, height
-  material    String?
-  color       String?
-  size        String?
-  isActive    Boolean       @default(true)
-  isFeatured  Boolean       @default(false)
-  isDigital   Boolean       @default(false)
-  isBespoke   Boolean       @default(false)
-  isCorporateGift Boolean   @default(false)
-  productType ProductType   @default(READY_TO_WEAR)
-  categoryId  String
-  category    Category      @relation(fields: [categoryId], references: [id])
-  images      ProductImage[]
-  variants    ProductVariant[]
-  reviews     Review[]
-  orderItems  OrderItem[]
-  cartItems   CartItem[]
-  matchingSets ProductSet[]
-  artisanId   String?
-  artisan     Artisan?      @relation(fields: [artisanId], references: [id])
-  communityImpact String?
-  sourcingStory String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  price            Float
+  comparePrice     Float?
+  sku              String           @unique
+  stock            Int              @default(0)
+  weight           Float?
+  dimensions       String?
+  color            String?
+  size             String?
+  isActive         Boolean          @default(true)
+  isFeatured       Boolean          @default(false)
+  isDigital        Boolean          @default(false)
+  isBespoke        Boolean          @default(false)
+  isCorporateGift  Boolean          @default(false)
+  productType      ProductType      @default(READY_TO_WEAR)
+  categoryId       String
+  artisanId        String?
+  communityImpact  String?
+  sourcingStory    String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  materials        String[]         @default([])
+  origin           String?
+  subcategory      String?
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  artisan          Artisan?         @relation(fields: [artisanId], references: [id])
+  category         Category         @relation(fields: [categoryId], references: [id])
+  images           ProductImage[]
+  variants         ProductVariant[]
+  reviews          Review[]
+  matchingSets     ProductSet[]     @relation("ProductToProductSet")
 
   @@index([categoryId])
   @@index([isActive])
@@ -146,17 +143,17 @@ model ProductVariant {
 }
 
 model Review {
-  id        String   @id @default(cuid())
-  rating    Int      // 1-5 stars
-  title     String?
-  comment   String?
-  isVerified Boolean @default(false)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  rating     Int
+  title      String?
+  comment    String?
+  isVerified Boolean  @default(false)
+  userId     String
+  productId  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id])
 
   @@index([productId])
   @@index([userId])
@@ -176,10 +173,10 @@ model Address {
   phone      String?
   isDefault  Boolean  @default(false)
   userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders     Order[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders     Order[]
 
   @@index([userId])
 }
@@ -188,39 +185,39 @@ model CartItem {
   id        String   @id @default(cuid())
   quantity  Int
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   variantId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId, variantId])
   @@index([userId])
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  orderNumber     String      @unique
-  status          OrderStatus @default(PENDING)
-  subtotal        Float
-  tax             Float
-  shipping        Float
-  total           Float
-  currency        String      @default("USD")
-  paymentMethod   String?
-  paymentStatus   PaymentStatus @default(PENDING)
-  shippingMethod  String?
-  trackingNumber  String?
-  notes           String?
-  userId          String
-  user            User        @relation(fields: [userId], references: [id])
+  id                String        @id @default(cuid())
+  orderNumber       String        @unique
+  status            OrderStatus   @default(PENDING)
+  subtotal          Float
+  tax               Float
+  shipping          Float
+  total             Float
+  currency          String        @default("USD")
+  paymentMethod     String?
+  paymentStatus     PaymentStatus @default(PENDING)
+  shippingMethod    String?
+  trackingNumber    String?
+  notes             String?
+  userId            String
   shippingAddressId String
-  shippingAddress Address     @relation(fields: [shippingAddressId], references: [id])
-  items           OrderItem[]
-  payments        Payment[]
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  shippingAddress   Address       @relation(fields: [shippingAddressId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  items             OrderItem[]
+  payments          Payment[]
 
   @@index([userId])
   @@index([status])
@@ -232,26 +229,26 @@ model OrderItem {
   quantity  Int
   price     Float
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
   variantId String?
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
 
   @@index([orderId])
 }
 
 model Payment {
-  id            String        @id @default(cuid())
-  amount        Float
-  currency      String        @default("USD")
-  method        PaymentMethod
-  status        PaymentStatus @default(PENDING)
-  transactionId String?
+  id              String        @id @default(cuid())
+  amount          Float
+  currency        String        @default("USD")
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?
   gatewayResponse String?
-  orderId       String
-  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  orderId         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([status])
@@ -292,7 +289,7 @@ model Wishlist {
 
 model Artisan {
   id          String    @id @default(cuid())
-  name        String
+  name        String    @unique
   region      String
   regionLabel String
   craft       String
@@ -301,22 +298,21 @@ model Artisan {
   video       String?
   bio         String?
   community   String?
-  products    Product[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+  products    Product[]
 }
 
 model ProductSet {
-  id        String   @id @default(cuid())
-  name      String
+  id          String    @id @default(cuid())
+  name        String
   description String?
-  products  Product[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[] @relation("ProductToProductSet")
 }
 
-// Enums
 enum UserRole {
   CUSTOMER
   ADMIN

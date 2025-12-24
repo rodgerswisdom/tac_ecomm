@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Kumbh_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import { SessionProvider } from "next-auth/react";
+import { FraudDetectionProvider } from "@/components/FraudDetectionProvider";
 
 const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -68,7 +69,9 @@ export default function RootLayout({
       >
         <SessionProvider>
           <CartProvider>
-            {children}
+            <FraudDetectionProvider>
+              {children}
+            </FraudDetectionProvider>
           </CartProvider>
         </SessionProvider>
       </body>

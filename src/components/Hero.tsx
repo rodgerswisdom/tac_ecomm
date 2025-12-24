@@ -97,7 +97,7 @@ const HeroComponent = () => {
 
   return (
     <section
-      className="relative overflow-hidden py-28 text-brand-umber md:py-36"
+      className="relative overflow-hidden pt-16 pb-12 text-brand-umber md:pt-20 md:pb-16"
       style={{
         backgroundImage: `linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(218, 191, 143, 0.55))`,
         backgroundSize: "cover",
@@ -133,7 +133,7 @@ const HeroComponent = () => {
       ))}
 
       <div className="relative z-10 gallery-container">
-        <div className="grid items-start gap-16 pt-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        <div className="grid items-start gap-16 pt-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <div className="space-y-8 text-center lg:text-left">
             <AnimatePresence mode="wait">
               <motion.div

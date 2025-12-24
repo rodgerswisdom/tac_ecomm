@@ -33,7 +33,9 @@ export default function SignInPage() {
     setIsLoading(true)
     setError('')
 
-    if (!formData.email.trim() || !formData.password) {
+    const normalizedEmail = formData.email.trim().toLowerCase()
+
+    if (!normalizedEmail || !formData.password) {
       setError('Please enter both email and password')
       setIsLoading(false)
       return
@@ -41,7 +43,7 @@ export default function SignInPage() {
 
     try {
       const result = await signIn('credentials', {
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         redirect: false
       })

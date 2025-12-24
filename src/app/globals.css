@@ -1,7 +1,7 @@
+@import "../styles/theme.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "../styles/theme.css";
 
 @layer base {
   :root {
@@ -118,14 +118,14 @@
   }
 
   .section-spacing {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
   }
 
   @media (min-width: 1024px) {
     .section-spacing {
-      padding-top: 8rem;
-      padding-bottom: 8rem;
+      padding-top: 4rem;
+      padding-bottom: 4rem;
     }
   }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,15 +12,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { ShoppingBag, Eye } from "lucide-react";
+import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 
 export interface ProductCardData {
@@ -47,181 +39,332 @@ export interface ProductCardData {
     quote: string;
     portrait: string;
   };
+  // New optional fields for enhanced product cards
+  brand?: string;
+  rating?: number;
+  reviewCount?: number;
+  isBestSeller?: boolean;
+  colors?: string[];
+  sizes?: string[];
 }
 
 interface ProductCardProps {
   product: ProductCardData;
+  isSelectedForComparison?: boolean;
+  onComparisonToggle?: (productId: number, isSelected: boolean) => void;
+  onQuickView?: (product: ProductCardData) => void;
 }
 
-const ProductCardComponent = ({ product }: ProductCardProps) => {
+const ProductCardComponent = ({
+  product,
+  isSelectedForComparison = false,
+  onComparisonToggle,
+  onQuickView,
+}: ProductCardProps) => {
   const { addToCart } = useCart();
-  const [showRipple, setShowRipple] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [activeImage, setActiveImage] = useState(0);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
 
-  useEffect(() => {
-    if (!isDialogOpen) {
-      setActiveImage(0);
-      return;
-    }
+  // Calculate discount percentage
+  const discountPercent = product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
 
-    const timer = setInterval(() => {
-      setActiveImage((current) => (current + 1) % product.gallery.length);
-    }, 2600);
+  // Get secondary image for hover swap (use second gallery image or first if only one)
+  const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
 
-    return () => clearInterval(timer);
-  }, [isDialogOpen, product.gallery.length]);
+  // Handle image navigation
+  const handleImageClick = (index: number) => {
+    setActiveImageIndex(index);
+  };
 
-  const handleAddToCart = () => {
+  // Handle quick add to cart
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
     });
-    setShowRipple(true);
-    setTimeout(() => setShowRipple(false), 650);
+  };
+
+  // Handle wishlist toggle
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsWishlisted(!isWishlisted);
+  };
+
+  // Render star rating
+  const renderStars = () => {
+    if (!product.rating) return null;
+    const rating = Math.round(product.rating);
+    return (
+      <div className="flex items-center gap-1">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`h-3.5 w-3.5 ${
+              i < rating
+                ? "fill-brand-gold text-brand-gold"
+                : "fill-none text-brand-umber/20"
+            }`}
+          />
+        ))}
+        {product.reviewCount && (
+          <span className="ml-1 text-xs text-brand-umber/60">
+            ({product.reviewCount})
+          </span>
+        )}
+      </div>
+    );
   };
 
   return (
     <motion.div
-      whileHover={{ y: -8, rotateX: 1.8 }}
-      transition={{ type: "spring", stiffness: 120, damping: 18 }}
-      className="group"
+      className="group relative"
+      onMouseEnter={() => {
+        setIsHovered(true);
+        setShowQuickAdd(true);
+      }}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setShowQuickAdd(false);
+      }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
     >
-      <Card className="mx-auto w-full max-w-sm overflow-hidden text-center transition-all group-hover:border-brand-teal/35 group-hover:shadow-[0_28px_58px_rgba(74,43,40,0.18)]">
-        <CardHeader className="flex flex-col items-center gap-3 bg-transparent p-6 pb-0">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <motion.div
-              className="group/image relative aspect-square w-56 overflow-hidden rounded-full border border-brand-teal/25 shadow-[0_25px_45px_rgba(74,43,40,0.12)]"
-              initial="rest"
-              animate="rest"
-              whileHover="hover"
-              variants={{ rest: { rotate: 0 }, hover: { rotate: 0 } }}
-            >
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                sizes="(min-width: 1024px) 16rem, 60vw"
-                className="object-cover"
-                priority={product.id < 3}
-              />
-              <DialogTrigger asChild>
+      <Card className="relative h-full overflow-hidden bg-white transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,43,40,0.12)]">
+        {/* Image Container */}
+        <div className="relative aspect-square w-full overflow-hidden rounded-t-xl bg-brand-beige/30">
+          <Link href={`/products/${product.slug}`} className="block h-full w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={isHovered && secondaryImage !== product.image ? "secondary" : "primary"}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="relative h-full w-full"
+              >
+                <Image
+                  src={
+                    isHovered && secondaryImage !== product.image
+                      ? secondaryImage
+                      : product.gallery[activeImageIndex] || product.image
+                  }
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  priority={product.id < 3}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </Link>
+
+          {/* Sale Badge - Top Left */}
+          {product.originalPrice && discountPercent > 0 && (
+            <div className="absolute left-3 top-3 z-10">
+              <span className="rounded-md bg-brand-coral px-2 py-1 text-xs font-semibold text-white shadow-md">
+                -{discountPercent}%
+              </span>
+            </div>
+          )}
+
+          {/* Best Seller Badge */}
+          {product.isBestSeller && (
+            <div className="absolute left-3 top-3 z-10">
+              <span className="rounded-md bg-brand-teal px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
+                Best Seller
+              </span>
+            </div>
+          )}
+
+          {/* Comparison Checkbox - Bottom Left */}
+          {onComparisonToggle && (
+            <div className="absolute bottom-3 left-3 z-10">
+              <label className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm transition-all hover:bg-white">
+                <input
+                  type="checkbox"
+                  checked={isSelectedForComparison}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onComparisonToggle(product.id, e.target.checked);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4 rounded border-brand-teal text-brand-teal focus:ring-brand-teal"
+                />
+                <span className="text-xs font-medium text-brand-umber">Compare</span>
+              </label>
+            </div>
+          )}
+
+          {/* Wishlist Heart - Top Right */}
+          <button
+            onClick={handleWishlistToggle}
+            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+          >
+            <Heart
+              className={`h-4 w-4 transition-colors ${
+                isWishlisted
+                  ? "fill-brand-coral text-brand-coral"
+                  : "text-brand-umber/60 hover:text-brand-coral"
+              }`}
+            />
+          </button>
+
+          {/* Quick View Button - Appears on Hover */}
+          {onQuickView && (
+            <AnimatePresence>
+              {isHovered && (
                 <motion.button
-                  type="button"
-                  variants={{ rest: { opacity: 0, y: 20 }, hover: { opacity: 1, y: 0 } }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-brand-umber/70 text-sm font-semibold uppercase tracking-[0.25em] text-white backdrop-blur-sm pointer-events-none group-hover/image:pointer-events-auto"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onQuickView(product);
+                  }}
+                  className="absolute right-3 bottom-3 z-10 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:scale-105"
                 >
-                  <Eye className="h-5 w-5" />
+                  <Eye className="h-3.5 w-3.5" />
                   Quick View
                 </motion.button>
-              </DialogTrigger>
-            </motion.div>
+              )}
+            </AnimatePresence>
+          )}
 
-            <DialogContent>
-              <DialogHeader className="items-start gap-6 sm:flex sm:flex-row">
-                <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-brand-jade/30 sm:w-1/2">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={`${product.id}-${activeImage}`}
-                      initial={{ opacity: 0.1, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.02 }}
-                      transition={{ duration: 0.6, ease: "easeOut" }}
-                      className="absolute inset-0"
-                    >
-                      <Image
-                        src={product.gallery[activeImage]}
-                        alt={`${product.name} angle ${activeImage + 1}`}
-                        fill
-                        sizes="100%"
-                        className="object-cover"
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-                <div className="flex flex-1 flex-col gap-6">
-                  <DialogTitle>{product.name}</DialogTitle>
-                  <DialogDescription>{product.description}</DialogDescription>
-
-                  <div className="flex flex-wrap items-center gap-4">
-                    <span className="text-3xl font-heading text-brand-coral">
-                      KES {product.price.toLocaleString()}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="text-sm text-brand-umber/40 line-through">
-                        KES {product.originalPrice.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="caps-spacing text-xs text-brand-umber/55">
-                      Materials
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {product.materials.map((material) => (
-                        <span
-                          key={material}
-                          className="rounded-full bg-brand-jade/40 px-4 py-1 text-sm text-brand-umber/80"
-                        >
-                          {material}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Button size="lg" onClick={handleAddToCart}>
-                    <ShoppingBag className="mr-2 h-5 w-5" />
-                    Add to Basket
-                  </Button>
-                </div>
-              </DialogHeader>
-            </DialogContent>
-          </Dialog>
-        </CardHeader>
-
-        <CardContent className="flex flex-col items-center space-y-4 px-6 pb-8 text-center">
-          <CardTitle className="text-center">
-            <Link
-              href={`/products/${product.slug}`}
-              className="transition-colors hover:text-brand-teal"
-            >
-              {product.name}
-            </Link>
-          </CardTitle>
-
-          <CardDescription className="flex items-center justify-center gap-2 text-sm text-brand-coral">
-            <span>KES {product.price.toLocaleString()}</span>
-            {product.originalPrice && (
-              <span className="text-xs text-brand-umber/40 line-through">
-                KES {product.originalPrice.toLocaleString()}
-              </span>
+          {/* Quick Add Button - Appears on Hover */}
+          <AnimatePresence>
+            {showQuickAdd && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
+              >
+                <Button
+                  onClick={handleQuickAdd}
+                  size="sm"
+                  className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm hover:bg-white hover:scale-105"
+                >
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  Quick Add
+                </Button>
+              </motion.div>
             )}
-          </CardDescription>
+          </AnimatePresence>
 
-          <p className="text-sm leading-relaxed text-brand-umber/75">
-            {product.description}
-          </p>
+          {/* Image Pagination Dots - Bottom Center */}
+          {product.gallery.length > 1 && (
+            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+              {product.gallery.slice(0, 5).map((_, index) => (
+                <button
+                  key={index}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleImageClick(index);
+                  }}
+                  className={`h-1.5 rounded-full transition-all ${
+                    activeImageIndex === index
+                      ? "w-6 bg-white"
+                      : "w-1.5 bg-white/50 hover:bg-white/75"
+                  }`}
+                  aria-label={`View angle ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
 
-          <div className="relative w-full">
-            <Button size="lg" className="w-full" onClick={handleAddToCart}>
-              <ShoppingBag className="mr-2 h-5 w-5" />
-              Add to Basket
-              <AnimatePresence>
-                {showRipple && (
-                  <motion.span
-                    className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-r from-brand-teal/60 to-brand-coral/45"
-                    initial={{ scale: 0, opacity: 0.75 }}
-                    animate={{ scale: 1.15, opacity: 0 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.65, ease: "easeOut" }}
-                  />
-                )}
-              </AnimatePresence>
-            </Button>
+        </div>
+
+        {/* Product Information */}
+        <CardContent className="p-4">
+          <div className="space-y-2">
+            {/* Brand Name - Subtle */}
+            {product.brand && (
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand-umber/50">
+                {product.brand}
+              </p>
+            )}
+
+            {/* Product Name - Prominent */}
+            <CardTitle className="line-clamp-2 text-left text-base font-semibold leading-tight">
+              <Link
+                href={`/products/${product.slug}`}
+                className="transition-colors hover:text-brand-teal"
+              >
+                {product.name}
+              </Link>
+            </CardTitle>
+
+            {/* Rating Stars */}
+            {renderStars()}
+
+            {/* Price */}
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-brand-coral">
+                KES {product.price.toLocaleString()}
+              </span>
+              {product.originalPrice && (
+                <span className="text-sm text-brand-umber/40 line-through">
+                  KES {product.originalPrice.toLocaleString()}
+                </span>
+              )}
+            </div>
+
+            {/* Color Swatches */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-brand-umber/60">Colors:</span>
+                <div className="flex gap-1.5">
+                  {product.colors.slice(0, 4).map((color, index) => (
+                    <div
+                      key={index}
+                      className="h-5 w-5 rounded-full border border-brand-umber/20"
+                      style={{ backgroundColor: color }}
+                      title={color}
+                    />
+                  ))}
+                  {product.colors.length > 4 && (
+                    <span className="text-xs text-brand-umber/50">
+                      +{product.colors.length - 4}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Size Swatches */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-xs text-brand-umber/60">Sizes:</span>
+                <div className="flex gap-1">
+                  {product.sizes.slice(0, 5).map((size, index) => (
+                    <span
+                      key={index}
+                      className="rounded border border-brand-umber/20 px-2 py-0.5 text-xs text-brand-umber/70"
+                    >
+                      {size}
+                    </span>
+                  ))}
+                  {product.sizes.length > 5 && (
+                    <span className="text-xs text-brand-umber/50">
+                      +{product.sizes.length - 5}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

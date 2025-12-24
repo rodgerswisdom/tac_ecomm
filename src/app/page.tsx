@@ -35,15 +35,15 @@ export default function HomePage() {
               Curated Collections
             </span>
             <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber md:text-5xl">
-              Discover our carefully curated categories of African craftsmanship.
+              Discover our carefully curated categories of Craftsmanship.
             </h2>
-            <p className="max-w-2xl text-base text-brand-umber/70">
+            {/* <p className="max-w-2xl text-base text-brand-umber/70">
               Each collection represents a distinct category of jewelry and accessories, showcasing the diversity and artistry of African craftsmanship across different regions and traditions.
-            </p>
+            </p> */}
           </motion.div>
 
           <motion.div
-            className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 place-items-center"
+            className="mt-14 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 place-items-center"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-120px" }}
@@ -68,7 +68,7 @@ export default function HomePage() {
             ))}
           </motion.div>
 
-          <div className="mt-16 flex justify-center">
+          {/* <div className="mt-16 flex justify-center">
             <Button
               size="lg"
               className="px-10 py-6"
@@ -76,7 +76,7 @@ export default function HomePage() {
             >
               <Link href="/collections">View All Collections</Link>
             </Button>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -95,9 +95,9 @@ export default function HomePage() {
             <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber md:text-5xl">
               Curated highlights from this month&apos;s gallery drop.
             </h2>
-            <p className="max-w-2xl text-base text-brand-umber/70">
+            {/* <p className="max-w-2xl text-base text-brand-umber/70">
               Discover the limited-run adornments our stylists are pairing for celebrations, gifting suites, and gallery openings.
-            </p>
+            </p> */}
           </motion.div>
 
           <motion.div

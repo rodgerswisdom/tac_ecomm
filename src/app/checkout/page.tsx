@@ -7,9 +7,10 @@ import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CustomDropdown } from '@/components/ui/custom-dropdown'
-import { Crown, ArrowLeft, CreditCard, MapPin, Truck, Shield, CheckCircle, Lock, Mail, Phone, User } from 'lucide-react'
+import { Crown, ArrowLeft, CreditCard, MapPin, Truck, Shield, CheckCircle, Lock, Mail, Phone, User, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { initializeFraudDetection, checkFraudRisk, shouldAllowTransaction, createTransactionId, type FraudCheckResult } from '@/lib/fraud'
 
 interface CartItem {
   id: number
@@ -53,6 +54,11 @@ export default function CheckoutPage() {
   const [isCompleted, setIsCompleted] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [showAccountPrompt, setShowAccountPrompt] = useState(false)
+  const [fraudCheckResult, setFraudCheckResult] = useState<FraudCheckResult | null>(null)
+  const [showFraudChallenge, setShowFraudChallenge] = useState(false)
+  const [fraudChallengeMessage, setFraudChallengeMessage] = useState<string>('')
+  const [fraudBlocked, setFraudBlocked] = useState(false)
+  const [fraudBlockMessage, setFraudBlockMessage] = useState<string>('')
 
   // Load cart from localStorage
   useEffect(() => {
@@ -76,22 +82,103 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Reset fraud-related states
+    setFraudCheckResult(null)
+    setShowFraudChallenge(false)
+    setFraudBlocked(false)
+    setFraudBlockMessage('')
+    
     setIsProcessing(true)
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 3000))
+    try {
+      // Perform fraud check before processing payment
+      const fraudResult = await checkFraudRisk()
+      setFraudCheckResult(fraudResult)
+      
+      const decision = shouldAllowTransaction(fraudResult)
+      
+      if (!decision.allowed) {
+        // Transaction blocked
+        setFraudBlocked(true)
+        setFraudBlockMessage(decision.message || 'Transaction cannot be completed due to security concerns.')
+        setIsProcessing(false)
+        return
+      }
+      
+      if (decision.requiresChallenge) {
+        // Show challenge UI
+        setShowFraudChallenge(true)
+        setFraudChallengeMessage(decision.message || 'Please verify your identity to continue.')
+        setIsProcessing(false)
+        return
+      }
+      
+      // Create transaction ID for tracking
+      const transactionId = await createTransactionId({
+        amount: total,
+        currency: 'USD',
+      })
+      
+      if (transactionId) {
+        console.log('Transaction ID:', transactionId)
+      }
+      
+      // Proceed with payment processing
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      setIsProcessing(false)
+      setIsCompleted(true)
+      
+      // Clear cart after successful order
+      localStorage.removeItem('tac-cart')
+      setCartItems([])
+      
+      // Show account creation prompt
+      setTimeout(() => {
+        setShowAccountPrompt(true)
+      }, 2000)
+    } catch (error) {
+      console.error('Error during checkout:', error)
+      setIsProcessing(false)
+      // Allow transaction to proceed if fraud check fails (fail-open)
+    }
+  }
+
+  const handleFraudChallengeContinue = async () => {
+    setIsProcessing(true)
+    setShowFraudChallenge(false)
     
-    setIsProcessing(false)
-    setIsCompleted(true)
-    
-    // Clear cart after successful order
-    localStorage.removeItem('tac-cart')
-    setCartItems([])
-    
-    // Show account creation prompt
-    setTimeout(() => {
-      setShowAccountPrompt(true)
-    }, 2000)
+    try {
+      // Create transaction ID for tracking
+      const transactionId = await createTransactionId({
+        amount: total,
+        currency: 'USD',
+      })
+      
+      if (transactionId) {
+        console.log('Transaction ID:', transactionId)
+      }
+      
+      // Proceed with payment processing
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      
+      setIsProcessing(false)
+      setIsCompleted(true)
+      
+      // Clear cart after successful order
+      localStorage.removeItem('tac-cart')
+      setCartItems([])
+      
+      // Show account creation prompt
+      setTimeout(() => {
+        setShowAccountPrompt(true)
+      }, 2000)
+    } catch (error) {
+      console.error('Error during checkout:', error)
+      setIsProcessing(false)
+    }
   }
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -100,13 +187,249 @@ export default function CheckoutPage() {
   const total = subtotal + shipping + tax
 
   const countryOptions = [
-    { value: 'US', label: 'United States' },
+    { value: 'AF', label: 'Afghanistan' },
+    { value: 'AL', label: 'Albania' },
+    { value: 'DZ', label: 'Algeria' },
+    { value: 'AS', label: 'American Samoa' },
+    { value: 'AD', label: 'Andorra' },
+    { value: 'AO', label: 'Angola' },
+    { value: 'AI', label: 'Anguilla' },
+    { value: 'AQ', label: 'Antarctica' },
+    { value: 'AG', label: 'Antigua and Barbuda' },
+    { value: 'AR', label: 'Argentina' },
+    { value: 'AM', label: 'Armenia' },
+    { value: 'AW', label: 'Aruba' },
+    { value: 'AU', label: 'Australia' },
+    { value: 'AT', label: 'Austria' },
+    { value: 'AZ', label: 'Azerbaijan' },
+    { value: 'BS', label: 'Bahamas' },
+    { value: 'BH', label: 'Bahrain' },
+    { value: 'BD', label: 'Bangladesh' },
+    { value: 'BB', label: 'Barbados' },
+    { value: 'BY', label: 'Belarus' },
+    { value: 'BE', label: 'Belgium' },
+    { value: 'BZ', label: 'Belize' },
+    { value: 'BJ', label: 'Benin' },
+    { value: 'BM', label: 'Bermuda' },
+    { value: 'BT', label: 'Bhutan' },
+    { value: 'BO', label: 'Bolivia' },
+    { value: 'BA', label: 'Bosnia and Herzegovina' },
+    { value: 'BW', label: 'Botswana' },
+    { value: 'BV', label: 'Bouvet Island' },
+    { value: 'BR', label: 'Brazil' },
+    { value: 'IO', label: 'British Indian Ocean Territory' },
+    { value: 'BN', label: 'Brunei Darussalam' },
+    { value: 'BG', label: 'Bulgaria' },
+    { value: 'BF', label: 'Burkina Faso' },
+    { value: 'BI', label: 'Burundi' },
+    { value: 'KH', label: 'Cambodia' },
+    { value: 'CM', label: 'Cameroon' },
     { value: 'CA', label: 'Canada' },
-    { value: 'GB', label: 'United Kingdom' },
+    { value: 'CV', label: 'Cape Verde' },
+    { value: 'KY', label: 'Cayman Islands' },
+    { value: 'CF', label: 'Central African Republic' },
+    { value: 'TD', label: 'Chad' },
+    { value: 'CL', label: 'Chile' },
+    { value: 'CN', label: 'China' },
+    { value: 'CX', label: 'Christmas Island' },
+    { value: 'CC', label: 'Cocos (Keeling) Islands' },
+    { value: 'CO', label: 'Colombia' },
+    { value: 'KM', label: 'Comoros' },
+    { value: 'CG', label: 'Congo' },
+    { value: 'CD', label: 'Congo, Democratic Republic' },
+    { value: 'CK', label: 'Cook Islands' },
+    { value: 'CR', label: 'Costa Rica' },
+    { value: 'CI', label: "Côte d'Ivoire" },
+    { value: 'HR', label: 'Croatia' },
+    { value: 'CU', label: 'Cuba' },
+    { value: 'CY', label: 'Cyprus' },
+    { value: 'CZ', label: 'Czech Republic' },
+    { value: 'DK', label: 'Denmark' },
+    { value: 'DJ', label: 'Djibouti' },
+    { value: 'DM', label: 'Dominica' },
+    { value: 'DO', label: 'Dominican Republic' },
+    { value: 'EC', label: 'Ecuador' },
+    { value: 'EG', label: 'Egypt' },
+    { value: 'SV', label: 'El Salvador' },
+    { value: 'GQ', label: 'Equatorial Guinea' },
+    { value: 'ER', label: 'Eritrea' },
+    { value: 'EE', label: 'Estonia' },
+    { value: 'ET', label: 'Ethiopia' },
+    { value: 'FK', label: 'Falkland Islands (Malvinas)' },
+    { value: 'FO', label: 'Faroe Islands' },
+    { value: 'FJ', label: 'Fiji' },
+    { value: 'FI', label: 'Finland' },
+    { value: 'FR', label: 'France' },
+    { value: 'GF', label: 'French Guiana' },
+    { value: 'PF', label: 'French Polynesia' },
+    { value: 'TF', label: 'French Southern Territories' },
+    { value: 'GA', label: 'Gabon' },
+    { value: 'GM', label: 'Gambia' },
+    { value: 'GE', label: 'Georgia' },
+    { value: 'DE', label: 'Germany' },
     { value: 'GH', label: 'Ghana' },
-    { value: 'NG', label: 'Nigeria' },
+    { value: 'GI', label: 'Gibraltar' },
+    { value: 'GR', label: 'Greece' },
+    { value: 'GL', label: 'Greenland' },
+    { value: 'GD', label: 'Grenada' },
+    { value: 'GP', label: 'Guadeloupe' },
+    { value: 'GU', label: 'Guam' },
+    { value: 'GT', label: 'Guatemala' },
+    { value: 'GG', label: 'Guernsey' },
+    { value: 'GN', label: 'Guinea' },
+    { value: 'GW', label: 'Guinea-Bissau' },
+    { value: 'GY', label: 'Guyana' },
+    { value: 'HT', label: 'Haiti' },
+    { value: 'HM', label: 'Heard Island and McDonald Islands' },
+    { value: 'VA', label: 'Holy See (Vatican City State)' },
+    { value: 'HN', label: 'Honduras' },
+    { value: 'HK', label: 'Hong Kong' },
+    { value: 'HU', label: 'Hungary' },
+    { value: 'IS', label: 'Iceland' },
+    { value: 'IN', label: 'India' },
+    { value: 'ID', label: 'Indonesia' },
+    { value: 'IR', label: 'Iran, Islamic Republic' },
+    { value: 'IQ', label: 'Iraq' },
+    { value: 'IE', label: 'Ireland' },
+    { value: 'IM', label: 'Isle of Man' },
+    { value: 'IL', label: 'Israel' },
+    { value: 'IT', label: 'Italy' },
+    { value: 'JM', label: 'Jamaica' },
+    { value: 'JP', label: 'Japan' },
+    { value: 'JE', label: 'Jersey' },
+    { value: 'JO', label: 'Jordan' },
+    { value: 'KZ', label: 'Kazakhstan' },
     { value: 'KE', label: 'Kenya' },
-    { value: 'ZA', label: 'South Africa' }
+    { value: 'KI', label: 'Kiribati' },
+    { value: 'KP', label: "Korea, Democratic People's Republic" },
+    { value: 'KR', label: 'Korea, Republic' },
+    { value: 'KW', label: 'Kuwait' },
+    { value: 'KG', label: 'Kyrgyzstan' },
+    { value: 'LA', label: "Lao People's Democratic Republic" },
+    { value: 'LV', label: 'Latvia' },
+    { value: 'LB', label: 'Lebanon' },
+    { value: 'LS', label: 'Lesotho' },
+    { value: 'LR', label: 'Liberia' },
+    { value: 'LY', label: 'Libyan Arab Jamahiriya' },
+    { value: 'LI', label: 'Liechtenstein' },
+    { value: 'LT', label: 'Lithuania' },
+    { value: 'LU', label: 'Luxembourg' },
+    { value: 'MO', label: 'Macao' },
+    { value: 'MK', label: 'Macedonia, Former Yugoslav Republic' },
+    { value: 'MG', label: 'Madagascar' },
+    { value: 'MW', label: 'Malawi' },
+    { value: 'MY', label: 'Malaysia' },
+    { value: 'MV', label: 'Maldives' },
+    { value: 'ML', label: 'Mali' },
+    { value: 'MT', label: 'Malta' },
+    { value: 'MH', label: 'Marshall Islands' },
+    { value: 'MQ', label: 'Martinique' },
+    { value: 'MR', label: 'Mauritania' },
+    { value: 'MU', label: 'Mauritius' },
+    { value: 'YT', label: 'Mayotte' },
+    { value: 'MX', label: 'Mexico' },
+    { value: 'FM', label: 'Micronesia, Federated States' },
+    { value: 'MD', label: 'Moldova, Republic' },
+    { value: 'MC', label: 'Monaco' },
+    { value: 'MN', label: 'Mongolia' },
+    { value: 'ME', label: 'Montenegro' },
+    { value: 'MS', label: 'Montserrat' },
+    { value: 'MA', label: 'Morocco' },
+    { value: 'MZ', label: 'Mozambique' },
+    { value: 'MM', label: 'Myanmar' },
+    { value: 'NA', label: 'Namibia' },
+    { value: 'NR', label: 'Nauru' },
+    { value: 'NP', label: 'Nepal' },
+    { value: 'NL', label: 'Netherlands' },
+    { value: 'AN', label: 'Netherlands Antilles' },
+    { value: 'NC', label: 'New Caledonia' },
+    { value: 'NZ', label: 'New Zealand' },
+    { value: 'NI', label: 'Nicaragua' },
+    { value: 'NE', label: 'Niger' },
+    { value: 'NG', label: 'Nigeria' },
+    { value: 'NU', label: 'Niue' },
+    { value: 'NF', label: 'Norfolk Island' },
+    { value: 'MP', label: 'Northern Mariana Islands' },
+    { value: 'NO', label: 'Norway' },
+    { value: 'OM', label: 'Oman' },
+    { value: 'PK', label: 'Pakistan' },
+    { value: 'PW', label: 'Palau' },
+    { value: 'PS', label: 'Palestinian Territory' },
+    { value: 'PA', label: 'Panama' },
+    { value: 'PG', label: 'Papua New Guinea' },
+    { value: 'PY', label: 'Paraguay' },
+    { value: 'PE', label: 'Peru' },
+    { value: 'PH', label: 'Philippines' },
+    { value: 'PN', label: 'Pitcairn' },
+    { value: 'PL', label: 'Poland' },
+    { value: 'PT', label: 'Portugal' },
+    { value: 'PR', label: 'Puerto Rico' },
+    { value: 'QA', label: 'Qatar' },
+    { value: 'RE', label: 'Réunion' },
+    { value: 'RO', label: 'Romania' },
+    { value: 'RU', label: 'Russian Federation' },
+    { value: 'RW', label: 'Rwanda' },
+    { value: 'SH', label: 'Saint Helena' },
+    { value: 'KN', label: 'Saint Kitts and Nevis' },
+    { value: 'LC', label: 'Saint Lucia' },
+    { value: 'PM', label: 'Saint Pierre and Miquelon' },
+    { value: 'VC', label: 'Saint Vincent and the Grenadines' },
+    { value: 'WS', label: 'Samoa' },
+    { value: 'SM', label: 'San Marino' },
+    { value: 'ST', label: 'Sao Tome and Principe' },
+    { value: 'SA', label: 'Saudi Arabia' },
+    { value: 'SN', label: 'Senegal' },
+    { value: 'RS', label: 'Serbia' },
+    { value: 'SC', label: 'Seychelles' },
+    { value: 'SL', label: 'Sierra Leone' },
+    { value: 'SG', label: 'Singapore' },
+    { value: 'SK', label: 'Slovakia' },
+    { value: 'SI', label: 'Slovenia' },
+    { value: 'SB', label: 'Solomon Islands' },
+    { value: 'SO', label: 'Somalia' },
+    { value: 'ZA', label: 'South Africa' },
+    { value: 'GS', label: 'South Georgia and the South Sandwich Islands' },
+    { value: 'ES', label: 'Spain' },
+    { value: 'LK', label: 'Sri Lanka' },
+    { value: 'SD', label: 'Sudan' },
+    { value: 'SR', label: 'Suriname' },
+    { value: 'SJ', label: 'Svalbard and Jan Mayen' },
+    { value: 'SZ', label: 'Swaziland' },
+    { value: 'SE', label: 'Sweden' },
+    { value: 'CH', label: 'Switzerland' },
+    { value: 'SY', label: 'Syrian Arab Republic' },
+    { value: 'TW', label: 'Taiwan, Province of China' },
+    { value: 'TJ', label: 'Tajikistan' },
+    { value: 'TZ', label: 'Tanzania, United Republic' },
+    { value: 'TH', label: 'Thailand' },
+    { value: 'TL', label: 'Timor-Leste' },
+    { value: 'TG', label: 'Togo' },
+    { value: 'TK', label: 'Tokelau' },
+    { value: 'TO', label: 'Tonga' },
+    { value: 'TT', label: 'Trinidad and Tobago' },
+    { value: 'TN', label: 'Tunisia' },
+    { value: 'TR', label: 'Turkey' },
+    { value: 'TM', label: 'Turkmenistan' },
+    { value: 'TC', label: 'Turks and Caicos Islands' },
+    { value: 'TV', label: 'Tuvalu' },
+    { value: 'UG', label: 'Uganda' },
+    { value: 'UA', label: 'Ukraine' },
+    { value: 'AE', label: 'United Arab Emirates' },
+    { value: 'GB', label: 'United Kingdom' },
+    { value: 'US', label: 'United States' },
+    { value: 'UM', label: 'United States Minor Outlying Islands' },
+    { value: 'UY', label: 'Uruguay' },
+    { value: 'UZ', label: 'Uzbekistan' },
+    { value: 'VU', label: 'Vanuatu' },
+    { value: 'VE', label: 'Venezuela' },
+    { value: 'VN', label: 'Viet Nam' },
+    { value: 'VG', label: 'Virgin Islands, British' },
+    { value: 'VI', label: 'Virgin Islands, U.S.' },
+    { value: 'WF', label: 'Wallis and Futuna' },
+    { value: 'EH', label: 'Western Sahara' },
+    { value: 'YE', label: 'Yemen' },
+    { value: 'ZM', label: 'Zambia' },
+    { value: 'ZW', label: 'Zimbabwe' }
   ]
 
   const shippingOptions = [
@@ -397,6 +720,7 @@ export default function CheckoutPage() {
                       value={form.country}
                       onChange={(value) => setForm(prev => ({ ...prev, country: value }))}
                       placeholder="Select country"
+                      searchable={true}
                     />
                   </div>
                 </CardContent>
@@ -556,6 +880,133 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Fraud Challenge Modal */}
+      {showFraudChallenge && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-background rounded-2xl p-8 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-amber-600" />
+              </div>
+              <h3 className="text-2xl font-bold luxury-heading mb-2">
+                Security <span className="afro-text-gradient">Verification</span>
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                {fraudChallengeMessage}
+              </p>
+              {fraudCheckResult && (
+                <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Risk Score: <span className="font-semibold text-foreground">{fraudCheckResult.risk_score}/100</span>
+                  </p>
+                  {fraudCheckResult.reason.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium mb-1">Risk Factors:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {fraudCheckResult.reason.map((reason, idx) => (
+                          <li key={idx} className="text-xs">{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="space-y-3">
+                <Button 
+                  className="w-full" 
+                  onClick={handleFraudChallengeContinue}
+                >
+                  Continue with Verification
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setShowFraudChallenge(false)
+                    setFraudCheckResult(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Fraud Blocked Modal */}
+      {fraudBlocked && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-background rounded-2xl p-8 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+              <h3 className="text-2xl font-bold luxury-heading mb-2">
+                Transaction <span className="text-red-600">Blocked</span>
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                {fraudBlockMessage}
+              </p>
+              {fraudCheckResult && (
+                <div className="mb-6 p-4 bg-muted/50 rounded-lg text-left">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Risk Score: <span className="font-semibold text-red-600">{fraudCheckResult.risk_score}/100</span>
+                  </p>
+                  {fraudCheckResult.reason.length > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      <p className="font-medium mb-1">Risk Factors:</p>
+                      <ul className="list-disc list-inside space-y-1">
+                        {fraudCheckResult.reason.map((reason, idx) => (
+                          <li key={idx} className="text-xs">{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="space-y-3">
+                <Button 
+                  className="w-full" 
+                  asChild
+                >
+                  <Link href="/contact">
+                    Contact Support
+                  </Link>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    setFraudBlocked(false)
+                    setFraudBlockMessage('')
+                    setFraudCheckResult(null)
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
 
       {/* Account Creation Prompt Modal */}
       {showAccountPrompt && (

@@ -49,16 +49,11 @@ export async function POST(request: NextRequest) {
       data: {
         name: trimmedName,
         email: normalizedEmail,
-        hashedPassword,
+        hashedPassword: hashedPassword,
         role: 'CUSTOMER', // Set as customer by default
         emailVerified: null
       }
-    }) as {
-      id: string
-      name: string | null
-      email: string
-      role: string
-    }
+    })
 
     return NextResponse.json(
       { 
