@@ -24,11 +24,11 @@ export const authOptions = {
           where: { email },
         })
 
-        if (!user || !user.hashedPassword) {
+        if (!user || !user.passwordHash) {
           throw new Error("Invalid email or password")
         }
 
-        const isValid = await compare(credentials.password as string, user.hashedPassword)
+        const isValid = await compare(credentials.password as string, user.passwordHash)
 
         if (!isValid) {
           throw new Error("Invalid email or password")

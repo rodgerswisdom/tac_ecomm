@@ -49,14 +49,14 @@ export async function POST(request: NextRequest) {
       data: {
         name: trimmedName,
         email: normalizedEmail,
-        hashedPassword: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'CUSTOMER', // Set as customer by default
         emailVerified: null
       }
     })
 
     return NextResponse.json(
-      { 
+      {
         message: 'User created successfully',
         user: {
           id: user.id,
