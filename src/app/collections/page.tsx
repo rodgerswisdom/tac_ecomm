@@ -103,7 +103,7 @@ export default function CollectionsPage() {
     }
 
     // Sort products
-    let sorted = [...filtered];
+    const sorted = [...filtered];
     switch (filters.sortBy) {
       case "price-low":
         sorted.sort((a, b) => a.price - b.price);

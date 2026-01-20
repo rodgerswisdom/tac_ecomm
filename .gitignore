@@ -23,6 +23,16 @@
 # misc
 .DS_Store
 *.pem
+.vscode/
+.idea/
+
+# secrets / certificates
+*.key
+*.crt
+*.pfx
+*.p12
+*.cer
+*.der
 
 # debug
 npm-debug.log*
