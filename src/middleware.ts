@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
+import { UserRole } from "@prisma/client"
 
 export async function middleware(request: NextRequest) {
-  const token = await getToken({ req: request })
+  const token = await getToken({ 
+    req: request,
+    secret: process.env.NEXTAUTH_SECRET 
+  })
+  
   const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
 
   if (isAdminRoute) {
-    if (!token || token.role !== 'ADMIN') {
-      return NextResponse.redirect(new URL('/auth/signin', request.url))
+    if (!token || (token.role as UserRole) !== 'ADMIN') {
+      const signInUrl = new URL('/auth/signin', request.url)
+      signInUrl.searchParams.set('callbackUrl', request.url)
+      return NextResponse.redirect(signInUrl)
     }
   }
 

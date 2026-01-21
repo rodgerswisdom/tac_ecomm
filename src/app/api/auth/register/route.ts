@@ -43,15 +43,24 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Hash password with bcrypt (12 rounds for good security/performance balance)
     const hashedPassword = await hash(plainPassword, 12)
 
+    // Create user in database
     const user = await prisma.user.create({
       data: {
         name: trimmedName,
         email: normalizedEmail,
-        hashedPassword: hashedPassword,
+        passwordHash: hashedPassword,
         role: 'CUSTOMER', // Set as customer by default
         emailVerified: null
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true
       }
     })
 

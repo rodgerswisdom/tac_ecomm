@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Kumbh_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
-import { SessionProvider } from "next-auth/react";
+import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 import { FraudDetectionProvider } from "@/components/FraudDetectionProvider";
+import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
 const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -67,13 +68,14 @@ export default function RootLayout({
       <body
         className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar bg-texture-linen`}
       >
-        <SessionProvider>
+        <SessionProviderWrapper>
           <CartProvider>
             <FraudDetectionProvider>
               {children}
+              <WhatsAppWidget />
             </FraudDetectionProvider>
           </CartProvider>
-        </SessionProvider>
+        </SessionProviderWrapper>
       </body>
     </html>
   );
