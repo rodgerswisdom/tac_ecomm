@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { cn, formatPrice } from "@/lib/utils"
 import { deleteProductAction, getProductList } from "@/server/admin/products"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
+import { AdminPageHeader } from "@/components/admin/page-header"
 
 interface ProductsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -22,7 +23,18 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50] as const
 type SortOption = (typeof SORT_OPTIONS)[number]["value"]
-type ProductListItem = Awaited<ReturnType<typeof getProductList>>["items"][number]
+type ProductImagePreview = {
+  url: string
+  alt?: string | null
+  order?: number | null
+}
+type ProductListItem = Awaited<ReturnType<typeof getProductList>>["items"][number] & {
+  images?: ProductImagePreview[]
+  category?: {
+    name?: string | null
+  } | null
+  shortDescription?: string | null
+}
 
 const MAX_PAGE_BUTTONS = 5
 
@@ -53,6 +65,39 @@ function buildQueryString(base: URLSearchParams, overrides: Record<string, strin
   return params.toString()
 }
 
+function truncateText(value: string | null | undefined, maxLength = 80) {
+  if (!value) return ""
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 1)}…`
+}
+
+function getPrimaryImage(product: ProductListItem) {
+  if (!product.images || product.images.length === 0) return undefined
+  let primary = product.images[0]
+  let primaryOrder = primary?.order ?? 0
+  for (let i = 1; i < product.images.length; i += 1) {
+    const candidate = product.images[i]
+    if (!candidate) continue
+    const candidateOrder = candidate.order ?? primaryOrder
+    if (candidateOrder < primaryOrder) {
+      primary = candidate
+      primaryOrder = candidateOrder
+    }
+  }
+  return primary
+}
+
+function getDiscountPercent(product: ProductListItem) {
+  const { comparePrice, price } = product
+  if (!comparePrice || comparePrice <= price) return null
+  const percent = ((comparePrice - price) / comparePrice) * 100
+  return Math.round(percent * 10) / 10
+}
+
+function getProductSummary(product: ProductListItem) {
+  return truncateText(product.shortDescription ?? product.description ?? "", 80)
+}
+
 function getStatus(product: ProductListItem) {
   const inStock = product.stock > 0 && product.isActive
   return {
@@ -78,6 +123,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     pageSize,
     sort,
   })
+  const productItems = products.items as ProductListItem[]
 
   const baseParams = new URLSearchParams()
   if (search) baseParams.set("q", search)
@@ -99,14 +145,12 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Dashboard / All products</p>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">All products</h1>
-            <p className="text-sm text-muted-foreground">Review inventory, availability, and pricing at a glance.</p>
-          </div>
-          <div className="flex gap-2">
+      <AdminPageHeader
+        title="All products"
+        breadcrumb={["Dashboard", "All products"]}
+        description="Review inventory, availability, and pricing at a glance."
+        actions={
+          <>
             <Button type="button" variant="outline" size="sm" className="gap-2">
               <Download className="h-4 w-4" /> Export
             </Button>
@@ -115,127 +159,147 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 <Plus className="h-4 w-4" /> Add a product
               </Link>
             </Button>
+          </>
+        }
+        toolbar={
+          <div className="flex w-full flex-wrap items-center justify-between gap-4">
+            
+            <form action="/admin/products" className="relative w-full max-w-md flex-1">
+              <label htmlFor="product-search" className="sr-only">
+                Search products by name or SKU
+              </label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="product-search"
+                name="q"
+                defaultValue={search}
+                placeholder="Search e.g. PRD-2024-001 or Heritage Cuff"
+                className="pl-9"
+              />
+              <input type="hidden" name="sort" value={sort} />
+              <input type="hidden" name="pageSize" value={pageSize} />
+              {categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
+            </form>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-xs font-medium text-muted-foreground">Sort by</span>
+              <AutoSubmitSelect
+                action="/admin/products"
+                name="sort"
+                defaultValue={sort}
+                options={SORT_OPTIONS}
+                hiddenFields={{ q: search, pageSize, categoryId }}
+                className="rounded-md border border-input bg-background px-3 py-2"
+                selectClassName="w-full text-sm focus:outline-none"
+              />
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <form action="/admin/products" className="relative w-full max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            name="q"
-            defaultValue={search}
-            placeholder="Search products..."
-            className="pl-9"
-          />
-          <input type="hidden" name="sort" value={sort} />
-          <input type="hidden" name="pageSize" value={pageSize} />
-          {categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
-        </form>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-xs font-medium text-muted-foreground">Sort by</span>
-          <AutoSubmitSelect
-            action="/admin/products"
-            name="sort"
-            defaultValue={sort}
-            options={SORT_OPTIONS}
-            hiddenFields={{ q: search, pageSize, categoryId }}
-            className="rounded-md border border-input bg-background px-3 py-2"
-            selectClassName="w-full text-sm focus:outline-none"
-          />
-        </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base font-semibold">Products ({products.total})</CardTitle>
-          <p className="text-sm text-muted-foreground">Showing {products.items.length} of {products.total} items</p>
+          <p className="text-sm text-muted-foreground">Showing {productItems.length} of {products.total} items</p>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="py-3 font-medium">Product</th>
-                <th className="py-3 font-medium">SKU</th>
-                <th className="py-3 font-medium">Status</th>
-                <th className="py-3 font-medium">Price</th>
-                <th className="py-3 font-medium text-right">Actions</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Product</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Price</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Discount (%)</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Description</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Quantity</th>
+                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Status</th>
+                <th className="border-b border-border/40 bg-muted/40 py-3 px-2 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/70">
-              {products.items.length === 0 && (
+            <tbody>
+              {productItems.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
                     No products match the current filters.
                   </td>
                 </tr>
-              )}
-              {products.items.map((product) => {
-                const status = getStatus(product)
-                return (
-                  <tr key={product.id} className="align-middle">
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 overflow-hidden rounded-full border border-border bg-muted">
-                          {product.images?.[0] ? (
-                            <Image
-                              src={product.images[0].url}
-                              alt={product.images[0].alt ?? product.name}
-                              width={40}
-                              height={40}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-muted-foreground">
-                              {product.name.substring(0, 2).toUpperCase()}
-                            </div>
-                          )}
+              ) : (
+                productItems.map((product) => {
+                  const primaryImage = getPrimaryImage(product)
+                  const discountPercent = getDiscountPercent(product)
+                  const summary = getProductSummary(product)
+                  const status = getStatus(product)
+                  return (
+                    <tr key={product.id} className="align-middle">
+                      <td className="py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 overflow-hidden rounded-md border border-border bg-muted">
+                            {primaryImage ? (
+                              <Image
+                                src={primaryImage.url}
+                                alt={primaryImage.alt ?? product.name}
+                                width={48}
+                                height={48}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-xs font-semibold uppercase text-muted-foreground">
+                                {product.name.substring(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="font-medium text-foreground">{product.name}</div>
+                            <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+                          </div>
                         </div>
-                        <div>
-                          <div className="font-medium text-foreground">{product.name}</div>
-                          <p className="text-xs text-muted-foreground">{product.category?.name ?? "Uncategorized"}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-muted-foreground">{product.sku}</td>
-                    <td className="py-4">
-                      <span className={cn("inline-flex items-center gap-2 text-sm font-medium", status.textClass)}>
-                        <span className={cn("h-2 w-2 rounded-full", status.dotClass)} />
-                        {status.label}
-                      </span>
-                    </td>
-                    <td className="py-4 font-semibold">{formatPrice(product.price)}</td>
-                    <td className="py-4 text-right">
-                      <div className="ml-auto flex w-fit items-center gap-1">
-                        <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="View product">
-                          <Link href={`/admin/products/${product.id}`}>
-                            <Eye className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit product">
-                          <Link href={`/admin/products/${product.id}`}>
-                            <PenSquare className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <form action={deleteProductAction}>
-                          <input type="hidden" name="productId" value={product.id} />
-                          <Button
-                            type="submit"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-rose-500 hover:text-rose-600"
-                            aria-label="Delete product"
-                          >
-                            <Trash2 className="h-4 w-4" />
+                      </td>
+                      <td className="border-l border-border/40 py-4 font-semibold">{formatPrice(product.price, "KES")}</td>
+                      <td className="border-l border-border/40 py-4">
+                        {discountPercent != null ? (
+                          <span className="font-medium text-emerald-600">{discountPercent}%</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="border-l border-border/40 py-4 text-sm text-muted-foreground">{summary || "—"}</td>
+                      <td className="border-l border-border/40 py-4 font-medium">{product.stock}</td>
+                      <td className="border-l border-border/40 py-4">
+                        <span className={cn("inline-flex items-center gap-2 text-sm font-medium", status.textClass)}>
+                          <span className={cn("h-2 w-2 rounded-full", status.dotClass)} />
+                          {status.label}
+                        </span>
+                      </td>
+                      <td className="border-l border-border/40 py-4 text-right">
+                        <div className="ml-auto flex w-fit items-center gap-1">
+                          <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="View product">
+                            <Link href={`/admin/products/${product.id}`}>
+                              <Eye className="h-4 w-4" />
+                            </Link>
                           </Button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                          <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit product">
+                            <Link href={`/admin/products/${product.id}`}>
+                              <PenSquare className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                          <form action={deleteProductAction}>
+                            <input type="hidden" name="productId" value={product.id} />
+                            <Button
+                              type="submit"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-rose-500 hover:text-rose-600"
+                              aria-label="Delete product"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </form>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+              </tbody>
+            </table>
         </CardContent>
       </Card>
 

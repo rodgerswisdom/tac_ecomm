@@ -17,11 +17,28 @@ import {
 import { getCategoryOptions } from "@/server/admin/categories"
 
 interface ProductDetailPageProps {
-  params: { productId: string }
+  params: Promise<{ productId: string }>
+  searchParams?: Promise<Record<string, string | string[]>>
 }
 
-export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const { productId } = params
+export default async function ProductDetailPage({ params, searchParams }: ProductDetailPageProps) {
+  const [{ productId }, query] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve<Record<string, string | string[]>>({}),
+  ])
+
+  const statusParam = (() => {
+    const raw = query?.status
+    if (!raw) return undefined
+    return Array.isArray(raw) ? raw[0] : raw
+  })()
+
+  const statusMessage =
+    statusParam === "published"
+      ? "Product published successfully and is now live."
+      : statusParam === "draft"
+        ? "Draft saved successfully."
+        : null
 
   const [product, categories] = await Promise.all([
     getProductDetail(productId),
@@ -56,6 +73,12 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </form>
         </div>
       </div>
+
+      {statusMessage ? (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {statusMessage}
+        </div>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -96,6 +119,26 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2 text-sm">
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground">Weight (kg)</span>
+                  <Input
+                    name="weight"
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 2.5"
+                    defaultValue={product.weight ?? ""}
+                  />
+                </label>
+                <label className="space-y-2">
+                  <span className="text-xs font-medium text-muted-foreground">Dimensions</span>
+                  <Input
+                    name="dimensions"
+                    placeholder="Length × Width × Height"
+                    defaultValue={product.dimensions ?? ""}
+                  />
+                </label>
               </div>
               <select
                 name="productType"

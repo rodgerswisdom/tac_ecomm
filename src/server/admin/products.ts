@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
 import { Prisma, ProductType } from "@prisma/client"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -20,6 +21,8 @@ const productInputSchema = z.object({
     isBespoke: z.boolean().default(false),
     isCorporateGift: z.boolean().default(false),
     artisanId: z.string().optional().nullable(),
+    weight: z.coerce.number().nonnegative().optional().nullable(),
+    dimensions: z.string().max(120).optional().nullable(),
 })
 
 const variantSchema = z.object({
@@ -141,6 +144,23 @@ async function resolveProductSlug(name: string, proposedSlug?: string, existingI
     }
 }
 
+async function generateDuplicateSku(baseSku: string) {
+    const sanitized = baseSku.replace(/\s+/g, "-").toUpperCase()
+    let attempt = 0
+
+    while (attempt < 5) {
+        const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
+        const candidate = `${sanitized}-COPY-${suffix}`
+        const existing = await prisma.product.findUnique({ where: { sku: candidate } })
+        if (!existing) {
+            return candidate
+        }
+        attempt += 1
+    }
+
+    return `${sanitized}-COPY-${Date.now().toString(36).toUpperCase()}`
+}
+
 function booleanFromForm(value: FormDataEntryValue | null) {
     if (value == null) return false
     const normalized = value.toString().toLowerCase()
@@ -151,6 +171,31 @@ function optionalString(value: FormDataEntryValue | null) {
     if (value == null) return undefined
     const trimmed = value.toString().trim()
     return trimmed.length > 0 ? trimmed : undefined
+}
+
+function optionalNumber(value: FormDataEntryValue | null) {
+    const raw = optionalString(value)
+    if (raw == null) return undefined
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function parseGalleryUrls(value: FormDataEntryValue | null) {
+    const raw = optionalString(value)
+    if (!raw) return []
+
+    try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+            return parsed.filter((url): url is string => typeof url === "string" && url.trim().length > 0)
+        }
+    } catch {
+        if (raw.startsWith("http")) {
+            return [raw]
+        }
+    }
+
+    return []
 }
 
 function revalidateProductRoute(productId?: string) {
@@ -165,6 +210,11 @@ export async function createProductAction(formData: FormData) {
 
     await assertAdmin()
 
+    const intent = formData.get("intent")?.toString()
+    const isActive = intent ? intent === "publish" : booleanFromForm(formData.get("isActive"))
+    const primaryImageUrl = optionalString(formData.get("primaryImageUrl"))
+    const galleryImageUrls = parseGalleryUrls(formData.get("galleryImageUrls"))
+
     const payload = {
         name: formData.get("name")?.toString() ?? "",
         description: formData.get("description")?.toString() ?? "",
@@ -174,11 +224,13 @@ export async function createProductAction(formData: FormData) {
         sku: formData.get("sku")?.toString() ?? "",
         categoryId: formData.get("categoryId")?.toString() ?? "",
         productType: (formData.get("productType") as ProductType) || ProductType.READY_TO_WEAR,
-        isActive: booleanFromForm(formData.get("isActive")),
+        isActive,
         isFeatured: booleanFromForm(formData.get("isFeatured")),
         isBespoke: booleanFromForm(formData.get("isBespoke")),
         isCorporateGift: booleanFromForm(formData.get("isCorporateGift")),
         artisanId: optionalString(formData.get("artisanId")),
+        weight: optionalNumber(formData.get("weight")),
+        dimensions: optionalString(formData.get("dimensions")),
     }
 
     const parsed = productInputSchema.safeParse(payload)
@@ -196,7 +248,25 @@ export async function createProductAction(formData: FormData) {
         },
     })
 
+    const imageUrls = Array.from(
+        new Set([...(primaryImageUrl ? [primaryImageUrl] : []), ...galleryImageUrls])
+    )
+
+    if (imageUrls.length > 0) {
+        await prisma.productImage.createMany({
+            data: imageUrls.map((url, index) => ({
+                productId: created.id,
+                url,
+                alt: `${created.name} image ${index + 1}`,
+                order: index,
+            })),
+        })
+    }
+
     revalidateProductRoute(created.id)
+
+    const statusParam = intent === "publish" ? "published" : "draft"
+    redirect(`/admin/products/${created.id}?status=${statusParam}`)
 }
 
 export async function updateProductAction(formData: FormData) {
@@ -219,6 +289,8 @@ export async function updateProductAction(formData: FormData) {
         isBespoke: booleanFromForm(formData.get("isBespoke")),
         isCorporateGift: booleanFromForm(formData.get("isCorporateGift")),
         artisanId: optionalString(formData.get("artisanId")),
+        weight: optionalNumber(formData.get("weight")),
+        dimensions: optionalString(formData.get("dimensions")),
     }
 
     const parsed = productInputSchema.safeParse(payload)
@@ -259,6 +331,93 @@ export async function deleteProductAction(formData: FormData) {
         }
         throw error
     }
+    revalidateProductRoute(productId)
+}
+
+export async function duplicateProductAction(formData: FormData) {
+    "use server"
+
+    await assertAdmin()
+
+    const productId = formData.get("productId")?.toString()
+
+    if (!productId) {
+        throw new Error("Product id is required")
+    }
+
+    const product = await prisma.product.findUnique({
+        where: { id: productId },
+        include: { images: true },
+    })
+
+    if (!product) {
+        throw new Error("Product not found")
+    }
+
+    const duplicateName = `${product.name} Copy`
+    const slug = await resolveProductSlug(duplicateName)
+    const sku = await generateDuplicateSku(product.sku)
+
+    const duplicated = await prisma.product.create({
+        data: {
+            name: duplicateName,
+            slug,
+            description: product.description,
+            shortDescription: product.shortDescription,
+            price: product.price,
+            comparePrice: product.comparePrice,
+            sku,
+            stock: product.stock,
+            weight: product.weight,
+            dimensions: product.dimensions,
+            color: product.color,
+            size: product.size,
+            isActive: false,
+            isFeatured: product.isFeatured,
+            isDigital: product.isDigital,
+            isBespoke: product.isBespoke,
+            isCorporateGift: product.isCorporateGift,
+            productType: product.productType,
+            categoryId: product.categoryId,
+            artisanId: product.artisanId,
+            communityImpact: product.communityImpact,
+            sourcingStory: product.sourcingStory,
+            materials: product.materials,
+            origin: product.origin,
+            subcategory: product.subcategory,
+        },
+    })
+
+    if (product.images.length > 0) {
+        await prisma.productImage.createMany({
+            data: product.images.map((image) => ({
+                productId: duplicated.id,
+                url: image.url,
+                alt: image.alt,
+                order: image.order,
+            })),
+        })
+    }
+
+    revalidateProductRoute(duplicated.id)
+}
+
+export async function archiveProductAction(formData: FormData) {
+    "use server"
+
+    await assertAdmin()
+
+    const productId = formData.get("productId")?.toString()
+
+    if (!productId) {
+        throw new Error("Product id is required")
+    }
+
+    await prisma.product.update({
+        where: { id: productId },
+        data: { isActive: false },
+    })
+
     revalidateProductRoute(productId)
 }
 

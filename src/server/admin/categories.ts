@@ -56,7 +56,7 @@ export async function createCategoryAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.errors[0]?.message ?? "Invalid category data")
+        throw new Error(parsed.error.issues[0]?.message ?? "Invalid category data")
     }
 
     const slug = await resolveCategorySlug(parsed.data.name)
@@ -85,7 +85,7 @@ export async function updateCategoryAction(formData: FormData) {
     })
 
     if (!parsed.success || !parsed.data.id) {
-        throw new Error(parsed.success ? "Category id is required" : parsed.error.errors[0]?.message)
+        throw new Error(parsed.success ? "Category id is required" : parsed.error.issues[0]?.message)
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, undefined, parsed.data.id)

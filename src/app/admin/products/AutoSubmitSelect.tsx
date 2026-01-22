@@ -9,7 +9,7 @@ interface AutoSubmitSelectProps {
   action: string
   name: string
   defaultValue: string
-  options: Option[]
+  options: ReadonlyArray<Option>
   hiddenFields?: Record<string, string | number | undefined>
   className?: string
   selectClassName?: string
