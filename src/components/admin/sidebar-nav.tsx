@@ -26,9 +26,10 @@ export type AdminNavItem = {
 
 interface SidebarNavProps {
   items: AdminNavItem[]
+  condensed?: boolean
 }
 
-export function SidebarNav({ items }: SidebarNavProps) {
+export function SidebarNav({ items, condensed = false }: SidebarNavProps) {
   const pathname = usePathname()
 
   return (
@@ -41,17 +42,24 @@ export function SidebarNav({ items }: SidebarNavProps) {
           <Link
             key={item.href}
             href={item.href}
+            aria-label={item.label}
             className={cn(
-              "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors",
+              "group flex items-center rounded-xl py-2 text-sm font-medium transition-colors",
+              condensed ? "justify-center gap-0 px-2" : "gap-3 px-3",
               isActive
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-background text-foreground shadow-sm">
+            <span
+              className={cn(
+                "flex items-center justify-center rounded-lg bg-background text-foreground shadow-sm",
+                condensed ? "h-10 w-10" : "h-8 w-8"
+              )}
+            >
               <Icon className="h-4 w-4" />
             </span>
-            <span>{item.label}</span>
+            {!condensed ? <span className="whitespace-nowrap">{item.label}</span> : null}
           </Link>
         )
       })}

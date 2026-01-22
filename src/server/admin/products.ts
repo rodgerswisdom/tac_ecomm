@@ -51,19 +51,21 @@ export type ProductListFilters = {
     sort?: ProductSortOption
 }
 
-function resolveProductSort(sort?: ProductSortOption) {
+function resolveProductSort(
+    sort?: ProductSortOption
+): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
     switch (sort) {
         case "priceAsc":
-            return { price: "asc" } as const
+            return { price: "asc" }
         case "priceDesc":
-            return { price: "desc" } as const
+            return { price: "desc" }
         case "stockAsc":
-            return [{ stock: "asc" }, { updatedAt: "desc" }] as const
+            return [{ stock: "asc" }, { updatedAt: "desc" }]
         case "stockDesc":
-            return [{ stock: "desc" }, { updatedAt: "desc" }] as const
+            return [{ stock: "desc" }, { updatedAt: "desc" }]
         case "recent":
         default:
-            return { updatedAt: "desc" } as const
+            return { updatedAt: "desc" }
     }
 }
 
