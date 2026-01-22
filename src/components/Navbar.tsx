@@ -2,19 +2,29 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown, Search } from "lucide-react";
+import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { cn } from "@/lib/utils";
+import { useSession, signOut } from "next-auth/react";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -38,10 +48,36 @@ const navLinks = [
 
 export const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data: session } = useSession();
   const { getCartItemCount } = useCart();
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleSignOut = async () => {
+    await signOut({ redirect: false });
+    router.push('/');
+    router.refresh();
+  };
+
+  const getUserInitials = (name: string | null | undefined, email: string | null | undefined) => {
+    if (name) {
+      return name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+    }
+    if (email) {
+      return email[0].toUpperCase();
+    }
+    return 'U';
+  };
+
+  const userName = session?.user?.name ?? undefined;
+  const userEmail = session?.user?.email ?? undefined;
 
   const handleDropdownMouseEnter = (href: string) => {
     if (closeTimeoutRef.current) {
@@ -191,6 +227,26 @@ export const Navbar = () => {
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="mt-8 flex flex-col gap-4 text-brand-umber">
+                  {session?.user && (
+                    <div className="mb-4 pb-4 border-b border-brand-umber/10">
+                      <div className="flex items-center gap-3 px-4">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
+                          <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
+                            {getUserInitials(userName, userEmail)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-brand-umber truncate">
+                            {userName || 'User'}
+                          </p>
+                          <p className="text-xs text-brand-umber/60 truncate">
+                            {userEmail}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <span className="caps-spacing text-xs text-brand-umber/70">
                     Menu
                   </span>
@@ -229,6 +285,38 @@ export const Navbar = () => {
                       </div>
                     );
                   })}
+                  {session?.user ? (
+                    <>
+                      <div className="pt-2 border-t border-brand-umber/10">
+                        <Link
+                          href="/profile"
+                          className={cn(
+                            "rounded-full px-4 py-3 text-sm font-medium transition-colors block",
+                            pathname === "/profile"
+                              ? "bg-white text-brand-umber shadow-sm"
+                              : "text-brand-umber/70 hover:bg-white/60 hover:text-brand-umber"
+                          )}
+                        >
+                          Profile
+                        </Link>
+                        <button
+                          onClick={handleSignOut}
+                          className="w-full rounded-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="pt-2 border-t border-brand-umber/10">
+                      <Link
+                        href="/auth/signin"
+                        className="rounded-full px-4 py-3 text-sm font-medium bg-brand-umber text-white hover:bg-brand-umber/90 transition-colors block text-center"
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -249,14 +337,63 @@ export const Navbar = () => {
               </Link>
             </Button>
 
-            <Button
-              size="sm"
-              variant="outline"
-              className="hidden lg:inline-flex text-[12px] px-4"
-              asChild
-            >
-              <Link href="/auth/signin">Sign In</Link>
-            </Button>
+            {session?.user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative h-9 w-9 rounded-full"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
+                      <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
+                        {getUserInitials(userName, userEmail)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">
+                        {userName || 'User'}
+                      </p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {userEmail}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600 focus:text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="hidden lg:inline-flex text-[12px] px-4"
+                asChild
+              >
+                <Link href="/auth/signin">Sign In</Link>
+              </Button>
+            )}
           </div>
         </div>
       </motion.nav>
