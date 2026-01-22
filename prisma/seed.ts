@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* eslint-disable @typescript-eslint/no-var-requires */
+ 
 import { createRequire } from 'node:module'
 
 const require = createRequire(import.meta.url)

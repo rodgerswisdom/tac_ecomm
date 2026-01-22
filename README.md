@@ -5,6 +5,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 ## 🌟 Features
 
 ### Core E-Commerce
+
 - **Product Catalog** - Browse and filter products with advanced search
 - **Product Details** - Rich product pages with image galleries and reviews
 - **Shopping Cart** - Persistent cart with real-time updates
@@ -12,33 +13,39 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 - **Order Management** - Track orders and view order history
 
 ### Payment Integration
+
 - **PayPal** - Secure PayPal payments
 - **Pesapal** - Mobile money payments for African markets
 - **Credit/Debit Cards** - Traditional card payments
 
 ### Dynamic Pricing
+
 - **Timezone-based Pricing** - Automatic price adjustments based on user location
 - **Currency Conversion** - Multi-currency support with real-time rates
 - **Regional Adjustments** - Market-specific pricing strategies
 
 ### Shipping & Logistics
+
 - **ShipEngine Integration** - Real-time shipping rates and tracking
 - **EasyPost Support** - Alternative shipping provider
 - **Order Tracking** - Complete shipment tracking with status updates
 
 ### Admin Dashboard
+
 - **Analytics** - Sales trends, order volumes, and customer insights
 - **Product Management** - CRUD operations for products and categories
 - **Order Management** - Process and fulfill orders
 - **Customer Management** - View and manage customer accounts
 
 ### User Experience
+
 - **Afrocentric Design** - Rich gold, emerald, and ebony color palette
 - **Responsive Design** - Mobile-first approach with perfect mobile experience
 - **Animations** - Smooth Framer Motion animations throughout
 - **Accessibility** - WCAG compliant with keyboard navigation
 
 ### Authentication & Security
+
 - **NextAuth.js** - Email and Google OAuth authentication
 - **Role-based Access** - Customer and admin role management
 - **Secure Payments** - PCI-compliant payment processing
@@ -47,6 +54,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 ## 🛠️ Tech Stack
 
 ### Frontend
+
 - **Next.js 16** - React framework with App Router
 - **TypeScript** - Type-safe development
 - **Tailwind CSS** - Utility-first CSS framework
@@ -54,12 +62,14 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 - **Radix UI** - Accessible component primitives
 
 ### Backend
+
 - **Next.js API Routes** - Serverless API endpoints
 - **Prisma ORM** - Type-safe database access
 - **PostgreSQL** - Primary database
 - **NextAuth.js** - Authentication framework
 
 ### Integrations
+
 - **PayPal SDK** - Payment processing
 - **Pesapal API** - Mobile money payments
 - **ShipEngine API** - Shipping and logistics
@@ -69,29 +79,34 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - PostgreSQL database
 - npm or yarn package manager
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-username/tac-ecomm.git
    cd tac-ecomm
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
+
    ```bash
    cp env.example .env.local
    ```
-   
+
    Fill in your environment variables in `.env.local`:
+
    ```env
    # Database
    DATABASE_URL="postgresql://username:password@localhost:5432/tac_ecomm"
@@ -124,6 +139,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    ```
 
 4. **Set up the database**
+
    ```bash
    # Generate Prisma client
    npm run db:generate
@@ -136,6 +152,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    ```
 
 5. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -145,7 +162,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 
 ## 📁 Project Structure
 
-```
+```sh
 tac_ecomm/
 ├── src/
 │   ├── app/                 # Next.js App Router pages
@@ -176,6 +193,7 @@ tac_ecomm/
 ## 🎨 Design System
 
 ### Color Palette
+
 - **Gold** (#C89B3C) - Primary brand color
 - **Ebony** (#1A1A1A) - Dark text and backgrounds
 - **Ivory** (#F4E4BA) - Light backgrounds and accents
@@ -184,6 +202,7 @@ tac_ecomm/
 - **Copper** (#B87333) - Tertiary accents
 
 ### Typography
+
 - **Headings** - Playfair Display (serif)
 - **Body Text** - Inter (sans-serif)
 - **Luxury Feel** - Elegant, readable, and culturally inspired
@@ -208,6 +227,7 @@ tac_ecomm/
 ## 🚀 Deployment
 
 ### Environment Setup
+
 1. Set up a PostgreSQL database (e.g., Supabase, Railway, or AWS RDS)
 2. Configure environment variables for production
 3. Set up payment gateway accounts (PayPal, Pesapal)
@@ -216,13 +236,16 @@ tac_ecomm/
 6. Configure image storage (Cloudinary)
 
 ### Deployment Options
+
 - **Vercel** (Recommended) - Easy Next.js deployment
 - **Netlify** - Alternative hosting platform
 - **AWS** - Full cloud infrastructure
 - **Railway** - Simple deployment with database
 
 ### CI/CD Pipeline
+
 The project includes a GitHub Actions workflow that:
+
 - Runs tests and linting
 - Performs security audits
 - Builds the application
@@ -273,7 +296,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email support@tacaccessories.com or join our Discord community.
+For support, email <support@tacaccessories.com> or join our Discord community.
 
 ---
 
