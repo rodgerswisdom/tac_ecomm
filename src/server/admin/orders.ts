@@ -81,14 +81,29 @@ const updateStatusSchema = z.object({
     note: z.string().max(500).optional().nullable(),
 })
 
+export type UpdateOrderStatusFormState = {
+    status: "idle" | "success" | "error"
+    message?: string
+}
+
 const deleteOrderSchema = z.object({
     orderId: z.string().cuid(),
 })
 
-export async function updateOrderStatusAction(formData: FormData) {
+export async function updateOrderStatusAction(
+    _prevState: UpdateOrderStatusFormState,
+    formData: FormData,
+): Promise<UpdateOrderStatusFormState> {
     "use server"
 
-    await assertAdmin()
+    try {
+        await assertAdmin()
+    } catch (error) {
+        return {
+            status: "error",
+            message: error instanceof Error ? error.message : "Unauthorized",
+        }
+    }
 
     const parsed = updateStatusSchema.safeParse({
         orderId: formData.get("orderId")?.toString(),
@@ -98,19 +113,35 @@ export async function updateOrderStatusAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid order update")
+        return {
+            status: "error",
+            message: parsed.error.issues[0]?.message ?? "Invalid order update",
+        }
     }
 
-    await prisma.order.update({
-        where: { id: parsed.data.orderId },
-        data: {
-            status: parsed.data.status,
-            paymentStatus: parsed.data.paymentStatus,
-            notes: parsed.data.note ?? undefined,
-        },
-    })
+    try {
+        await prisma.order.update({
+            where: { id: parsed.data.orderId },
+            data: {
+                status: parsed.data.status,
+                paymentStatus: parsed.data.paymentStatus,
+                notes: parsed.data.note ?? undefined,
+            },
+        })
 
-    revalidatePath("/admin/orders")
+        revalidatePath("/admin/orders")
+        revalidatePath(`/admin/orders/${parsed.data.orderId}`)
+
+        return {
+            status: "success",
+            message: "Order status updated",
+        }
+    } catch (error) {
+        return {
+            status: "error",
+            message: error instanceof Error ? error.message : "Unable to update order",
+        }
+    }
 }
 
 export async function deleteOrderAction(formData: FormData) {
