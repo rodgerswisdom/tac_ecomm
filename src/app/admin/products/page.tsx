@@ -1,6 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
-import { Download, Eye, PenSquare, Plus, Search, Trash2 } from "lucide-react"
+import { Download, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { cn, formatPrice } from "@/lib/utils"
 import { deleteProductAction, getProductList } from "@/server/admin/products"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
+import { RowActions } from "@/components/admin/row-actions"
 
 interface ProductsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -34,6 +35,7 @@ type ProductListItem = Awaited<ReturnType<typeof getProductList>>["items"][numbe
     name?: string | null
   } | null
   shortDescription?: string | null
+  currency?: string | null
 }
 
 const MAX_PAGE_BUTTONS = 5
@@ -150,7 +152,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         breadcrumb={[
           { label: "All products", href: "/admin/products" },
         ]}
-        description="Review inventory, availability, and pricing at a glance."
+        // description="Review inventory, availability, and pricing at a glance."
         actions={
           <>
             <Button type="button" variant="outline" size="sm" className="gap-2">
@@ -166,17 +168,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
         toolbar={
           <div className="flex w-full flex-wrap items-center justify-between gap-4">
             
-            <form action="/admin/products" className="relative w-full max-w-md flex-1">
+            <form action="/admin/products" className="relative flex-1 min-w-[200px] max-w-sm">
               <label htmlFor="product-search" className="sr-only">
                 Search products by name or SKU
               </label>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#b98b5e]" />
               <Input
                 id="product-search"
                 name="q"
                 defaultValue={search}
                 placeholder="Search e.g. PRD-2024-001 or Heritage Cuff"
-                className="pl-9"
+                className="h-10 rounded-full border border-transparent bg-white/95 pl-12 pr-6 text-base text-[#4a2b28] shadow-[0_14px_36px_rgba(74,43,40,0.18)] focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#4b9286]/35"
               />
               <input type="hidden" name="sort" value={sort} />
               <input type="hidden" name="pageSize" value={pageSize} />
@@ -254,7 +256,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                           </div>
                         </div>
                       </td>
-                      <td className="border-l border-border/40 py-4 font-semibold">{formatPrice(product.price, "KES")}</td>
+                      <td className="border-l border-border/40 py-4 font-semibold">{formatPrice(product.price, product.currency ?? "USD")}</td>
                       <td className="border-l border-border/40 py-4">
                         {discountPercent != null ? (
                           <span className="font-medium text-emerald-600">{discountPercent}%</span>
@@ -271,30 +273,17 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                         </span>
                       </td>
                       <td className="border-l border-border/40 py-4 text-right">
-                        <div className="ml-auto flex w-fit items-center gap-1">
-                          <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="View product">
-                            <Link href={`/admin/products/${product.id}`}>
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button asChild variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit product">
-                            <Link href={`/admin/products/${product.id}`}>
-                              <PenSquare className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <form action={deleteProductAction}>
-                            <input type="hidden" name="productId" value={product.id} />
-                            <Button
-                              type="submit"
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-rose-500 hover:text-rose-600"
-                              aria-label="Delete product"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </form>
-                        </div>
+                        <RowActions
+                          viewHref={`/admin/products/${product.id}`}
+                          editHref={`/admin/products/${product.id}`}
+                          deleteConfig={{
+                            action: deleteProductAction,
+                            fields: { productId: product.id },
+                            resourceLabel: product.name,
+                            confirmTitle: `Delete ${product.name}?`,
+                            confirmDescription: `This will permanently remove ${product.name} from the catalog.`,
+                          }}
+                        />
                       </td>
                     </tr>
                   )
