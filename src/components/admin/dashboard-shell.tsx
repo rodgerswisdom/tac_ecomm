@@ -79,7 +79,7 @@ export function AdminDashboardShell({
           <form
             action="/admin/products"
             role="search"
-            className="flex flex-1 items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#a7cbb8] px-5 py-2 text-sm text-[#2f3c34] shadow-inner max-w-xl min-w-[220px]"
+            className="flex flex-1 items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner max-w-sm min-w-[100px]"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             <label htmlFor="global-search" className="sr-only">
@@ -100,15 +100,15 @@ export function AdminDashboardShell({
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-3 rounded-full border border-[#3f3324]/50 bg-[#e6cda3] px-3 py-2 text-left text-[#3f3324] transition hover:bg-[#f3dcbc]"
+                  aria-label={`Open profile menu for ${userName}`}
+                  className="flex items-center gap-2 rounded-full border border-[#3f3324]/40 bg-[#b8d3c2] p-1 text-[#3f3324] transition hover:bg-[#a9c2b0]"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#3f3324]/30 bg-[#b8d3c2] text-sm font-semibold uppercase text-[#2d3b34]">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-sm font-semibold uppercase text-[#2d3b34]">
                     {userInitials}
                   </div>
-                  <div className="leading-tight text-left">
-                    <p className="text-sm font-semibold">{userName}</p>
-                    <p className="text-xs text-[#6e5a44]">{userEmail}</p>
-                  </div>
+                  <span className="sr-only">
+                    {userName} ({userEmail}) profile menu
+                  </span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -155,7 +155,7 @@ export function AdminDashboardShell({
         ) : null}
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-border bg-background/95 px-4 py-6 text-foreground shadow-lg transition-all duration-200 lg:sticky lg:top-[4.75rem] lg:h-[calc(100vh-4.75rem)] lg:bg-background/70 lg:shadow-none",
+            "fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-border bg-background/95 px-4 py-6 text-foreground shadow-lg transition-all duration-200 lg:sticky lg:top-[4.25rem] lg:h-[calc(100vh-4.25rem)] lg:bg-background/70 lg:shadow-none",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
             isDesktopCollapsed ? "lg:w-20 lg:px-2" : "lg:w-64"
           )}
