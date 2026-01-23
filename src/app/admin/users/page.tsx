@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatPrice } from "@/lib/utils"
 import { getUsersSummary, updateUserRoleAction } from "@/server/admin/users"
+import { AdminPageHeader } from "@/components/admin/page-header"
 
 const roleOptions = Object.values(UserRole)
 
@@ -11,10 +12,13 @@ export default async function UsersPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Users</h1>
-        <p className="text-sm text-muted-foreground">Review customer behavior and roles.</p>
-      </div>
+      <AdminPageHeader
+        title="Users"
+        description="Review customer behavior and roles."
+        breadcrumb={[
+          { label: "Users", href: "/admin/users" },
+        ]}
+      />
 
       <Card>
         <CardHeader>

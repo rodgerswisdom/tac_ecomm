@@ -9,6 +9,7 @@ import {
   getCategories,
   updateCategoryAction,
 } from "@/server/admin/categories"
+import { AdminPageHeader } from "@/components/admin/page-header"
 
 interface CategoriesPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -27,10 +28,13 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Categories</h1>
-        <p className="text-sm text-muted-foreground">Organize collections and hierarchies.</p>
-      </div>
+      <AdminPageHeader
+        title="Categories"
+        description="Organize collections and hierarchies."
+        breadcrumb={[
+          { label: "Categories", href: "/admin/categories" },
+        ]}
+      />
 
       <Card>
         <CardHeader>

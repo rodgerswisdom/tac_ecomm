@@ -19,6 +19,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "admin:create": "tsx scripts/bootstrapAdmin.ts",
     "postinstall": "echo 'Skipping prisma generate in postinstall'",
     "prepare": "echo 'Skipping prisma generate in prepare'"
   },

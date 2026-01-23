@@ -115,7 +115,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     <div className="space-y-8">
       <AdminPageHeader
         title="All orders"
-        breadcrumb={["Dashboard", "All orders"]}
+        breadcrumb={[
+          { label: "All orders", href: "/admin/orders" },
+        ]}
         description="Monitor fulfillment and payments."
         toolbar={
           <form className="flex w-full flex-wrap items-center gap-3" action="/admin/orders">

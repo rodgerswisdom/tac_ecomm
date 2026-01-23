@@ -147,7 +147,9 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
     <div className="space-y-8">
       <AdminPageHeader
         title="All products"
-        breadcrumb={["Dashboard", "All products"]}
+        breadcrumb={[
+          { label: "All products", href: "/admin/products" },
+        ]}
         description="Review inventory, availability, and pricing at a glance."
         actions={
           <>

@@ -172,7 +172,7 @@ export function AdminDashboardShell({
           </Link>
         </aside>
 
-        <main className="flex-1 bg-background px-4 py-8 text-foreground lg:px-8">
+        <main className="flex-1 bg-background px-3 py-8 text-foreground sm:px-4 lg:px-6">
           <div className="mx-auto w-full max-w-7xl space-y-8">{children}</div>
         </main>
       </div>
