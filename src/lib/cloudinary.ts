@@ -4,7 +4,7 @@ export interface CloudinaryConfig {
   cloudName: string
   apiKey: string
   apiSecret: string
-  uploadPreset?: string
+  uploadPreset: string
 }
 
 export interface UploadResult {
@@ -44,19 +44,24 @@ export class CloudinaryService {
       transformation?: TransformOptions
     } = {}
   ): Promise<UploadResult> {
+    if (!this.config.cloudName || !this.config.uploadPreset) {
+      throw new Error(
+        'Cloudinary configuration is missing. Please set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.'
+      )
+    }
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('upload_preset', this.config.uploadPreset || 'tac_accessories')
-      
+      formData.append('upload_preset', this.config.uploadPreset)
+
       if (options.folder) {
         formData.append('folder', options.folder)
       }
-      
+
       if (options.publicId) {
         formData.append('public_id', options.publicId)
       }
-      
+
       if (options.tags) {
         formData.append('tags', options.tags.join(','))
       }
@@ -80,7 +85,7 @@ export class CloudinaryService {
       }
 
       const result = await response.json()
-      
+
       return {
         public_id: result.public_id,
         secure_url: result.secure_url,
@@ -107,7 +112,7 @@ export class CloudinaryService {
       publicId?: string
     } = {}
   ): Promise<UploadResult[]> {
-    const uploadPromises = files.map((file, index) => 
+    const uploadPromises = files.map((file, index) =>
       this.uploadImage(file, {
         ...options,
         publicId: options.publicId ? `${options.publicId}_${index}` : undefined
@@ -126,7 +131,7 @@ export class CloudinaryService {
   ): string {
     const baseUrl = `https://res.cloudinary.com/${this.config.cloudName}/image/upload`
     const transforms = this.buildTransformationString(transformation)
-    
+
     return `${baseUrl}/${transforms}/${publicId}`
   }
 
@@ -170,6 +175,9 @@ export class CloudinaryService {
    * Delete image from Cloudinary
    */
   async deleteImage(publicId: string): Promise<boolean> {
+    if (!this.config.cloudName || !this.config.apiKey || !this.config.apiSecret) {
+      throw new Error('Cloudinary delete configuration is missing server credentials')
+    }
     try {
       const timestamp = Math.round(new Date().getTime() / 1000)
       const signature = this.generateSignature(publicId, timestamp)
@@ -247,7 +255,7 @@ export class CloudinaryService {
    */
   private generateSignature(publicId: string, timestamp: number): string {
     const params = `public_id=${publicId}&timestamp=${timestamp}${this.config.apiSecret}`
-    
+
     // In a real implementation, you would use a proper HMAC-SHA1 implementation
     // This is a simplified version for demonstration
     return btoa(params).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)
@@ -256,11 +264,19 @@ export class CloudinaryService {
 
 // Utility functions
 export function getCloudinaryConfig(): CloudinaryConfig {
+  const isServer = typeof window === 'undefined'
+  const cloudName =
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || ''
+  const uploadPreset =
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET || 'tac_accessories'
+
   return {
-    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
-    apiKey: process.env.CLOUDINARY_API_KEY || '',
-    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
-    uploadPreset: 'tac_accessories'
+    cloudName,
+    apiKey: isServer
+      ? process.env.CLOUDINARY_API_KEY || ''
+      : process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '',
+    apiSecret: isServer ? process.env.CLOUDINARY_API_SECRET || '' : '',
+    uploadPreset
   }
 }
 

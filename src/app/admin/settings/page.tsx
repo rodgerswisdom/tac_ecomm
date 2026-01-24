@@ -3,16 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { formatPrice } from "@/lib/utils"
 import { getAdminSettingsData, toggleCouponAction, toggleProductFlagAction } from "@/server/admin/settings"
+import { AdminPageHeader } from "@/components/admin/page-header"
 
 export default async function SettingsPage() {
   const data = await getAdminSettingsData()
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground">Control storefront highlights and incentives.</p>
-      </div>
+      <AdminPageHeader
+        title="Settings"
+        description="Control storefront highlights and incentives."
+        breadcrumb={[
+          { label: "Settings", href: "/admin/settings" },
+        ]}
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>

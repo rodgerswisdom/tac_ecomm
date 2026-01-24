@@ -7,7 +7,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PhotoUpload } from "@/components/PhotoUpload";
+import { ImageUploader } from "@/components/ImageUploader";
 import { 
   Palette, 
   Users, 
@@ -260,7 +260,13 @@ export default function BespokeStudioPage() {
                     />
                   </div>
 
-                  <PhotoUpload onFilesChange={handlePhotosChange} maxFiles={5} />
+                  <ImageUploader
+                    mode="multiple"
+                    onChange={handlePhotosChange}
+                    maxFiles={5}
+                    folder="bespoke-uploads"
+                    tags={["bespoke", "reference"]}
+                  />
 
                   <div>
                     <label className="block text-sm font-medium text-brand-umber mb-2">

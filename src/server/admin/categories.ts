@@ -11,7 +11,25 @@ const categorySchema = z.object({
     description: z.string().optional().nullable(),
     image: z.string().url().optional().nullable(),
     parentId: z.string().cuid().optional().nullable(),
+    slug: z
+        .string()
+        .min(2)
+        .max(80)
+        .regex(/^[a-z0-9-]+$/i, "Slug can only contain letters, numbers, and dashes")
+        .optional()
+        .nullable(),
 })
+
+function normalizeSlug(value: FormDataEntryValue | null) {
+    const raw = value?.toString().trim().toLowerCase()
+    if (!raw) return undefined
+    const cleaned = raw
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "")
+    return cleaned || undefined
+}
 
 export async function getCategories() {
     return prisma.category.findMany({
@@ -53,13 +71,14 @@ export async function createCategoryAction(formData: FormData) {
         description: formData.get("description")?.toString(),
         image: formData.get("image")?.toString(),
         parentId: formData.get("parentId")?.toString() || undefined,
+        slug: normalizeSlug(formData.get("slug")),
     })
 
     if (!parsed.success) {
         throw new Error(parsed.error.issues[0]?.message ?? "Invalid category data")
     }
 
-    const slug = await resolveCategorySlug(parsed.data.name)
+    const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined)
 
     await prisma.category.create({
         data: {
@@ -82,13 +101,14 @@ export async function updateCategoryAction(formData: FormData) {
         description: formData.get("description")?.toString(),
         image: formData.get("image")?.toString(),
         parentId: formData.get("parentId")?.toString() || undefined,
+        slug: normalizeSlug(formData.get("slug")),
     })
 
     if (!parsed.success || !parsed.data.id) {
         throw new Error(parsed.success ? "Category id is required" : parsed.error.issues[0]?.message)
     }
 
-    const slug = await resolveCategorySlug(parsed.data.name, undefined, parsed.data.id)
+    const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined, parsed.data.id)
 
     await prisma.category.update({
         where: { id: parsed.data.id },

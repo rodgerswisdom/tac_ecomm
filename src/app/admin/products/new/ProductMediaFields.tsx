@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { PhotoUpload } from "@/components/PhotoUpload"
+import { ImageUploader } from "@/components/ImageUploader"
 
 interface ProductMediaFieldsProps {
   maxFiles?: number
@@ -21,7 +21,13 @@ export function ProductMediaFields({ maxFiles = 5 }: ProductMediaFieldsProps) {
 
   return (
     <div className="space-y-4">
-      <PhotoUpload onFilesChange={handleFilesChange} maxFiles={maxFiles} />
+      <ImageUploader
+        mode="multiple"
+        onChange={handleFilesChange}
+        maxFiles={maxFiles}
+        folder="product-gallery"
+        tags={["products", "admin"]}
+      />
       <input type="hidden" name="primaryImageUrl" value={primaryImage} />
       <input type="hidden" name="galleryImageUrls" value={JSON.stringify(galleryUrls)} />
       <p className="text-xs text-muted-foreground">

@@ -3,6 +3,7 @@ import { StatsCard } from "@/components/admin/stats-card"
 import { SimpleBarChart, SimplePieChart, TrendChart } from "@/components/admin/trend-chart"
 import { getDetailedAnalytics } from "@/server/admin/analytics"
 import { formatPrice } from "@/lib/utils"
+import { AdminPageHeader } from "@/components/admin/page-header"
 
 export default async function AnalyticsPage() {
   const analytics = await getDetailedAnalytics(90)
@@ -21,10 +22,13 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Analytics</h1>
-        <p className="text-sm text-muted-foreground">90-day performance insights.</p>
-      </div>
+      <AdminPageHeader
+        title="Analytics"
+        description="90-day performance insights."
+        breadcrumb={[
+          { label: "Analytics", href: "/admin/analytics" },
+        ]}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard title="Avg order value" value={formatPrice(analytics.averageOrderValue)} subtitle="90-day" />
