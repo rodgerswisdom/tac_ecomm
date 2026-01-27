@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -215,4 +215,8 @@ function SignInForm() {
       </div>
     </div>
   )
+}
+
+export default function SignInPage() {
+  return <SignInForm />
 }

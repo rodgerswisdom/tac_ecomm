@@ -23,27 +23,28 @@ export default async function OverviewPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatsCard
           title="Total Revenue"
-          value={formatPrice(metrics.totals.revenue)}
+          value={metrics.totals.revenue}
+          prefix="$"
           subtitle="Since launch"
-          icon={<DollarSign className="h-3 w-4 text-emerald-500" />}
+          icon={<DollarSign className="h-8 w-5 text-emerald-500" />}
         />
         <StatsCard
           title="Total Orders"
-          value={metrics.totals.orders.toLocaleString()}
+          value={metrics.totals.orders}
           subtitle="All time"
-          icon={<ShoppingBag className="h-3 w-4 text-blue-500" />}
+          icon={<ShoppingBag className="h-8 w-5 text-blue-500" />}
         />
         <StatsCard
           title="Customers"
-          value={metrics.totals.users.toLocaleString()}
+          value={metrics.totals.users}
           subtitle="Registered users"
-          icon={<Users className="h-3 w-4 text-purple-500" />}
+          icon={<Users className="h-8 w-5 text-purple-500" />}
         />
         <StatsCard
           title="Active Products"
-          value={metrics.totals.products.toLocaleString()}
+          value={metrics.totals.products}
           subtitle="Catalog size"
-          icon={<Package className="h-3 w-4 text-orange-500" />}
+          icon={<Package className="h-8 w-5 text-orange-500" />}
         />
       </div>
 

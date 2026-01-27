@@ -1,6 +1,7 @@
 # Implementation Plan: TAC Accessories Enhancements
 
 ## Overview
+
 This document outlines the implementation plan for all requested features and fixes for the TAC Accessories e-commerce platform.
 
 ---
@@ -8,10 +9,12 @@ This document outlines the implementation plan for all requested features and fi
 ## 1. Name Consistency: "Tac Accessories"
 
 ### What Needs to Be Done
+
 - Standardize the brand name to "Tac Accessories" (with capital T and A) throughout the entire codebase
 - Replace all variations: "TAC Accessories", "TAC Jewellery", "Tac accessories", etc.
 
 ### How I'll Do It
+
 1. **Search and Replace Strategy:**
    - Use grep to find all instances of brand name variations
    - Replace in the following files:
@@ -37,15 +40,18 @@ This document outlines the implementation plan for all requested features and fi
 ## 2. Hero Section: Categories + Featured Products Slideshow
 
 ### What Needs to Be Done
+
 - Transform the hero section to include a dynamic slideshow that alternates between:
   - Category showcases (existing hero images)
   - Featured product highlights with CTAs
 - Add creative CTAs on product slides (e.g., "Shop Now", "View Collection", "Limited Edition")
 
 ### How I'll Do It
+
 1. **Update Hero Component (`src/components/Hero.tsx`):**
    - Extend the slideshow to include both hero images AND featured products
    - Create a unified slide data structure:
+
      ```typescript
      type SlideType = 'hero' | 'product'
      interface Slide {
@@ -57,6 +63,7 @@ This document outlines the implementation plan for all requested features and fi
        product?: ProductCardData // if type is 'product'
      }
      ```
+
    - Add featured products from `featuredProducts` array
    - Create dynamic CTAs based on product type:
      - Regular products: "Shop Now" → product page
@@ -82,11 +89,13 @@ This document outlines the implementation plan for all requested features and fi
 ## 3. Search Bar in Navigation
 
 ### What Needs to Be Done
+
 - Add a search bar to the navbar
 - Implement search functionality that searches through products
 - Show search results in a dropdown or dedicated search page
 
 ### How I'll Do It
+
 1. **Create Search Component (`src/components/SearchBar.tsx`):**
    - Build a search input with icon
    - Implement debounced search (300ms delay)
@@ -121,6 +130,7 @@ This document outlines the implementation plan for all requested features and fi
 ## 4. Related Products on Product Detail Page
 
 ### What Needs to Be Done
+
 - Enhance the related products section on product detail pages
 - Show products related by:
   - Same category
@@ -130,6 +140,7 @@ This document outlines the implementation plan for all requested features and fi
 - Make it visually appealing and interactive
 
 ### How I'll Do It
+
 1. **Enhance Related Products Logic (`src/app/products/[slug]/page.tsx`):**
    - Improve the `related` useMemo to:
      - Prioritize same category products
@@ -161,12 +172,14 @@ This document outlines the implementation plan for all requested features and fi
 ## 5. Sign Up Flow Fix
 
 ### What Needs to Be Done
+
 - Fix authentication flow to ensure all auth works correctly
 - Ensure proper redirects after signup/signin
 - Fix any issues with NextAuth configuration
 - Handle errors gracefully
 
 ### How I'll Do It
+
 1. **Review Auth Configuration:**
    - Check `src/lib/auth.ts` for proper NextAuth setup
    - Verify credentials provider configuration
@@ -210,11 +223,13 @@ This document outlines the implementation plan for all requested features and fi
 ## 6. Country Dropdown Fix (Payment Form)
 
 ### What Needs to Be Done
+
 - Fix the dropdown background that makes text invisible in the checkout form
 - Ensure proper contrast between text and background
 - Fix z-index issues if dropdown is behind other elements
 
 ### How I'll Do It
+
 1. **Fix Custom Dropdown Component (`src/components/ui/custom-dropdown.tsx`):**
    - Current issue: Button has `bg-brand-umber` with `text-brand-beige`, but dropdown menu also has dark background
    - Fix text color in dropdown options:
@@ -244,6 +259,7 @@ This document outlines the implementation plan for all requested features and fi
 ## 7. Corporate Gifts Page Enhancement
 
 ### What Needs to Be Done
+
 - The corporate gifts page already exists at `/collections/corporate-gifts`
 - Enhance it with:
   - Better integration with product data
@@ -252,6 +268,7 @@ This document outlines the implementation plan for all requested features and fi
   - Bulk order functionality (UI)
 
 ### How I'll Do It
+
 1. **Enhance Existing Page (`src/app/collections/corporate-gifts/page.tsx`):**
    - Connect to actual product data (filter `isCorporateGift: true`)
    - Add product grid showing corporate gift products
@@ -322,4 +339,3 @@ This document outlines the implementation plan for all requested features and fi
 - Product data comes from `src/data/content.ts` (will need to ensure corporate gift products are marked)
 - Authentication uses NextAuth (already configured)
 - All components are client-side ("use client") where needed
-

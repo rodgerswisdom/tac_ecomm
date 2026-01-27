@@ -149,22 +149,22 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
 
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base font-semibold">Categories ({filtered.length})</CardTitle>
-              <p className="text-sm text-muted-foreground">{visibleCategories.length} shown out of {filtered.length} results</p>
+              <CardTitle className="text-base">Categories ({filtered.length})</CardTitle>
+              <span className="text-sm text-muted-foreground">Showing {visibleCategories.length} of {filtered.length} </span>
             </div>
           </div>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="border-b border-border/60 py-3 pr-4">Category</th>
-                <th className="border-b border-border/60 py-3 pr-4">Slug</th>
-                <th className="border-b border-border/60 py-3 pr-4">Number of products</th>
-                <th className="border-b border-border/60 py-3 pr-4">Parent category</th>
-                <th className="border-b border-border/60 py-3 text-right">Actions</th>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs">Category</th>
+                <th className="px-4 py-3 text-left text-xs">Slug</th>
+                <th className="px-4 py-3 text-left text-xs">Number of products</th>
+                <th className="px-4 py-3 text-left text-xs">Parent category</th>
+                <th className="px-4 py-3 text-left text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -176,8 +176,8 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                 </tr>
               ) : (
                 visibleCategories.map((category) => (
-                  <tr key={category.id} className="border-b border-border/40">
-                    <td className="py-4 pr-4">
+                  <tr key={category.id} className="border-b last:border-b-0">
+                    <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-xs font-semibold uppercase">
                           {getInitials(category.name)}
@@ -188,10 +188,10 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 pr-4 text-muted-foreground">{category.slug}</td>
-                    <td className="py-4 pr-4 font-semibold text-foreground">{category._count.products}</td>
-                    <td className="py-4 pr-4 text-muted-foreground">{category.parent?.name ?? "—"}</td>
-                    <td className="py-4 text-right">
+                    <td className="px-4 py-4">{category.slug}</td>
+                    <td className="px-4 py-4">{category._count.products}</td>
+                    <td className="px-4 py-4">{category.parent?.name ?? "—"}</td>
+                    <td className="px-4 py-4">
                       <RowActions
                         viewHref={`/collections/${category.slug}`}
                         viewLinkProps={{ target: "_blank", rel: "noopener noreferrer" }}
@@ -211,7 +211,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
             </tbody>
           </table>
         </CardContent>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 text-sm text-muted-foreground">
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <span>Rows per page:</span>
             <AutoSubmitSelect
@@ -220,15 +220,14 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
               defaultValue={String(pageSize)}
               options={PAGE_SIZE_OPTIONS.map((size) => ({ label: String(size), value: size }))}
               hiddenFields={{ q: search || undefined, sort, page: "1" }}
-              className="rounded-md border border-input bg-background px-2 py-1"
-              selectClassName="text-sm focus:outline-none"
+              selectClassName="rounded-md border border-border bg-transparent px-2 py-1"
             />
           </div>
           <div className="flex items-center gap-2">
             <Button
               asChild
               size="sm"
-              variant="outline"
+              variant="ghost"
               disabled={currentPage <= 1}
             >
               <Link href={buildHref({ page: Math.max(currentPage - 1, 1) })}>
@@ -236,12 +235,12 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
               </Link>
             </Button>
             <span>
-              Page {currentPage} of {pageCount}
+              {currentPage}
             </span>
             <Button
               asChild
               size="sm"
-              variant="outline"
+              variant="ghost"
               disabled={currentPage >= pageCount}
             >
               <Link href={buildHref({ page: Math.min(currentPage + 1, pageCount) })}>
