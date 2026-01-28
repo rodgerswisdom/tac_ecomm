@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from "react-dom"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { updateOrderStatusAction, type UpdateOrderStatusFormState } from "@/server/admin/orders"
+import { updateOrderStatusAction, type UpdateOrderStatusFormState } from "@/server/admin/orders/orders.actions"
 
 const initialState: UpdateOrderStatusFormState = { status: "idle" }
 

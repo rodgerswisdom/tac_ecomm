@@ -31,14 +31,14 @@ export default async function AnalyticsPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard title="Avg order value" value={formatPrice(analytics.averageOrderValue)} subtitle="90-day" />
+        <StatsCard title="Avg order value" value={analytics.averageOrderValue} subtitle="90-day" />
         <StatsCard
           title="Repeat buyers"
-          value={analytics.repeatVsFirst.repeat.toString()}
+          value={analytics.repeatVsFirst.repeat}
           subtitle={`${analytics.repeatVsFirst.firstTime} first-time buyers`}
         />
-        <StatsCard title="Top product" value={analytics.topProducts[0]?.name ?? '—'} subtitle="By revenue" />
-        <StatsCard title="Cart items flagged" value={analytics.cartAbandonment.toString()} subtitle="Inactive 7+ days" />
+        <StatsCard title="Top product" value={analytics.topProducts[0]?.revenue ?? 0} subtitle={analytics.topProducts[0]?.name ?? "—"} />
+        <StatsCard title="Cart items flagged" value={analytics.cartAbandonment} subtitle="Inactive 7+ days" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
