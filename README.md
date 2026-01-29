@@ -214,7 +214,7 @@ tac_ecomm/
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 - `npm run lint:fix` - Fix ESLint errors
-- `npm run type-check` - Run TypeScript type checking
+- `fc` - Run TypeScript type checking
 - `npm run test` - Run tests
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:coverage` - Run tests with coverage

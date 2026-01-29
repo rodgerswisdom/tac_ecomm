@@ -38,7 +38,7 @@ export default async function AnalyticsPage() {
           subtitle={`${analytics.repeatVsFirst.firstTime} first-time buyers`}
         />
         <StatsCard title="Top product" value={analytics.topProducts[0]?.revenue ?? 0} subtitle={analytics.topProducts[0]?.name ?? "—"} />
-        <StatsCard title="Cart items flagged" value={analytics.cartAbandonment} subtitle="Inactive 7+ days" />
+          {/* <StatsCard title="Cart items flagged" value={analytics.cartAbandonment} subtitle="Inactive 7+ days" /> */}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

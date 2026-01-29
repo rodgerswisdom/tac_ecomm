@@ -43,6 +43,8 @@ export interface OrderEmailData {
   }
   trackingNumber?: string
   estimatedDelivery?: string
+  couponCode?: string
+  couponDiscount?: number
 }
 
 export class EmailService {
@@ -177,7 +179,6 @@ export class EmailService {
                   <span>$${(item.price * item.quantity).toFixed(2)}</span>
                 </div>
               `).join('')}
-              
               <div class="item">
                 <span>Subtotal:</span>
                 <span>$${data.subtotal.toFixed(2)}</span>
@@ -190,6 +191,12 @@ export class EmailService {
                 <span>Shipping:</span>
                 <span>$${data.shipping.toFixed(2)}</span>
               </div>
+              ${'couponCode' in data && data.couponCode ? `
+                <div class="item">
+                  <span>Discount (${data.couponCode}):</span>
+                    <span>-$${typeof data.couponDiscount === 'number' ? data.couponDiscount.toFixed(2) : '0.00'}</span>
+                </div>
+              ` : ''}
               <div class="item total">
                 <span>Total:</span>
                 <span>$${data.total.toFixed(2)}</span>

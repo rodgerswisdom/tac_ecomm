@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -63,6 +63,7 @@ const ProductCardComponent = ({
 }: ProductCardProps) => {
   const { addToCart } = useCart();
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -92,11 +93,68 @@ const ProductCardComponent = ({
     });
   };
 
+  // Check if user is logged in (simple check for now)
+  const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('nextauth.token');
+
+  // Load wishlist state on mount (for guest: localStorage, for user: API)
+  useEffect(() => {
+    let ignore = false;
+    async function fetchWishlist() {
+      if (isLoggedIn) {
+        try {
+          const res = await fetch('/api/wishlist');
+          const data = await res.json();
+          if (!ignore && data.wishlist) {
+            setIsWishlisted(data.wishlist.some((w: any) => w.productId === product.id));
+          }
+        } catch {}
+      } else {
+        const guestWishlist = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
+        setIsWishlisted(guestWishlist.includes(product.id));
+      }
+    }
+    fetchWishlist();
+    return () => { ignore = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
+
   // Handle wishlist toggle
-  const handleWishlistToggle = (e: React.MouseEvent) => {
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
+    setWishlistLoading(true);
+    if (isLoggedIn) {
+      try {
+        if (!isWishlisted) {
+          await fetch('/api/wishlist', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id })
+          });
+          setIsWishlisted(true);
+        } else {
+          await fetch('/api/wishlist', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id })
+          });
+          setIsWishlisted(false);
+        }
+      } catch {}
+    } else {
+      // Guest: use localStorage
+      const guestWishlist = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
+      if (!isWishlisted) {
+        const updated = [...guestWishlist, product.id];
+        localStorage.setItem('tac-wishlist', JSON.stringify(updated));
+        setIsWishlisted(true);
+      } else {
+        const updated = guestWishlist.filter((id: number) => id !== product.id);
+        localStorage.setItem('tac-wishlist', JSON.stringify(updated));
+        setIsWishlisted(false);
+      }
+    }
+    setWishlistLoading(false);
   };
 
   // Render star rating
@@ -207,8 +265,9 @@ const ProductCardComponent = ({
           {/* Wishlist Heart - Top Right */}
           <button
             onClick={handleWishlistToggle}
-            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110 disabled:opacity-60"
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
+            disabled={wishlistLoading}
           >
             <Heart
               className={`h-4 w-4 transition-colors ${
