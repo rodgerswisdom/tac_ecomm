@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
+import { toast } from 'sonner'
 
 interface CartItem {
   id: number
@@ -45,14 +46,14 @@ export function CartProvider({ children }: CartProviderProps) {
       const data = await res.json()
       // API returns { cart: [...] }
       if (Array.isArray(data.cart)) {
-        // Map API cart items to CartItem shape if needed
-        return data.cart.map((item: Partial<CartItem> & { product?: Partial<CartItem>; productId?: number; }) => ({
-          id: item.productId || item.id,
-          name: item.product?.name || item.name,
-          price: item.product?.price || item.price,
-          originalPrice: item.product?.originalPrice,
-          image: item.product?.image || item.image,
-          quantity: item.quantity,
+        // Map API cart items to CartItem shape (id as number for client consistency)
+        return data.cart.map((item: Partial<CartItem> & { product?: Partial<CartItem>; productId?: string | number }) => ({
+          id: Number(item.productId ?? item.id) || 0,
+          name: item.product?.name ?? item.name ?? '',
+          price: Number(item.product?.price ?? item.price) ?? 0,
+          originalPrice: item.product?.originalPrice ?? item.originalPrice,
+          image: item.product?.image ?? item.image ?? '',
+          quantity: Number(item.quantity) || 1,
           size: item.size,
           color: item.color
         }))
@@ -100,13 +101,15 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }, [user])
 
-  // On login, merge local cart with server cart
+  // On login only: merge local cart with server cart and save (not on every cart change — avoids blink)
   useEffect(() => {
-    if (user && isLoaded) {
-      (async () => {
-        const serverCart = await fetchUserCart()
-        // Merge logic: combine items, sum quantities for same id
-        const merged: CartItem[] = [...cart]
+    if (!user || !isLoaded) return
+    let cancelled = false
+    ;(async () => {
+      const serverCart = await fetchUserCart()
+      if (cancelled) return
+      setCart(prev => {
+        const merged: CartItem[] = [...prev]
         serverCart.forEach((item: CartItem) => {
           const existing = merged.find(i => i.id === item.id)
           if (existing) {
@@ -115,12 +118,13 @@ export function CartProvider({ children }: CartProviderProps) {
             merged.push(item)
           }
         })
-        setCart(merged)
-        await saveUserCart(merged)
+        saveUserCart(merged)
         localStorage.removeItem('tac-cart')
-      })()
-    }
-  }, [user, isLoaded, cart])
+        return merged
+      })
+    })()
+    return () => { cancelled = true }
+  }, [user, isLoaded])
 
   // Save cart to localStorage whenever it changes (for guests)
   useEffect(() => {
@@ -136,20 +140,34 @@ export function CartProvider({ children }: CartProviderProps) {
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id)
-      if (existingItem) {
-        return prevCart.map(cartItem =>
-          cartItem.id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1 }
-            : cartItem
-        )
-      } else {
-        return [...prevCart, { ...item, quantity: 1 }]
+      const next = existingItem
+        ? prevCart.map(cartItem =>
+            cartItem.id === item.id
+              ? { ...cartItem, quantity: cartItem.quantity + 1 }
+              : cartItem
+          )
+        : [...prevCart, { ...item, quantity: 1 }]
+      if (user) queueMicrotask(() => saveUserCart(next))
+      return next
+    })
+    toast.success('Added to cart', {
+      action: {
+        label: 'Checkout',
+        onClick: () => { window.location.href = '/checkout' }
+      },
+      cancel: {
+        label: 'View cart',
+        onClick: () => { window.location.href = '/cart' }
       }
     })
   }
 
   const removeFromCart = (id: number) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== id))
+    setCart(prevCart => {
+      const next = prevCart.filter(item => item.id !== id)
+      if (user) queueMicrotask(() => saveUserCart(next))
+      return next
+    })
   }
 
   const updateQuantity = (id: number, quantity: number) => {
@@ -157,16 +175,18 @@ export function CartProvider({ children }: CartProviderProps) {
       removeFromCart(id)
       return
     }
-    
-    setCart(prevCart =>
-      prevCart.map(item =>
+    setCart(prevCart => {
+      const next = prevCart.map(item =>
         item.id === id ? { ...item, quantity } : item
       )
-    )
+      if (user) queueMicrotask(() => saveUserCart(next))
+      return next
+    })
   }
 
   const clearCart = () => {
     setCart([])
+    if (user) queueMicrotask(() => saveUserCart([]))
   }
 
   const isInCart = (id: number) => {

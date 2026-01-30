@@ -8,7 +8,9 @@ import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings } from "
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { cn } from "@/lib/utils";
+import { CurrencyCode } from "@/lib/currency";
 import { useSession, signOut } from "next-auth/react";
 import {
   Sheet,
@@ -46,11 +48,18 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+const CURRENCY_OPTIONS: { code: CurrencyCode; label: string }[] = [
+  { code: "KSH", label: "KES" },
+  { code: "USD", label: "USD" },
+  { code: "EUR", label: "EUR" },
+];
+
 export const Navbar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { data: session } = useSession();
   const { getCartItemCount } = useCart();
+  const { currency, setCurrency } = useCurrency();
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -200,6 +209,28 @@ export const Navbar = () => {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs font-medium text-brand-umber/80 hover:text-brand-umber"
+                >
+                  {currency}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[100px]">
+                {CURRENCY_OPTIONS.map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.code}
+                    onClick={() => setCurrency(opt.code)}
+                    className={cn(currency === opt.code && "bg-brand-teal/10 font-medium")}
+                  >
+                    {opt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <div className="lg:hidden">
               <Button
                 variant="ghost"

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { featuredProducts } from "@/data/content";
 import { Product360Viewer } from "@/components/Product360Viewer";
 
@@ -17,6 +18,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
 
   const slug = params?.slug as string;
 
@@ -138,12 +140,12 @@ export default function ProductDetailPage() {
                     Investment
                   </p>
                   <p className="text-3xl font-heading text-brand-coral">
-                    KES {product.price.toLocaleString()}
+                    {formatPrice(product.price)}
                   </p>
                 </div>
                 {product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
-                    KES {product.originalPrice.toLocaleString()}
+                    {formatPrice(product.originalPrice)}
                   </span>
                 )}
                 <div className="flex items-center gap-2 rounded-full bg-brand-jade/30 px-3 py-1 text-sm text-brand-umber/70">
@@ -215,6 +217,7 @@ function ProductSummary({
   product: (typeof featuredProducts)[number];
 }) {
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -284,11 +287,11 @@ function ProductSummary({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-lg font-semibold text-brand-coral">
-                KES {product.price.toLocaleString()}
+                {formatPrice(product.price)}
               </p>
               {product.originalPrice && (
                 <p className="text-sm text-brand-umber/40 line-through">
-                  KES {product.originalPrice.toLocaleString()}
+                  {formatPrice(product.originalPrice)}
                 </p>
               )}
             </div>

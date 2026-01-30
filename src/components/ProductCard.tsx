@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export interface ProductCardData {
   id: number;
@@ -62,6 +63,7 @@ const ProductCardComponent = ({
   onQuickView,
 }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -372,11 +374,11 @@ const ProductCardComponent = ({
             {/* Price */}
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-brand-coral">
-                KES {product.price.toLocaleString()}
+                {formatPrice(product.price)}
               </span>
               {product.originalPrice && (
                 <span className="text-sm text-brand-umber/40 line-through">
-                  KES {product.originalPrice.toLocaleString()}
+                  {formatPrice(product.originalPrice)}
                 </span>
               )}
             </div>

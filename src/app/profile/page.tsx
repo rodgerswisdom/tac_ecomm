@@ -3,15 +3,91 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { User, Mail, Calendar, Shield, ArrowLeft, Settings } from 'lucide-react'
+import { User, Mail, Calendar, Shield, ArrowLeft, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Input } from '@/components/ui/input'
+import { CustomDropdown } from '@/components/ui/custom-dropdown'
+import { countries } from '@/data/countries'
+
+type ShippingFormData = {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  zipCode: string
+  country: string
+}
+
+const emptyShipping: ShippingFormData = {
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  state: '',
+  zipCode: '',
+  country: 'US'
+}
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const [shipping, setShipping] = useState<ShippingFormData | null>(null)
+  const [shippingLoading, setShippingLoading] = useState(true)
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [addressForm, setAddressForm] = useState<ShippingFormData>(emptyShipping)
+  const [savingAddress, setSavingAddress] = useState(false)
+  const [addressError, setAddressError] = useState('')
+
+  useEffect(() => {
+    if (!session?.user) return
+    setShippingLoading(true)
+    fetch('/api/user/shipping')
+      .then(res => res.json())
+      .then(data => {
+        if (data.shipping) {
+          setShipping(data.shipping)
+          setAddressForm(data.shipping)
+        } else {
+          setAddressForm({ ...emptyShipping, email: session.user?.email ?? '' })
+        }
+      })
+      .finally(() => setShippingLoading(false))
+  }, [session?.user])
+
+  async function handleSaveAddress(e: React.FormEvent) {
+    e.preventDefault()
+    setAddressError('')
+    if (!addressForm.firstName || !addressForm.lastName || !addressForm.address || !addressForm.city || !addressForm.state || !addressForm.zipCode || !addressForm.country) {
+      setAddressError('Please fill in all required fields.')
+      return
+    }
+    setSavingAddress(true)
+    try {
+      const res = await fetch('/api/user/shipping', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addressForm)
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAddressError(data.error || 'Failed to save address.')
+        return
+      }
+      setShipping({ ...addressForm })
+      setEditingAddress(false)
+    } finally {
+      setSavingAddress(false)
+    }
+  }
 
   if (status === 'loading') {
     return (
@@ -151,6 +227,78 @@ export default function ProfilePage() {
                   <p className="font-medium">{getRoleLabel(session.user.role || 'CUSTOMER')}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Default Shipping Address */}
+          <Card className="afro-card bg-background/80 backdrop-blur-sm border-border/50 shadow-xl mb-6">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Default Shipping Address
+                  </CardTitle>
+                  <CardDescription>
+                    Used to autofill checkout. You can edit it here or during checkout.
+                  </CardDescription>
+                </div>
+                {!editingAddress && shipping && (
+                  <Button variant="outline" size="sm" onClick={() => setEditingAddress(true)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {shippingLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading address…
+                </div>
+              ) : editingAddress || !shipping ? (
+                <form onSubmit={handleSaveAddress} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input name="firstName" placeholder="First Name" value={addressForm.firstName} onChange={e => setAddressForm(f => ({ ...f, firstName: e.target.value }))} required />
+                  <Input name="lastName" placeholder="Last Name" value={addressForm.lastName} onChange={e => setAddressForm(f => ({ ...f, lastName: e.target.value }))} required />
+                  <Input name="email" type="email" placeholder="Email" value={addressForm.email} onChange={e => setAddressForm(f => ({ ...f, email: e.target.value }))} required className="md:col-span-2" />
+                  <Input name="phone" placeholder="Phone" value={addressForm.phone} onChange={e => setAddressForm(f => ({ ...f, phone: e.target.value }))} className="md:col-span-2" />
+                  <Input name="address" placeholder="Address" value={addressForm.address} onChange={e => setAddressForm(f => ({ ...f, address: e.target.value }))} required className="md:col-span-2" />
+                  <Input name="city" placeholder="City" value={addressForm.city} onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))} required />
+                  <Input name="state" placeholder="State" value={addressForm.state} onChange={e => setAddressForm(f => ({ ...f, state: e.target.value }))} required />
+                  <Input name="zipCode" placeholder="ZIP / Postal Code" value={addressForm.zipCode} onChange={e => setAddressForm(f => ({ ...f, zipCode: e.target.value }))} required />
+                  <div className="md:col-span-2">
+                    <CustomDropdown
+                      options={countries.map(c => ({ value: c.code, label: c.name }))}
+                      value={addressForm.country}
+                      onChange={country => setAddressForm(f => ({ ...f, country }))}
+                      placeholder="Select Country"
+                      searchable
+                      className="w-full"
+                    />
+                  </div>
+                  {addressError && <p className="text-red-500 text-sm col-span-2">{addressError}</p>}
+                  <div className="col-span-2 flex gap-2">
+                    <Button type="submit" disabled={savingAddress}>
+                      {savingAddress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                      Save address
+                    </Button>
+                    {shipping && (
+                      <Button type="button" variant="outline" onClick={() => { setEditingAddress(false); setAddressForm(shipping); setAddressError(''); }}>
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              ) : (
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">{shipping.firstName} {shipping.lastName}</p>
+                  <p>{shipping.address}</p>
+                  <p>{shipping.city}, {shipping.state} {shipping.zipCode}, {shipping.country}</p>
+                  {shipping.phone && <p>{shipping.phone}</p>}
+                  <p>{shipping.email}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

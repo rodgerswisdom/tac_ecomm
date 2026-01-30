@@ -1,10 +1,12 @@
 import React from "react";
 import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 
 export function CartStep() {
   const { cart, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const { formatPrice } = useCurrency();
 
   if (cart.length === 0) {
     return <div className="text-center py-12 text-muted-foreground">Your cart is empty.</div>;
@@ -30,7 +32,7 @@ export function CartStep() {
                 <Image src={item.image} alt={item.name} width={48} height={48} className="rounded" />
                 <span>{item.name}</span>
               </td>
-              <td className="py-2">${item.price.toFixed(2)}</td>
+              <td className="py-2">{formatPrice(item.price)}</td>
               <td className="py-2">
                 <input
                   type="number"
@@ -40,7 +42,7 @@ export function CartStep() {
                   className="w-16 border rounded px-2 py-1"
                 />
               </td>
-              <td className="py-2">${(item.price * item.quantity).toFixed(2)}</td>
+              <td className="py-2">{formatPrice(item.price * item.quantity)}</td>
               <td className="py-2">
                 <Button size="sm" variant="destructive" onClick={() => removeFromCart(item.id)}>
                   Remove
@@ -51,7 +53,7 @@ export function CartStep() {
         </tbody>
       </table>
       <div className="text-right font-semibold text-lg">
-        Subtotal: ${getCartTotal().toFixed(2)}
+        Subtotal: {formatPrice(getCartTotal())}
       </div>
     </div>
   );

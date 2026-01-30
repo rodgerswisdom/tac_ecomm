@@ -6,11 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { featuredProducts } from "@/data/content";
 import { ProductCardData } from "@/components/ProductCard";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export function SearchBar() {
+  const { formatPrice } = useCurrency();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<ProductCardData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -169,7 +171,7 @@ export function SearchBar() {
                       {product.category}
                     </p>
                     <p className="text-xs font-semibold text-brand-coral mt-0.5">
-                      KES {product.price.toLocaleString()}
+                      {formatPrice(product.price)}
                     </p>
                   </div>
                 </motion.button>

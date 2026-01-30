@@ -1,16 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { countries } from "@/data/countries";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type ShippingStepProps = {
   onNext?: (data: ShippingFormData) => void;
   initialData?: ShippingFormData | null;
   loading?: boolean;
+  /** When true, show "Save this address for next time" and call onSaveAddress on submit when checked */
+  canSaveAddress?: boolean;
+  onSaveAddress?: (data: ShippingFormData) => Promise<void>;
 };
 
-export function ShippingStep({ onNext, initialData, loading }: ShippingStepProps) {
+export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onSaveAddress }: ShippingStepProps) {
   const [form, setForm] = useState<ShippingFormData>({
     firstName: "",
     lastName: "",
@@ -22,29 +26,48 @@ export function ShippingStep({ onNext, initialData, loading }: ShippingStepProps
     zipCode: "",
     country: "US"
   });
-  React.useEffect(() => {
-    if (initialData) setForm(initialData);
+  const [saveForNextTime, setSaveForNextTime] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (initialData) {
+      setForm(initialData);
+      setSaveForNextTime(true);
+    }
   }, [initialData]);
+
   const [error, setError] = useState("");
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // Simple validation
     if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.state || !form.zipCode) {
       setError("Please fill in all required fields.");
       return;
     }
     setError("");
+    if (canSaveAddress && saveForNextTime && onSaveAddress) {
+      setSaving(true);
+      try {
+        await onSaveAddress(form);
+      } catch {
+        setError("Could not save address. You can still continue.");
+      } finally {
+        setSaving(false);
+      }
+    }
     onNext?.(form);
   }
 
   return (
     <div>
       <h2 className="text-lg font-semibold mb-4">Shipping Information</h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        Enter your shipping details. If you have a saved address, it is shown below — you can edit any field.
+      </p>
       <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit} autoComplete="on">
         <Input name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} required disabled={loading} />
         <Input name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} required disabled={loading} />
@@ -65,9 +88,24 @@ export function ShippingStep({ onNext, initialData, loading }: ShippingStepProps
             disabled={loading}
           />
         </div>
+        {canSaveAddress && (
+          <div className="col-span-2 flex items-center gap-2">
+            <Checkbox
+              id="save-address"
+              checked={saveForNextTime}
+              onCheckedChange={checked => setSaveForNextTime(checked === true)}
+              disabled={loading}
+            />
+            <label htmlFor="save-address" className="text-sm text-muted-foreground cursor-pointer">
+              Save this address for next time
+            </label>
+          </div>
+        )}
         {error && <div className="text-red-500 col-span-2">{error}</div>}
         <div className="col-span-2 flex justify-end">
-          <Button type="submit" disabled={loading}>{loading ? "Loading..." : "Continue to Delivery"}</Button>
+          <Button type="submit" disabled={loading || saving}>
+            {loading ? "Loading..." : saving ? "Saving..." : "Continue to Delivery"}
+          </Button>
         </div>
       </form>
     </div>

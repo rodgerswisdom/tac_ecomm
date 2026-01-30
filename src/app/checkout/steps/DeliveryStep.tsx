@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 const deliveryOptions = [
   { id: "standard", label: "Standard Delivery (3-5 days)", price: 0 },
@@ -8,6 +9,7 @@ const deliveryOptions = [
 ];
 
 export function DeliveryStep({ onNext }: { onNext?: (method: DeliveryMethod) => void }) {
+  const { formatPrice } = useCurrency();
   const [selected, setSelected] = useState<DeliveryMethod>(deliveryOptions[0].id as DeliveryMethod);
   const [error, setError] = useState("");
 
@@ -35,7 +37,7 @@ export function DeliveryStep({ onNext }: { onNext?: (method: DeliveryMethod) => 
               onChange={() => setSelected(opt.id as DeliveryMethod)}
             />
             <span>{opt.label}</span>
-            {opt.price > 0 && <span className="ml-auto font-semibold">+${opt.price.toFixed(2)}</span>}
+            {opt.price > 0 && <span className="ml-auto font-semibold">+{formatPrice(opt.price)}</span>}
           </label>
         ))}
         {error && <div className="text-red-500">{error}</div>}

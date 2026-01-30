@@ -32,14 +32,14 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
     // Delete all existing cart items for user
     await prisma.cartItem.deleteMany({ where: { userId: user.id } })
-    // Add new cart items
+    // Add new cart items (Prisma productId is String)
     for (const item of cartItems) {
       await prisma.cartItem.create({
         data: {
           userId: user.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          variantId: item.variantId || null,
+          productId: String(item.productId),
+          quantity: Number(item.quantity) || 1,
+          variantId: item.variantId ? String(item.variantId) : null,
         }
       })
     }

@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ShoppingBag, Eye, ImageOff } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface ShowcaseProduct {
   id: number;
@@ -41,6 +42,7 @@ export interface ShowcaseCardProps {
 
 const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [activeImage, setActiveImage] = useState(0);
   const [coverError, setCoverError] = useState(false);
@@ -152,11 +154,11 @@ const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
 
               <div className="flex flex-wrap items-center gap-4">
                 <span className="text-3xl font-heading text-brand-coral">
-                  KES {product.price.toLocaleString()}
+                  {formatPrice(product.price)}
                 </span>
                 {product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
-                    KES {product.originalPrice.toLocaleString()}
+                    {formatPrice(product.originalPrice)}
                   </span>
                 )}
               </div>
@@ -208,7 +210,7 @@ const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
           </Link>
         </h3>
         <p className="text-sm font-semibold text-brand-coral">
-          KES {product.price.toLocaleString()}
+          {formatPrice(product.price)}
         </p>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
 import { featuredProducts } from "@/data/content";
 import { ProductCardData } from "@/components/ProductCard";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Sparkles, ArrowRight, ShoppingBag } from "lucide-react";
 
 const floatingParticles = [
@@ -53,6 +54,7 @@ interface Slide {
 }
 
 const HeroComponent = () => {
+  const { formatPrice } = useCurrency();
   // Get featured products (first 3)
   const featuredProductSlides: Slide[] = featuredProducts.slice(0, 3).map((product) => ({
     type: "product" as const,
@@ -197,11 +199,11 @@ const HeroComponent = () => {
                       <p className="caps-spacing text-xs text-brand-umber/50">Price</p>
                       <div className="flex items-baseline gap-2">
                         <p className="text-2xl font-heading text-brand-coral">
-                          KES {activeSlide.product.price.toLocaleString()}
+                          {formatPrice(activeSlide.product.price)}
                         </p>
                         {activeSlide.product.originalPrice && (
                           <span className="text-sm text-brand-umber/40 line-through">
-                            KES {activeSlide.product.originalPrice.toLocaleString()}
+                            {formatPrice(activeSlide.product.originalPrice)}
                           </span>
                         )}
                       </div>

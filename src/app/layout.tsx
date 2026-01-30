@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Kumbh_Sans } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
+import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
 import { FraudDetectionProvider } from "@/components/FraudDetectionProvider";
+import { Toaster } from "sonner";
 import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
 const cormorantGaramond = Cormorant_Garamond({
@@ -70,10 +72,13 @@ export default function RootLayout({
       >
         <SessionProviderWrapper>
           <CartProvider>
+            <CurrencyProvider>
             <FraudDetectionProvider>
               {children}
+              <Toaster position="bottom-center" richColors />
               <WhatsAppWidget />
             </FraudDetectionProvider>
+            </CurrencyProvider>
           </CartProvider>
         </SessionProviderWrapper>
       </body>

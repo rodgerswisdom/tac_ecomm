@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { patternAssets } from "@/lib/patterns";
 import { featuredProducts } from "@/data/content";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
@@ -20,6 +21,7 @@ export default function CartPage() {
     clearCart,
     getCartTotal,
   } = useCart();
+  const { formatPrice } = useCurrency();
 
   const subtotal = getCartTotal();
   const shipping = subtotal >= 50000 ? 0 : 2500;
@@ -28,14 +30,7 @@ export default function CartPage() {
 
   const hasItems = cart.length > 0;
 
-  const cartItems = useMemo(
-    () =>
-      cart.map((item) => ({
-        ...item,
-        displayPrice: item.price.toLocaleString(),
-      })),
-    [cart],
-  );
+  const cartItems = useMemo(() => cart.map((item) => ({ ...item })), [cart]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
@@ -127,7 +122,7 @@ export default function CartPage() {
                         <div>
                           <p className="font-heading text-lg text-brand-umber">{item.name}</p>
                           <span className="text-sm text-brand-coral">
-                            KES {item.displayPrice}
+                            {formatPrice(item.price)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -162,12 +157,12 @@ export default function CartPage() {
                 </div>
 
                 <div className="mt-10 space-y-4 text-sm text-brand-umber/70">
-                  <Row label="Subtotal" value={`KES ${subtotal.toLocaleString()}`} />
+                  <Row label="Subtotal" value={formatPrice(subtotal)} />
                   <Row
                     label="Global shipping"
-                    value={shipping === 0 ? "Complimentary" : `KES ${shipping.toLocaleString()}`}
+                    value={shipping === 0 ? "Complimentary" : formatPrice(shipping)}
                   />
-                  <Row label="Duties & care" value={`KES ${duty.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} />
+                  <Row label="Duties & care" value={formatPrice(duty)} />
                 </div>
 
                 <div className="mt-6 flex items-center justify-between rounded-2xl border border-brand-gold/40 bg-white/95 px-5 py-4">
@@ -175,7 +170,7 @@ export default function CartPage() {
                     Total
                   </span>
                   <span className="text-3xl font-heading text-brand-coral">
-                    KES {total.toLocaleString()}
+                    {formatPrice(total)}
                   </span>
                 </div>
 
@@ -225,7 +220,7 @@ export default function CartPage() {
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-brand-umber">
-                        ${product.price.toLocaleString()}
+                        {formatPrice(product.price)}
                       </span>
                       <Button size="sm" variant="outline">
                         Add to Cart

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProductCardData } from "@/components/ProductCard";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface QuickViewModalProps {
   product: ProductCardData | null;
@@ -23,6 +24,7 @@ interface QuickViewModalProps {
 
 export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps) {
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   if (!product) return null;
@@ -162,11 +164,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             {/* Price */}
             <div className="flex items-center gap-4">
               <span className="text-3xl font-heading font-bold text-brand-coral">
-                KES {product.price.toLocaleString()}
+                {formatPrice(product.price)}
               </span>
               {product.originalPrice && (
                 <span className="text-sm text-brand-umber/40 line-through">
-                  KES {product.originalPrice.toLocaleString()}
+                  {formatPrice(product.originalPrice)}
                 </span>
               )}
             </div>

@@ -1,9 +1,11 @@
 import React from "react";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 
 export function ReviewStep({ shipping, delivery, payment, onPlaceOrder }: ReviewStepProps) {
   const { cart, getCartTotal } = useCart();
+  const { formatPrice } = useCurrency();
 
   return (
     <div>
@@ -28,13 +30,13 @@ export function ReviewStep({ shipping, delivery, payment, onPlaceOrder }: Review
         <ul className="text-sm">
           {cart.map(item => (
             <li key={item.id}>
-              {item.name} x{item.quantity} - ${(item.price * item.quantity).toFixed(2)}
+              {item.name} x{item.quantity} - {formatPrice(item.price * item.quantity)}
             </li>
           ))}
         </ul>
       </div>
       <div className="text-right font-semibold text-lg mb-6">
-        Total: ${getCartTotal().toFixed(2)}
+        Total: {formatPrice(getCartTotal())}
       </div>
       <div className="flex justify-end">
         <Button type="button" onClick={onPlaceOrder}>Place Order</Button>

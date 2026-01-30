@@ -1,6 +1,14 @@
+"use client";
+
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { Lock } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { CheckoutStepper } from "./CheckoutStepper";
-import { CartStep } from "./steps/CartStep";
 import { ShippingStep, ShippingFormData } from "./steps/ShippingStep";
 import { DeliveryStep, DeliveryMethod } from "./steps/DeliveryStep";
 import { PaymentStep, PaymentFormData } from "./steps/PaymentStep";
@@ -8,35 +16,43 @@ import { ReviewStep } from "./steps/ReviewStep";
 import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
 
+const TOTAL_STEPS = 3;
+
 export default function ShopifyCheckout() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [currentStep, setCurrentStep] = useState(1);
   const [shipping, setShipping] = useState<ShippingFormData | null>(null);
-  // Track if shipping is loading (for autopopulate)
   const [shippingLoading, setShippingLoading] = useState(false);
-    // On mount, try to fetch saved shipping for logged-in user
-    useEffect(() => {
-      if (!shipping) {
-        setShippingLoading(true);
-        fetch("/api/user/shipping")
-          .then(res => res.json())
-          .then(data => {
-            if (data.shipping) setShipping(data.shipping);
-          })
-          .finally(() => setShippingLoading(false));
-      }
-      // Only run on mount
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  useEffect(() => {
+    setShippingLoading(true);
+    fetch("/api/user/shipping")
+      .then(res => res.json())
+      .then(data => {
+        if (data.shipping) setShipping(data.shipping);
+      })
+      .finally(() => setShippingLoading(false));
+  }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
   const [payment, setPayment] = useState<PaymentFormData | null>(null);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (cart.length === 0 && !orderPlaced) {
+      router.replace("/cart");
+    }
+  }, [cart.length, orderPlaced, router]);
+
   function handleNextStep() {
-    setCurrentStep((s) => Math.min(5, s + 1));
+    setCurrentStep((s) => Math.min(TOTAL_STEPS, s + 1));
   }
   function handlePrevStep() {
+    if (currentStep === 1) {
+      router.push("/cart");
+      return;
+    }
     setCurrentStep((s) => Math.max(1, s - 1));
   }
 
@@ -51,7 +67,6 @@ export default function ShopifyCheckout() {
           paymentMethod: payment?.method,
           shippingMethod: delivery,
           cartItems: cart,
-          // Optionally add coupon, tax, shipping, total if available
         })
       });
       const data = await res.json();
@@ -67,82 +82,107 @@ export default function ShopifyCheckout() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 max-w-5xl mx-auto py-8">
-      <div className="flex-1">
-        <CheckoutStepper currentStep={currentStep} />
-        <div className="bg-white p-6 rounded-lg shadow-md min-h-[400px]">
-          {orderPlaced ? (
-            <div className="text-center py-16">
-              <h2 className="text-2xl font-bold mb-4">Thank you for your order!</h2>
-              <p className="text-muted-foreground">Your order has been placed and you will receive a confirmation email soon.</p>
+    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+      <Navbar />
+      <section className="section-spacing pb-0">
+        <div className="gallery-container flex flex-col gap-10">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-3">
+              <span className="caps-spacing text-xs text-brand-teal">Secure Checkout</span>
+              <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">
+                Checkout
+              </h1>
+              <p className="max-w-2xl text-sm text-brand-umber/70">
+                Complete your order with shipping, delivery, and payment. Your information is protected.
+              </p>
             </div>
-          ) : (
-            <>
-              {currentStep === 1 && <CartStep />}
-              {currentStep === 2 && (
-                <ShippingStep
-                  onNext={data => {
-                    setShipping(data);
-                    handleNextStep();
-                  }}
-                  initialData={shipping}
-                  loading={shippingLoading}
-                />
-              )}
-              {currentStep === 3 && (
-                <DeliveryStep
-                  onNext={method => {
-                    setDelivery(method);
-                    handleNextStep();
-                  }}
-                />
-              )}
-              {currentStep === 4 && (
-                <PaymentStep
-                  onNext={data => {
-                    setPayment(data);
-                    handleNextStep();
-                  }}
-                />
-              )}
-              {currentStep === 5 && shipping && delivery && payment && (
+            <div className="flex items-center gap-2 rounded-full border border-brand-teal/30 bg-white/85 px-4 py-2 text-xs text-brand-umber/70">
+              <Lock className="h-4 w-4 text-brand-teal" aria-hidden />
+              <span>Secure checkout</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="flex-1">
+              <CheckoutStepper currentStep={currentStep} />
+              <div className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-8 md:p-10 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm min-h-[400px]">
+                {orderPlaced ? (
+                  <div className="text-center py-16">
+                    <h2 className="font-heading text-3xl text-brand-umber mb-4">Thank you for your order</h2>
+                    <p className="text-brand-umber/70">
+                      Your order has been placed and you will receive a confirmation email soon.
+                    </p>
+                    <Button className="mt-8" asChild>
+                      <Link href="/collections">Continue shopping</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+              {currentStep === 1 && (
                 <div className="space-y-8">
                   <ShippingStep
                     onNext={data => setShipping(data)}
                     initialData={shipping}
+                    loading={shippingLoading}
+                    canSaveAddress={!!session?.user}
+                    onSaveAddress={async (data) => {
+                      const res = await fetch("/api/user/shipping", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(data),
+                      });
+                      if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || "Failed to save address");
+                      }
+                    }}
                   />
-                  <ReviewStep
-                    shipping={shipping}
-                    delivery={delivery}
-                    payment={payment}
-                    onPlaceOrder={handlePlaceOrder}
-                  />
-                </div>
-              )}
-              {error && <div className="text-red-500 mt-4">{error}</div>}
-              <div className="flex justify-between mt-8">
-                <button
-                  className="btn btn-secondary"
-                  onClick={handlePrevStep}
-                  disabled={currentStep === 1 || orderPlaced}
-                >
-                  Back
-                </button>
-                {currentStep < 5 && (
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleNextStep}
-                    disabled={orderPlaced}
-                  >
-                    Next
-                  </button>
+                        {shipping && (
+                          <DeliveryStep
+                            onNext={method => {
+                              setDelivery(method);
+                              handleNextStep();
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+                    {currentStep === 2 && (
+                      <PaymentStep
+                        onNext={data => {
+                          setPayment(data);
+                          handleNextStep();
+                        }}
+                      />
+                    )}
+                    {currentStep === 3 && shipping && delivery && payment && (
+                      <ReviewStep
+                        shipping={shipping}
+                        delivery={delivery}
+                        payment={payment}
+                        onPlaceOrder={handlePlaceOrder}
+                      />
+                    )}
+                    {error && <div className="text-red-500 mt-4">{error}</div>}
+                    <div className="flex justify-between mt-8">
+                      <Button
+                        variant="outline"
+                        onClick={handlePrevStep}
+                        disabled={orderPlaced}
+                        className="border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5"
+                      >
+                        Back
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
-            </>
-          )}
+            </div>
+            <OrderSummarySidebar />
+          </div>
         </div>
-      </div>
-      <OrderSummarySidebar />
-    </div>
+      </section>
+      <Footer />
+    </main>
   );
 }
