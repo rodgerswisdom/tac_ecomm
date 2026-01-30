@@ -51,40 +51,13 @@ export class PayPalPayment {
 
   async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
     try {
-      // In a real implementation, you would call PayPal's API here
-      // This is a mock implementation
       const paypalUrl = this.config.mode === 'sandbox' 
         ? 'https://api.sandbox.paypal.com' 
         : 'https://api.paypal.com'
 
-      // Mock PayPal payment creation
-      const paymentData = {
-        intent: 'sale',
-        payer: {
-          payment_method: 'paypal'
-        },
-        transactions: [{
-          amount: {
-            total: request.amount.toFixed(2),
-            currency: request.currency
-          },
-          description: request.description,
-          custom: request.orderId
-        }],
-        redirect_urls: {
-          return_url: request.returnUrl,
-          cancel_url: request.cancelUrl
-        }
-      }
-
-      // Simulate API call
-      const response = await this.simulateApiCall(paypalUrl + '/v1/payments/payment', paymentData)
-      
-      return {
-        success: true,
-        paymentId: response.id,
-        redirectUrl: response.links.find((link: any) => link.rel === 'approval_url')?.href
-      }
+      // TODO: Replace with real PayPal API integration
+      // Example: Use fetch or axios to call PayPal REST API
+      throw new Error('PayPal integration not implemented. Please integrate with PayPal REST API.');
     } catch (error) {
       return {
         success: false,
@@ -95,18 +68,8 @@ export class PayPalPayment {
 
   async verifyPayment(paymentId: string, payerId: string): Promise<PaymentVerification> {
     try {
-      // Mock verification
-      const verification = await this.simulateApiCall(`/v1/payments/payment/${paymentId}/execute`, {
-        payer_id: payerId
-      })
-
-      return {
-        success: true,
-        status: 'completed',
-        transactionId: verification.transactions[0].related_resources[0].sale.id,
-        amount: parseFloat(verification.transactions[0].amount.total),
-        currency: verification.transactions[0].amount.currency
-      }
+      // TODO: Replace with real PayPal payment verification
+      throw new Error('PayPal payment verification not implemented. Please integrate with PayPal REST API.');
     } catch (error) {
       return {
         success: false,
@@ -228,31 +191,13 @@ export class PesapalPayment {
   }
 
   private async getAccessToken(): Promise<string> {
-    // Mock token generation
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return 'TOKEN-' + Math.random().toString(36).substr(2, 9)
+    // TODO: Implement Pesapal OAuth token retrieval
+    throw new Error('Pesapal OAuth token retrieval not implemented.');
   }
 
   private async simulateApiCall(url: string, data: any, token?: string): Promise<any> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Mock response
-    if (url.includes('PostPesapalDirectOrderV4')) {
-      return {
-        order_tracking_id: 'ORDER-' + Math.random().toString(36).substr(2, 9),
-        redirect_url: 'https://www.pesapal.com/redirect?token=' + Math.random().toString(36).substr(2, 9)
-      }
-    } else if (url.includes('QueryPaymentStatus')) {
-      return {
-        payment_status: 'COMPLETED',
-        payment_method: 'M-PESA',
-        amount: data.amount || 299,
-        currency: data.currency || 'USD'
-      }
-    }
-    
-    return {}
+    // Remove mock, not used in production
+    throw new Error('Pesapal API simulation not implemented. Please integrate with Pesapal API.');
   }
 }
 

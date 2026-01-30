@@ -10,6 +10,7 @@ interface AdminPageHeaderProps {
   actions?: ReactNode
   toolbar?: ReactNode
   className?: string
+  actionsAlignment?: "start" | "center" | "end"
 }
 
 export function AdminPageHeader({
@@ -19,7 +20,11 @@ export function AdminPageHeader({
   actions,
   toolbar,
   className,
+  actionsAlignment = "center",
 }: AdminPageHeaderProps) {
+  const actionsAlignmentClass =
+    actionsAlignment === "end" ? "items-end" : actionsAlignment === "start" ? "items-start" : "items-center"
+
   return (
     <div className={cn("space-y-4 border-b border-border/70 pb-5", className)}>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -73,7 +78,7 @@ export function AdminPageHeader({
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
           {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         </div>
-        {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
+        {actions ? <div className={cn("flex flex-wrap gap-2", actionsAlignmentClass)}>{actions}</div> : null}
       </div>
       {toolbar ? <div className="flex flex-wrap items-center gap-3">{toolbar}</div> : null}
     </div>

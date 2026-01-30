@@ -4,7 +4,7 @@ import { Mail, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { cn, formatPrice } from "@/lib/utils"
+import { formatPrice } from "@/lib/utils"
 import { deleteOrderAction, getOrders } from "@/server/admin/orders"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
@@ -58,25 +58,6 @@ function formatOrderDate(date: Date | string) {
   return orderDateFormatter.format(new Date(date))
 }
 
-function getPageNumbers(current: number, total: number, maxCount = 3) {
-  const clampedTotal = Math.max(total, 1)
-  const half = Math.floor(maxCount / 2)
-  let start = Math.max(current - half, 1)
-  let end = start + maxCount - 1
-
-  if (end > clampedTotal) {
-    end = clampedTotal
-    start = Math.max(end - maxCount + 1, 1)
-  }
-
-  const pages: number[] = []
-  for (let page = start; page <= end; page++) {
-    pages.push(page)
-  }
-
-  return pages
-}
-
 type OrdersListItem = Awaited<ReturnType<typeof getOrders>>["orders"][number] & {
   user?: {
     name?: string | null
@@ -110,7 +91,6 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     return `/admin/orders?${q.toString()}`
   }
 
-  const pageNumbers = getPageNumbers(page, orders.pageCount || 1, 3)
   const hasActiveFilters = Boolean(status || search)
 
   return (
@@ -159,23 +139,24 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Orders ({orders.total})</CardTitle>
+          <CardTitle className="text-base">Orders ({orders.total})</CardTitle>
           <p className="text-sm text-muted-foreground">Track fulfillment, payments, and client context at a glance.</p>
         </CardHeader>
+
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-left text-muted-foreground">
+            <thead className="bg-muted/40">
               <tr>
-                <th className="pb-2 font-medium">Order #</th>
-                <th className="pb-2 font-medium">Date</th>
-                <th className="pb-2 font-medium">Client</th>
-                <th className="pb-2 font-medium">Total price</th>
-                <th className="pb-2 font-medium">Status</th>
-                <th className="pb-2 font-medium">Payment Status</th>
-                <th className="pb-2 font-medium text-right">Actions</th>
+                <th className="px-4 py-3 text-left text-xs">Order #</th>
+                <th className="px-4 py-3 text-left text-xs">Date</th>
+                <th className="px-4 py-3 text-left text-xs">Client</th>
+                <th className="px-4 py-3 text-left text-xs">Total price</th>
+                <th className="px-4 py-3 text-left text-xs">Status</th>
+                <th className="px-4 py-3 text-left text-xs">Payment Status</th>
+                <th className="px-4 py-3 text-left text-xs">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/70">
+            <tbody>
               {ordersWithRelations.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
@@ -186,30 +167,30 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 ordersWithRelations.map((order) => {
                   const detailHref = `/admin/orders/${order.id}`
                   return (
-                    <tr key={order.id} className="align-middle">
-                      <td className="py-4 font-semibold tracking-tight">{order.orderNumber}</td>
-                      <td className="py-4 text-sm text-muted-foreground">{formatOrderDate(order.createdAt)}</td>
-                      <td className="py-4">
+                    <tr key={order.id} className="border-b last:border-b-0">
+                      <td className="px-4 py-4 ">{order.orderNumber}</td>
+                      <td className="px-4 py-4 ">{formatOrderDate(order.createdAt)}</td>
+                      <td className="px-4 py-4">
                         <div className="font-medium">{order.user?.name ?? "Customer"}</div>
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="py-4 font-semibold">{formatPrice(order.total, order.currency ?? "USD")}</td>
-                      <td className="py-4">
+                      <td className="px-4 py-4 ">{formatPrice(order.total, order.currency ?? "USD")}</td>
+                      <td className="px-4 py-4">
                         <StatusBadge
                           label={order.status.replace(/_/g, " ")}
                           variant={orderStatusVariantMap[order.status] ?? "info"}
                         />
                       </td>
-                      <td className="py-4">
+                      <td className="px-4 py-4">
                         <StatusBadge
                           label={order.paymentStatus.replace(/_/g, " ")}
                           variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
                         />
                       </td>
-                      <td className="py-4">
+                      <td className="px-4 py-4">
                         <RowActions
                           containerClassName="justify-end gap-2"
                           buttonClassName="border border-border"
@@ -241,7 +222,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
               name="pageSize"
               defaultValue={String(pageSize)}
               options={rowsPerPageOptions.map((value) => ({ label: String(value), value: String(value) }))}
-              selectClassName="w-20 rounded-md border border-border bg-transparent px-2 py-1 text-sm"
+              selectClassName="rounded-md border border-border bg-transparent px-2 py-1"
               hiddenFields={{
                 status: status ?? undefined,
                 q: search ?? undefined,
@@ -250,23 +231,12 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="ghost" className="h-9 px-3 border border-border" disabled={page <= 1}>
+            <Button asChild size="sm" variant="ghost" disabled={page <= 1}>
               <Link href={buildPageHref(Math.max(page - 1, 1))}>Prev</Link>
             </Button>
-            {pageNumbers.map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                asChild
-                size="sm"
-                variant="ghost"
-                className={cn(
-                  "h-9 w-9 border",
-                  pageNumber === page ? "border-white bg-white text-background" : "border-border text-muted-foreground",
-                )}
-              >
-                <Link href={buildPageHref(pageNumber)}>{pageNumber}</Link>
-              </Button>
-            ))}
+            <span>
+              {page}
+            </span>
             <Button
               asChild
               size="sm"

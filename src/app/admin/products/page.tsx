@@ -24,325 +24,244 @@ const SORT_OPTIONS = [
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50] as const
 type SortOption = (typeof SORT_OPTIONS)[number]["value"]
-type ProductImagePreview = {
-  url: string
-  alt?: string | null
-  order?: number | null
-}
+
 type ProductListItem = Awaited<ReturnType<typeof getProductList>>["items"][number] & {
-  images?: ProductImagePreview[]
-  category?: {
-    name?: string | null
-  } | null
-  shortDescription?: string | null
+  images?: { url: string; alt?: string | null; order?: number | null }[]
+  category?: { name?: string | null } | null
   currency?: string | null
 }
 
-const MAX_PAGE_BUTTONS = 5
+// const MAX_PAGE_BUTTONS = 5
 
-function parseSearchParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) return value[0]
-  return value
+function parseParam(v?: string | string[]) {
+  return Array.isArray(v) ? v[0] : v
 }
 
 function clampPageSize(value?: string | null) {
-  const parsed = Number(value)
-  if (!parsed || Number.isNaN(parsed)) return 10
-  return Math.min(Math.max(parsed, 5), 50)
+  const n = Number(value)
+  if (!n || Number.isNaN(n)) return 10
+  return Math.min(Math.max(n, 5), 50)
 }
 
-function isValidSort(value: string | undefined): value is SortOption {
-  return SORT_OPTIONS.some((option) => option.value === value)
+function isValidSort(v?: string): v is SortOption {
+  return SORT_OPTIONS.some((o) => o.value === v)
 }
 
 function buildQueryString(base: URLSearchParams, overrides: Record<string, string | number | undefined>) {
   const params = new URLSearchParams(base)
-  Object.entries(overrides).forEach(([key, value]) => {
-    if (value === undefined || value === null) {
-      params.delete(key)
-    } else {
-      params.set(key, String(value))
-    }
+  Object.entries(overrides).forEach(([k, v]) => {
+    if (v == null) params.delete(k)
+    else params.set(k, String(v))
   })
   return params.toString()
 }
 
-function truncateText(value: string | null | undefined, maxLength = 80) {
-  if (!value) return ""
-  if (value.length <= maxLength) return value
-  return `${value.slice(0, maxLength - 1)}…`
+function getPrimaryImage(p: ProductListItem) {
+  if (!p.images?.length) return undefined
+  return [...p.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
 }
 
-function getPrimaryImage(product: ProductListItem) {
-  if (!product.images || product.images.length === 0) return undefined
-  let primary = product.images[0]
-  let primaryOrder = primary?.order ?? 0
-  for (let i = 1; i < product.images.length; i += 1) {
-    const candidate = product.images[i]
-    if (!candidate) continue
-    const candidateOrder = candidate.order ?? primaryOrder
-    if (candidateOrder < primaryOrder) {
-      primary = candidate
-      primaryOrder = candidateOrder
-    }
-  }
-  return primary
+function getDiscountPercent(p: ProductListItem) {
+  if (!p.comparePrice || p.comparePrice <= p.price) return null
+  return Math.round(((p.comparePrice - p.price) / p.comparePrice) * 100)
 }
 
-function getDiscountPercent(product: ProductListItem) {
-  const { comparePrice, price } = product
-  if (!comparePrice || comparePrice <= price) return null
-  const percent = ((comparePrice - price) / comparePrice) * 100
-  return Math.round(percent * 10) / 10
-}
-
-function getProductSummary(product: ProductListItem) {
-  return truncateText(product.shortDescription ?? product.description ?? "", 80)
-}
-
-function getStatus(product: ProductListItem) {
-  const inStock = product.stock > 0 && product.isActive
+function getStatus(p: ProductListItem) {
+  const inStock = p.stock > 0 && p.isActive
   return {
     label: inStock ? "In stock" : "Out of stock",
-    dotClass: inStock ? "bg-emerald-500" : "bg-rose-500",
-    textClass: inStock ? "text-emerald-600" : "text-rose-600",
+    dot: inStock ? "bg-emerald-500" : "bg-rose-500",
+    text: inStock ? "text-emerald-600" : "text-rose-600",
   }
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = (await searchParams) ?? {}
-  const page = Math.max(Number(parseSearchParam(params.page) ?? "1") || 1, 1)
-  const search = parseSearchParam(params.q) ?? ""
-  const categoryId = parseSearchParam(params.categoryId)
-  const sortParam = parseSearchParam(params.sort)
-  const sort: SortOption = isValidSort(sortParam) ? sortParam : "recent"
-  const pageSize = clampPageSize(parseSearchParam(params.pageSize))
 
-  const products = await getProductList({
-    page,
-    search,
-    categoryId: categoryId ?? undefined,
-    pageSize,
-    sort,
-  })
-  const productItems = products.items as ProductListItem[]
+  const page = Math.max(Number(parseParam(params.page) ?? 1), 1)
+  const search = parseParam(params.q) ?? ""
+  const sortParam = parseParam(params.sort)
+  const sort: SortOption = isValidSort(sortParam) ? sortParam : "recent"
+  const pageSize = clampPageSize(parseParam(params.pageSize))
+
+  const products = await getProductList({ page, search, sort, pageSize })
+  const items = products.items as ProductListItem[]
 
   const baseParams = new URLSearchParams()
   if (search) baseParams.set("q", search)
-  if (categoryId) baseParams.set("categoryId", categoryId)
   baseParams.set("sort", sort)
   baseParams.set("pageSize", String(pageSize))
 
   const totalPages = Math.max(products.pageCount, 1)
-  const halfWindow = Math.floor(MAX_PAGE_BUTTONS / 2)
-  let startPage = Math.max(1, products.page - halfWindow)
-  const endPage = Math.min(totalPages, startPage + MAX_PAGE_BUTTONS - 1)
-  if (endPage - startPage + 1 < MAX_PAGE_BUTTONS) {
-    startPage = Math.max(1, endPage - MAX_PAGE_BUTTONS + 1)
-  }
-  const pageNumbers = []
-  for (let i = startPage; i <= endPage; i += 1) {
-    pageNumbers.push(i)
-  }
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
         title="All products"
-        breadcrumb={[
-          { label: "All products", href: "/admin/products" },
-        ]}
-        // description="Review inventory, availability, and pricing at a glance."
+        breadcrumb={[{ label: "products", href: "/admin/products" }]}
         actions={
           <>
-            <Button type="button" variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2">
               <Download className="h-4 w-4" /> Export
             </Button>
             <Button asChild size="sm" className="gap-2">
               <Link href="/admin/products/new">
-                <Plus className="h-4 w-4" /> Add a product
+                <Plus className="h-4 w-4" /> Add product
               </Link>
             </Button>
           </>
         }
         toolbar={
-          <div className="flex w-full flex-wrap items-center justify-between gap-4">
-            
-            <form action="/admin/products" className="relative flex-1 min-w-[200px] max-w-sm">
-              <label htmlFor="product-search" className="sr-only">
-                Search products by name or SKU
-              </label>
-              <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#b98b5e]" />
+          <div className="flex w-full items-center justify-between gap-4">
+            {/* Search */}
+            <form action="/admin/products" className="relative w-full max-w-sm">
+              <Search className="absolute left-4 top-1/2 h-3 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                id="product-search"
                 name="q"
                 defaultValue={search}
-                placeholder="Search e.g. PRD-2024-001 or Heritage Cuff"
-                className="h-10 rounded-full border border-transparent bg-white/95 pl-12 pr-6 text-base text-[#4a2b28] shadow-[0_14px_36px_rgba(74,43,40,0.18)] focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#4b9286]/35"
+                placeholder="Search by name or SKU"
+                className="pl-10"
               />
               <input type="hidden" name="sort" value={sort} />
               <input type="hidden" name="pageSize" value={pageSize} />
-              {categoryId && <input type="hidden" name="categoryId" value={categoryId} />}
             </form>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-xs font-medium text-muted-foreground">Sort by</span>
-              <AutoSubmitSelect
-                action="/admin/products"
-                name="sort"
-                defaultValue={sort}
-                options={SORT_OPTIONS}
-                hiddenFields={{ q: search, pageSize, categoryId }}
-                className="rounded-md border border-input bg-background px-3 py-2"
-                selectClassName="w-full text-sm focus:outline-none"
-              />
-            </div>
+
+            {/* Sort aligned right */}
+            <AutoSubmitSelect
+              action="/admin/products"
+              name="sort"
+              defaultValue={sort}
+              options={SORT_OPTIONS}
+              hiddenFields={{ q: search, pageSize }}
+              className="rounded-md border px-3 py-2"
+              selectClassName="text-sm"
+            />
           </div>
         }
       />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold">Products ({products.total})</CardTitle>
-          <p className="text-sm text-muted-foreground">Showing {productItems.length} of {products.total} items</p>
+          <CardTitle className="text-base">Products ({products.total})</CardTitle>
+          <span className="text-sm text-muted-foreground">
+            Showing {items.length} of {products.total}
+          </span>
         </CardHeader>
+
         <CardContent className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase tracking-wide text-muted-foreground">
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Product</th>
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Price</th>
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Discount (%)</th>
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Description</th>
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Quantity</th>
-                <th className="border-b border-r border-border/40 bg-muted/40 py-3 px-2 font-medium">Status</th>
-                <th className="border-b border-border/40 bg-muted/40 py-3 px-2 text-right font-medium">Actions</th>
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs">Product</th>
+                <th className="px-4 py-3 text-left text-xs">Category</th>
+                <th className="px-4 py-3 text-left text-xs">Price</th>
+                <th className="px-4 py-3 text-left text-xs">Stock</th>
+                <th className="px-4 py-3 text-left text-xs">Status</th>
+                <th className="px-4 py-3 text-right text-xs">Actions</th>
               </tr>
             </thead>
+
             <tbody>
-              {productItems.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                    No products match the current filters.
-                  </td>
-                </tr>
-              ) : (
-                productItems.map((product) => {
-                  const primaryImage = getPrimaryImage(product)
-                  const discountPercent = getDiscountPercent(product)
-                  const summary = getProductSummary(product)
-                  const status = getStatus(product)
-                  return (
-                    <tr key={product.id} className="align-middle">
-                      <td className="py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 overflow-hidden rounded-md border border-border bg-muted">
-                            {primaryImage ? (
-                              <Image
-                                src={primaryImage.url}
-                                alt={primaryImage.alt ?? product.name}
-                                width={48}
-                                height={48}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-xs font-semibold uppercase text-muted-foreground">
-                                {product.name.substring(0, 2).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="font-medium text-foreground">{product.name}</div>
-                            <p className="text-xs text-muted-foreground">SKU: {product.sku}</p>
+              {items.map((product) => {
+                const image = getPrimaryImage(product)
+                const discount = getDiscountPercent(product)
+                const status = getStatus(product)
+
+                return (
+                  <tr key={product.id} className="border-b last:border-b-0">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
+                          {image ? (
+                            <Image src={image.url} alt={product.name} width={40} height={40} />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs">
+                              {product.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium">{product.name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            SKU: {product.sku}
                           </div>
                         </div>
-                      </td>
-                      <td className="border-l border-border/40 py-4 font-semibold">{formatPrice(product.price, product.currency ?? "USD")}</td>
-                      <td className="border-l border-border/40 py-4">
-                        {discountPercent != null ? (
-                          <span className="font-medium text-emerald-600">{discountPercent}%</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </td>
-                      <td className="border-l border-border/40 py-4 text-sm text-muted-foreground">{summary || "—"}</td>
-                      <td className="border-l border-border/40 py-4 font-medium">{product.stock}</td>
-                      <td className="border-l border-border/40 py-4">
-                        <span className={cn("inline-flex items-center gap-2 text-sm font-medium", status.textClass)}>
-                          <span className={cn("h-2 w-2 rounded-full", status.dotClass)} />
-                          {status.label}
-                        </span>
-                      </td>
-                      <td className="border-l border-border/40 py-4 text-right">
-                        <RowActions
-                          viewHref={`/admin/products/${product.id}`}
-                          editHref={`/admin/products/${product.id}`}
-                          deleteConfig={{
-                            action: deleteProductAction,
-                            fields: { productId: product.id },
-                            resourceLabel: product.name,
-                            confirmTitle: `Delete ${product.name}?`,
-                            confirmDescription: `This will permanently remove ${product.name} from the catalog.`,
-                          }}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-              </tbody>
-            </table>
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-4 text-muted-foreground">
+                      {product.category?.name ?? "—"}
+                    </td>
+
+                    <td className="px-4 py-4">
+                      <div className="font-medium">
+                        {formatPrice(product.price, product.currency ?? "USD")}
+                      </div>
+                      {discount && (
+                        <div className="text-xs text-emerald-600">
+                          {discount}% off
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-4">{product.stock}</td>
+
+                    <td className="px-4 py-4">
+                      <span className={cn("inline-flex items-center gap-2", status.text)}>
+                        <span className={cn("h-2 w-2 rounded-full", status.dot)} />
+                        {status.label}
+                      </span>
+                    </td>
+
+                    <td className="px-4 py-4 text-right">
+                      <RowActions
+                        viewHref={`/admin/products/${product.id}`}
+                        editHref={`/admin/products/${product.id}`}
+                        deleteConfig={{
+                          action: deleteProductAction,
+                          fields: { productId: product.id },
+                          resourceLabel: product.name,
+                          confirmTitle: `Delete ${product.name}?`,
+                          confirmDescription: `This will permanently remove ${product.name}.`,
+                        }}
+                      />
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </CardContent>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground">
+          {/* Pagination restored */}
+          <div className="flex items-center gap-2">
+            <span>Rows per page:</span>
+            <AutoSubmitSelect
+              action="/admin/products"
+              name="pageSize"
+              defaultValue={String(pageSize)}
+              options={PAGE_SIZE_OPTIONS.map((n) => ({ label: String(n), value: n }))}
+              hiddenFields={{ q: search || undefined, sort, page: "1" }}
+              selectClassName="rounded-md border border-border bg-transparent px-2 py-1"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+              <Button asChild size="sm" variant="ghost" disabled={page <= 1}>
+                <Link href={`/admin/products?${buildQueryString(baseParams, { page: page - 1 })}`}>
+                  Prev
+                </Link>
+              </Button>
+              <span>
+                {page}
+              </span>
+              <Button asChild size="sm" variant="ghost" disabled={page >= totalPages}>
+                <Link href={`/admin/products?${buildQueryString(baseParams, { page: page + 1, totalPages })}`}>
+                  Next
+                </Link>
+              </Button>
+            </div>
         </CardContent>
       </Card>
-
-      <div className="flex flex-col gap-4 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center gap-2">
-          <span>Rows per page:</span>
-          <AutoSubmitSelect
-            action="/admin/products"
-            name="pageSize"
-            defaultValue={String(pageSize)}
-            options={PAGE_SIZE_OPTIONS.map((size) => ({ label: String(size), value: size }))}
-            hiddenFields={{ q: search, sort, categoryId }}
-            className="rounded-md border border-input bg-background px-2 py-1"
-            selectClassName="text-sm focus:outline-none"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            disabled={products.page <= 1}
-          >
-            <Link href={`/admin/products?${buildQueryString(baseParams, { page: products.page - 1 })}`}>
-              Prev
-            </Link>
-          </Button>
-          {pageNumbers.map((pageNumber) => (
-            <Button
-              key={pageNumber}
-              asChild
-              variant={pageNumber === products.page ? "default" : "outline"}
-              size="sm"
-            >
-              <Link href={`/admin/products?${buildQueryString(baseParams, { page: pageNumber })}`}>
-                {pageNumber}
-              </Link>
-            </Button>
-          ))}
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            disabled={products.page >= totalPages}
-          >
-            <Link href={`/admin/products?${buildQueryString(baseParams, { page: products.page + 1 })}`}>
-              Next
-            </Link>
-          </Button>
-        </div>
-      </div>
     </div>
   )
 }

@@ -209,9 +209,11 @@ export default function CartPage() {
                 {featuredProducts.slice(0, 3).map((product) => (
                   <div key={product.id} className="group">
                     <div className="aspect-square overflow-hidden rounded-2xl mb-4">
-                      <img
+                      <Image
                         src={product.image}
                         alt={product.name}
+                        width={300}
+                        height={300}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
