@@ -1,11 +1,15 @@
 import { redirect } from "next/navigation"
-import { auth } from "@/app/api/auth/[...nextauth]/route"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
 
 export async function requireAdmin() {
     const session = await auth()
 
     if (!session || session.user?.role !== "ADMIN") {
-        redirect("/auth/signin")
+        const headersList = await headers()
+        const pathname = headersList.get("x-pathname") ?? "/admin"
+        const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`
+        redirect(signInUrl)
     }
 
     return session

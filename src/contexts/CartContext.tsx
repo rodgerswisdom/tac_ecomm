@@ -5,7 +5,8 @@ import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
 interface CartItem {
-  id: number
+  /** Product id (string cuid from DB); used as key and for API sync */
+  id: number | string
   name: string
   price: number
   originalPrice?: number
@@ -13,15 +14,17 @@ interface CartItem {
   quantity: number
   size?: string
   color?: string
+  /** Preserved from API so we always send valid productId when saving */
+  productId?: string
 }
 
 interface CartContextType {
   cart: CartItem[]
   addToCart: (item: Omit<CartItem, 'quantity'>) => void
-  removeFromCart: (id: number) => void
-  updateQuantity: (id: number, quantity: number) => void
+  removeFromCart: (id: number | string) => void
+  updateQuantity: (id: number | string, quantity: number) => void
   clearCart: () => void
-  isInCart: (id: number) => boolean
+  isInCart: (id: number | string) => boolean
   getCartTotal: () => number
   getCartItemCount: () => number
 }
@@ -46,17 +49,21 @@ export function CartProvider({ children }: CartProviderProps) {
       const data = await res.json()
       // API returns { cart: [...] }
       if (Array.isArray(data.cart)) {
-        // Map API cart items to CartItem shape (id as number for client consistency)
-        return data.cart.map((item: Partial<CartItem> & { product?: Partial<CartItem>; productId?: string | number }) => ({
-          id: Number(item.productId ?? item.id) || 0,
-          name: item.product?.name ?? item.name ?? '',
-          price: Number(item.product?.price ?? item.price) ?? 0,
-          originalPrice: item.product?.originalPrice ?? item.originalPrice,
-          image: item.product?.image ?? item.image ?? '',
-          quantity: Number(item.quantity) || 1,
-          size: item.size,
-          color: item.color
-        }))
+        // Map API cart items; keep productId (string) as id so we send valid FK when saving
+        return data.cart.map((item: Partial<CartItem> & { product?: Partial<CartItem>; productId?: string | number }) => {
+          const productId = item.productId != null ? String(item.productId) : (item.id != null ? String(item.id) : '')
+          return {
+            id: productId,
+            productId,
+            name: item.product?.name ?? item.name ?? '',
+            price: Number(item.product?.price ?? item.price) ?? 0,
+            originalPrice: item.product?.originalPrice ?? item.originalPrice,
+            image: item.product?.image ?? item.image ?? '',
+            quantity: Number(item.quantity) || 1,
+            size: item.size,
+            color: item.color
+          }
+        })
       }
       return []
     } catch {
@@ -67,16 +74,17 @@ export function CartProvider({ children }: CartProviderProps) {
   // Save merged cart to server (production-ready)
   const saveUserCart = async (mergedCart: CartItem[]) => {
     try {
-      // API expects { cartItems: [...] }
+      const productId = (item: CartItem) => item.productId ?? (typeof item.id === 'string' ? item.id : null)
+      const validItems = mergedCart.filter(item => productId(item) && String(productId(item)).length > 1)
       await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          cartItems: mergedCart.map(item => ({
-            productId: item.id,
+          cartItems: validItems.map(item => ({
+            productId: productId(item),
             quantity: item.quantity,
-            variantId: null // Add variantId if your model supports it
+            variantId: null
           }))
         })
       })
@@ -162,7 +170,7 @@ export function CartProvider({ children }: CartProviderProps) {
     })
   }
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: number | string) => {
     setCart(prevCart => {
       const next = prevCart.filter(item => item.id !== id)
       if (user) queueMicrotask(() => saveUserCart(next))
@@ -170,7 +178,7 @@ export function CartProvider({ children }: CartProviderProps) {
     })
   }
 
-  const updateQuantity = (id: number, quantity: number) => {
+  const updateQuantity = (id: number | string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(id)
       return
@@ -189,7 +197,7 @@ export function CartProvider({ children }: CartProviderProps) {
     if (user) queueMicrotask(() => saveUserCart([]))
   }
 
-  const isInCart = (id: number) => {
+  const isInCart = (id: number | string) => {
     return cart.some(item => item.id === id)
   }
 

@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Crown, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 import { signIn } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 
 function SignInForm() {
   const [formData, setFormData] = useState({
@@ -19,7 +19,6 @@ function SignInForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
-  const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
 
@@ -63,9 +62,8 @@ function SignInForm() {
         // NextAuth returns "CredentialsSignin" for invalid credentials
         setError('Invalid email or password. Please check your credentials and try again.')
       } else if (result?.ok) {
-        // Redirect to callback URL or home page
-        router.push(callbackUrl)
-        router.refresh()
+        // Full page redirect so the session cookie is sent on the next request (avoids sign-in loop for /admin)
+        window.location.href = callbackUrl
       } else {
         setError('An unexpected error occurred. Please try again.')
       }

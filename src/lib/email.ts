@@ -22,6 +22,7 @@ export interface EmailData {
 
 export interface OrderEmailData {
   customerName: string
+  customerEmail: string
   orderNumber: string
   orderDate: string
   items: Array<{
@@ -56,24 +57,32 @@ export class EmailService {
 
   async sendEmail(data: EmailData): Promise<boolean> {
     try {
-      // In a real implementation, you would use Resend API here
-      // This is a mock implementation
-      const emailPayload = {
-        from: data.from || `${this.config.fromName} <${this.config.fromEmail}>`,
+      const from = data.from || `${this.config.fromName} <${this.config.fromEmail}>`
+      const payload = {
+        from,
         to: data.to,
         subject: data.subject,
         html: data.html,
         text: data.text || this.htmlToText(data.html)
       }
 
-      // Simulate API call
-      await this.simulateApiCall('/emails', emailPayload)
-      
-      console.log('Email sent successfully:', {
-        to: data.to,
-        subject: data.subject
-      })
-      
+      if (this.config.apiKey) {
+        const res = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.config.apiKey}`
+          },
+          body: JSON.stringify(payload)
+        })
+        if (!res.ok) {
+          const err = await res.text()
+          throw new Error(`Resend API error: ${res.status} ${err}`)
+        }
+      } else {
+        await this.simulateApiCall('/emails', payload)
+      }
+
       return true
     } catch (error) {
       console.error('Failed to send email:', error)
@@ -84,7 +93,7 @@ export class EmailService {
   async sendOrderConfirmation(data: OrderEmailData): Promise<boolean> {
     const template = this.getOrderConfirmationTemplate(data)
     return this.sendEmail({
-      to: data.customerName, // In real implementation, use customer email
+      to: data.customerEmail,
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -94,7 +103,7 @@ export class EmailService {
   async sendOrderShipped(data: OrderEmailData): Promise<boolean> {
     const template = this.getOrderShippedTemplate(data)
     return this.sendEmail({
-      to: data.customerName, // In real implementation, use customer email
+      to: data.customerEmail,
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -104,7 +113,7 @@ export class EmailService {
   async sendOrderDelivered(data: OrderEmailData): Promise<boolean> {
     const template = this.getOrderDeliveredTemplate(data)
     return this.sendEmail({
-      to: data.customerName, // In real implementation, use customer email
+      to: data.customerEmail,
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -211,7 +220,8 @@ export class EmailService {
               ${data.shippingAddress.country}
             </p>
             
-            <p>We'll send you a tracking number once your order ships. Expected delivery: 3-5 business days.</p>
+            <p>Our team will contact you shortly to confirm your order and next steps. We'll send you a tracking number once your order ships.</p>
+            <p>If you have any questions, reply to this email or contact our support team.</p>
             
             <div style="text-align: center;">
               <a href="#" class="button">Track Your Order</a>
@@ -259,7 +269,7 @@ export class EmailService {
       ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.zipCode}
       ${data.shippingAddress.country}
       
-      We'll send tracking information once your order ships.
+      Our team will contact you shortly to confirm your order and next steps. We'll send tracking information once your order ships. If you have any questions, reply to this email.
       
       Thank you for choosing TAC Accessories!
     `
