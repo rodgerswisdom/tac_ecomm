@@ -465,9 +465,14 @@ export async function addProductImageAction(formData: FormData) {
 
     await assertAdmin()
 
+    const url = formData.get("url")?.toString()?.trim() ?? ""
+    if (!url) {
+        throw new Error("Please upload an image or enter an image URL.")
+    }
+
     const parsed = imageSchema.safeParse({
         productId: formData.get("productId")?.toString(),
-        url: formData.get("url")?.toString() ?? "",
+        url,
         alt: formData.get("alt")?.toString() || undefined,
         order: formData.get("order") ?? 0,
     })

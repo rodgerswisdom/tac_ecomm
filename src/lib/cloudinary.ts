@@ -1,10 +1,26 @@
 // Cloudinary image upload and optimization utilities
+// Supports a single CLOUDINARY_URL (cloudinary://api_key:api_secret@cloud_name) or separate env vars.
 
 export interface CloudinaryConfig {
   cloudName: string
   apiKey: string
   apiSecret: string
   uploadPreset: string
+}
+
+/** Parse Cloudinary URL: cloudinary://api_key:api_secret@cloud_name */
+export function parseCloudinaryUrl(url: string): { cloudName: string; apiKey: string; apiSecret: string } | null {
+  if (!url || !url.startsWith("cloudinary://")) return null
+  try {
+    const u = new URL(url)
+    const cloudName = u.hostname
+    const apiKey = u.username
+    const apiSecret = decodeURIComponent(u.password)
+    if (!cloudName || !apiKey || !apiSecret) return null
+    return { cloudName, apiKey, apiSecret }
+  } catch {
+    return null
+  }
 }
 
 export interface UploadResult {
@@ -46,7 +62,7 @@ export class CloudinaryService {
   ): Promise<UploadResult> {
     if (!this.config.cloudName || !this.config.uploadPreset) {
       throw new Error(
-        'Cloudinary configuration is missing. Please set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.'
+        "Cloudinary configuration is missing. Set CLOUDINARY_URL (cloudinary://api_key:api_secret@cloud_name) or NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET."
       )
     }
     try {
@@ -264,19 +280,69 @@ export class CloudinaryService {
 
 // Utility functions
 export function getCloudinaryConfig(): CloudinaryConfig {
-  const isServer = typeof window === 'undefined'
-  const cloudName =
-    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME || ''
+  const isServer = typeof window === "undefined"
   const uploadPreset =
-    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || process.env.CLOUDINARY_UPLOAD_PRESET || 'tac_accessories'
+    process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ||
+    process.env.CLOUDINARY_UPLOAD_PRESET ||
+    "tac_accessories"
+
+  // Prefer single URL on server (no secret in client bundle)
+  const url = process.env.CLOUDINARY_URL
+  if (isServer && url) {
+    const parsed = parseCloudinaryUrl(url)
+    if (parsed) {
+      return {
+        cloudName: parsed.cloudName,
+        apiKey: parsed.apiKey,
+        apiSecret: parsed.apiSecret,
+        uploadPreset,
+      }
+    }
+  }
+
+  const cloudName =
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    process.env.CLOUDINARY_CLOUD_NAME ||
+    ""
+  const apiKey = isServer
+    ? process.env.CLOUDINARY_API_KEY || ""
+    : process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || ""
+  const apiSecret = isServer ? process.env.CLOUDINARY_API_SECRET || "" : ""
 
   return {
     cloudName,
-    apiKey: isServer
-      ? process.env.CLOUDINARY_API_KEY || ''
-      : process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY || '',
-    apiSecret: isServer ? process.env.CLOUDINARY_API_SECRET || '' : '',
-    uploadPreset
+    apiKey,
+    apiSecret,
+    uploadPreset,
+  }
+}
+
+const UPLOAD_API = "/api/upload/cloudinary"
+
+/** Upload via our API (uses CLOUDINARY_URL on server); use from client when config is not in browser */
+async function uploadImageViaApi(
+  file: File,
+  options: { folder?: string; tags?: string[] } = {}
+): Promise<UploadResult> {
+  const formData = new FormData()
+  formData.append("file", file)
+  if (options.folder) formData.append("folder", options.folder)
+  if (options.tags?.length) formData.append("tags", options.tags.join(","))
+
+  const res = await fetch(UPLOAD_API, { method: "POST", body: formData })
+  const data = await res.json()
+
+  if (!res.ok) {
+    throw new Error(data?.error ?? `Upload failed: ${res.statusText}`)
+  }
+
+  return {
+    public_id: data.public_id,
+    secure_url: data.secure_url,
+    width: data.width,
+    height: data.height,
+    format: data.format,
+    bytes: data.bytes,
   }
 }
 
@@ -284,6 +350,8 @@ export function getCloudinaryConfig(): CloudinaryConfig {
 export function useCloudinary() {
   const config = getCloudinaryConfig()
   const cloudinary = new CloudinaryService(config)
+  const isClient = typeof window !== "undefined"
+  const useApi = isClient && !config.cloudName
 
   const uploadImage = async (
     file: File,
@@ -294,6 +362,12 @@ export function useCloudinary() {
       transformation?: TransformOptions
     } = {}
   ) => {
+    if (useApi) {
+      return uploadImageViaApi(file, {
+        folder: options.folder,
+        tags: options.tags,
+      })
+    }
     return cloudinary.uploadImage(file, options)
   }
 
@@ -305,6 +379,17 @@ export function useCloudinary() {
       transformation?: TransformOptions
     } = {}
   ) => {
+    if (useApi) {
+      const results: UploadResult[] = []
+      for (const file of files) {
+        const r = await uploadImageViaApi(file, {
+          folder: options.folder,
+          tags: options.tags,
+        })
+        results.push(r)
+      }
+      return results
+    }
     return cloudinary.uploadMultipleImages(files, options)
   }
 

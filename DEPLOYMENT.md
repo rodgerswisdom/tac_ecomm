@@ -54,9 +54,9 @@ EMAIL_FROM=noreply@your-domain.com
 
 ### Image Upload
 ```
-CLOUDINARY_CLOUD_NAME=your-cloudinary-cloud-name
-CLOUDINARY_API_KEY=your-cloudinary-api-key
-CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+CLOUDINARY_URL=cloudinary://api_key:api_secret@cloud_name
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your-cloud-name
+NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=tac_accessories
 ```
 
 ### App Configuration
