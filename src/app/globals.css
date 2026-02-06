@@ -49,6 +49,25 @@
     cursor: default;
   }
 
+  /* Normalize form controls across browsers */
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  input[type="search"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
   a,
   button,
   [role="button"] {

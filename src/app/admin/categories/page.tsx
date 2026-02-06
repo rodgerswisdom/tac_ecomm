@@ -148,14 +148,13 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
       />
 
       <Card>
-        <CardHeader>
-          <div className="flex flex-row items-center justify-between">
-            <div>
+        <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Categories ({filtered.length})</CardTitle>
-              <span className="text-sm text-muted-foreground">Showing {visibleCategories.length} of {filtered.length} </span>
-            </div>
-          </div>
+              <span className="text-sm text-muted-foreground">
+                Showing {visibleCategories.length} of {filtered.length} 
+              </span>
         </CardHeader>
+        
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
@@ -195,7 +194,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                       <RowActions
                         viewHref={`/collections/${category.slug}`}
                         viewLinkProps={{ target: "_blank", rel: "noopener noreferrer" }}
-                        editHref={`/admin/categories?categoryId=${category.id}`}
+                        editHref={`/admin/categories/${category.id}`}
                         deleteConfig={{
                           action: deleteCategoryAction,
                           fields: { categoryId: category.id },

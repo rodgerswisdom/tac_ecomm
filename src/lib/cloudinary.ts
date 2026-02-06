@@ -81,7 +81,8 @@ export class CloudinaryService {
       )
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`)
+        const errorText = await response.text().catch(() => '')
+        throw new Error(`Upload failed: ${response.status} ${response.statusText}${errorText ? ` - ${errorText}` : ''}`)
       }
 
       const result = await response.json()

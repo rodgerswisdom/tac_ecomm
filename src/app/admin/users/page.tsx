@@ -173,7 +173,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
                     <td className="px-4 py-4">
                       <RowActions
                         viewHref={`/admin/users/${user.id}`}
-                        editHref={`/admin/users/${user.id}/edit`}
+                        editHref={`/admin/users/${user.id}`}
                         deleteConfig={{
                           action: deleteUserAction,
                           fields: { id: user.id },

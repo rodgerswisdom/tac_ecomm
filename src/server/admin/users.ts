@@ -1,6 +1,5 @@
 import { Prisma, UserRole } from "@prisma/client"
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
@@ -18,6 +17,8 @@ type UsersSummaryFilters = {
 }
 
 const DEFAULT_PAGE_SIZE = 10
+
+export type ActionResult = { success?: boolean; error?: string }
 
 /**
  * ================================
@@ -75,6 +76,7 @@ export async function getUsersSummary({
                     name: true,
                     email: true,
                     role: true,
+                    updatedAt: true,
                     createdAt: true,
                     _count: { select: { orders: true } },
                     sessions: {
@@ -88,14 +90,17 @@ export async function getUsersSummary({
         ])
 
         const now = new Date()
+        const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // 7 days fallback
 
         // Derive user status from latest session
         const formattedUsers = users.map(({ sessions, ...user }) => ({
             ...user,
             status:
-                sessions?.[0]?.expires && sessions[0].expires > now
+                (sessions?.[0]?.expires && sessions[0].expires > now)
                     ? "Active"
-                    : "Inactive",
+                    : user.updatedAt && now.getTime() - user.updatedAt.getTime() < ACTIVE_WINDOW_MS
+                        ? "Active"
+                        : "Inactive",
         }))
 
         return {
@@ -118,6 +123,46 @@ export async function getUsersSummary({
     }
 }
 
+export async function getUserDetail(userId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                    updatedAt: true,
+                createdAt: true,
+                _count: { select: { orders: true } },
+                sessions: {
+                    orderBy: { expires: "desc" },
+                    take: 1,
+                    select: { expires: true },
+                },
+            },
+        })
+
+        if (!user) return null
+
+        const now = new Date()
+        const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+        const status = user.sessions?.[0]?.expires && user.sessions[0].expires > now
+            ? "Active"
+            : user.updatedAt && now.getTime() - user.updatedAt.getTime() < ACTIVE_WINDOW_MS
+                ? "Active"
+                : "Inactive"
+
+        return {
+            ...user,
+            status,
+        }
+    } catch (error) {
+        console.error("Failed to load user", error)
+        return null
+    }
+}
+
 /**
  * ================================
  * Actions
@@ -125,7 +170,7 @@ export async function getUsersSummary({
  */
 
 // Create new user
-export async function createUserAction(formData: FormData) {
+export async function createUserAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
     "use server"
 
     await assertAdmin()
@@ -137,7 +182,7 @@ export async function createUserAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid user payload")
+        return { error: parsed.error.issues[0]?.message ?? "Invalid user payload" }
     }
 
     try {
@@ -149,13 +194,13 @@ export async function createUserAction(formData: FormData) {
             error instanceof Prisma.PrismaClientKnownRequestError &&
             error.code === "P2002"
         ) {
-            throw new Error("A user with that email already exists")
+            return { error: "A user with that email already exists" }
         }
-        throw error
+        return { error: "Failed to create user" }
     }
 
     revalidatePath("/admin/users")
-    redirect("/admin/users")
+    return { success: true }
 }
 
 // Update user role

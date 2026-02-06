@@ -26,7 +26,7 @@ export function AdminPageHeader({
     actionsAlignment === "end" ? "items-end" : actionsAlignment === "start" ? "items-start" : "items-center"
 
   return (
-    <div className={cn("space-y-4 border-b border-border/70 pb-5", className)}>
+    <div className={cn("space-y-3 border-b border-border/70 pb-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1">
           {(() => {
@@ -39,10 +39,13 @@ export function AdminPageHeader({
             )
             if (!normalized.length) return null
             return (
-              <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs font-medium tracking-[0.2em] text-muted-foreground">
+              <nav
+                aria-label="Breadcrumb"
+                className="flex items-center gap-1 text-xs font-medium tracking-[0.2em] text-muted-foreground/70"
+              >
                 <Link
                   href="/admin/overview"
-                  className="flex items-center text-muted-foreground transition hover:text-foreground"
+                  className="flex items-center text-muted-foreground/70 transition hover:text-foreground"
                   aria-label="Go to dashboard"
                 >
                   <Home className="h-4 w-4" aria-hidden="true" />
@@ -55,7 +58,9 @@ export function AdminPageHeader({
                         href={item.href}
                         className={cn(
                           "text-xs font-medium tracking-[0.2em] transition",
-                          index === normalized.length - 1 ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                          index === normalized.length - 1
+                            ? "text-foreground"
+                            : "text-muted-foreground/70 hover:text-foreground"
                         )}
                       >
                         {item.label}
@@ -64,7 +69,7 @@ export function AdminPageHeader({
                       <span
                         className={cn(
                           "text-xs font-medium tracking-[0.2em]",
-                          index === normalized.length - 1 ? "text-foreground" : "text-muted-foreground"
+                          index === normalized.length - 1 ? "text-foreground" : "text-muted-foreground/70"
                         )}
                       >
                         {item.label}
@@ -75,7 +80,7 @@ export function AdminPageHeader({
               </nav>
             )
           })()}
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
           {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {actions ? <div className={cn("flex flex-wrap gap-2", actionsAlignmentClass)}>{actions}</div> : null}

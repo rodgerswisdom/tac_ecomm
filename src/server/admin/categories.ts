@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { generateSlug } from "@/lib/utils"
 import { assertAdmin } from "./auth"
+import type { ActionResult } from "./users"
 
 const categorySchema = z.object({
     id: z.string().cuid().optional(),
@@ -45,6 +46,16 @@ export async function getCategoryOptions() {
     return prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
 }
 
+export async function getCategoryById(id: string) {
+    return prisma.category.findUnique({
+        where: { id },
+        include: {
+            parent: { select: { id: true, name: true } },
+            _count: { select: { products: true, children: true } },
+        },
+    })
+}
+
 async function resolveCategorySlug(name: string, proposedSlug?: string, existingId?: string) {
     const base = generateSlug(proposedSlug || name)
     if (!base) throw new Error("Unable to generate category slug")
@@ -61,7 +72,7 @@ async function resolveCategorySlug(name: string, proposedSlug?: string, existing
     }
 }
 
-export async function createCategoryAction(formData: FormData) {
+export async function createCategoryAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
     "use server"
 
     await assertAdmin()
@@ -75,22 +86,30 @@ export async function createCategoryAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid category data")
+        return { error: parsed.error.issues[0]?.message ?? "Invalid category data" }
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined)
 
-    await prisma.category.create({
-        data: {
-            ...parsed.data,
-            slug,
-        },
-    })
+    try {
+        await prisma.category.create({
+            data: {
+                ...parsed.data,
+                slug,
+            },
+        })
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return { error: "Category slug must be unique" }
+        }
+        return { error: "Failed to create category" }
+    }
 
     revalidatePath("/admin/categories")
+    return { success: true }
 }
 
-export async function updateCategoryAction(formData: FormData) {
+export async function updateCategoryAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
     "use server"
 
     await assertAdmin()
@@ -105,20 +124,28 @@ export async function updateCategoryAction(formData: FormData) {
     })
 
     if (!parsed.success || !parsed.data.id) {
-        throw new Error(parsed.success ? "Category id is required" : parsed.error.issues[0]?.message)
+        return { error: parsed.success ? "Category id is required" : parsed.error.issues[0]?.message }
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined, parsed.data.id)
 
-    await prisma.category.update({
-        where: { id: parsed.data.id },
-        data: {
-            ...parsed.data,
-            slug,
-        },
-    })
+    try {
+        await prisma.category.update({
+            where: { id: parsed.data.id },
+            data: {
+                ...parsed.data,
+                slug,
+            },
+        })
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return { error: "Category slug must be unique" }
+        }
+        return { error: "Failed to update category" }
+    }
 
     revalidatePath("/admin/categories")
+    return { success: true }
 }
 
 export async function deleteCategoryAction(formData: FormData) {

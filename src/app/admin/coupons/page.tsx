@@ -8,7 +8,9 @@ import { RowActions } from "@/components/admin/row-actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { CouponType } from "@prisma/client"
 import { useState, useEffect } from "react"
+import { useRef } from "react"
 import React from "react"
+import { Plus } from "lucide-react";
 
 type Coupon = {
   id: string;
@@ -24,12 +26,13 @@ type Coupon = {
 };
 
 export default function AdminCouponsPage() {
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const toastTimeout = useRef<NodeJS.Timeout | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [total, setTotal] = useState(0);
   const [usageStats, setUsageStats] = useState<any>({});
   const [, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Filters/search/sort/pagination
   const [q, setQ] = useState("");
   const [status, setStatus] = useState(""); // Default: show all, not just active
   const [type, setType] = useState("");
@@ -39,15 +42,12 @@ export default function AdminCouponsPage() {
   const [pageSize, setPageSize] = useState(20);
   const [sort, setSort] = useState("createdAt");
   const [order, setOrder] = useState<"asc"|"desc">("desc");
-  // Bulk selection
   const [selected, setSelected] = useState<string[]>([]);
-  // Modal/dialog state
   const [detailsCoupon, setDetailsCoupon] = useState<Coupon|null>(null);
-  const [confirmDialog, setConfirmDialog] = useState<{open: boolean, action: null|(() => void), message: string}>({open: false, action: null, message: ""});
-  // Activation timing dialog
   const [timingDialog, setTimingDialog] = useState<{open: boolean, couponIds: string[], defaultStart?: string, defaultEnd?: string, onConfirm?: (start: string, end: string) => void}>({open: false, couponIds: []});
-  // New coupon dialog
   const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const pageCount = Math.max(Math.ceil(total / pageSize), 1);
+
 
   const fetchCoupons = React.useCallback(async () => {
     setLoading(true);
@@ -68,56 +68,68 @@ export default function AdminCouponsPage() {
       setLoading(false);
     }
     
-    // NewCouponForm component (top-level, not nested)
-    function NewCouponForm({ onSuccess }: { onSuccess: () => void }) {
-      const [loading, setLoading] = useState(false);
-      const [error, setError] = useState<string | null>(null);
-      async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
-        const formData = new FormData(e.currentTarget);
-        try {
-          const res = await fetch("/api/admin/coupons", {
-            method: "POST",
-            body: formData,
-          });
-          if (!res.ok) throw new Error("Failed to create coupon");
-          onSuccess();
-        } catch (err: any) {
-          setError(err.message || "Failed to create coupon");
-        } finally {
-          setLoading(false);
-        }
+    }, [q, status, type, start, end, page, pageSize, sort, order]);
+  
+  function NewCouponForm({ onSuccess }: { onSuccess: () => void }) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+      e.preventDefault();
+      setLoading(true);
+      setError(null);
+      const formData = new FormData(e.currentTarget);
+      try {
+        const res = await fetch("/api/admin/coupons", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) throw new Error("Failed to create coupon");
+        setToast({ message: "Coupon created successfully!", type: "success" });
+        if (toastTimeout.current) clearTimeout(toastTimeout.current);
+        toastTimeout.current = setTimeout(() => setToast(null), 3000);
+        onSuccess();
+      } catch (err: any) {
+        setError(err.message || "Failed to create coupon");
+      } finally {
+        setLoading(false);
       }
-      return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-          <Input name="code" placeholder="Code" required maxLength={32} />
-          <Input name="description" placeholder="Description" />
-          <select name="type" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-            <option value={CouponType.PERCENTAGE}>Percentage</option>
-            <option value={CouponType.FIXED_AMOUNT}>Fixed Amount</option>
-            <option value={CouponType.FREE_SHIPPING}>Free Shipping</option>
-          </select>
-          <Input name="value" placeholder="Value" type="number" step="0.01" required />
-          <Input name="minAmount" placeholder="Minimum Order Amount" type="number" step="0.01" />
-          <Input name="maxUses" placeholder="Max Uses" type="number" />
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="isActive" value="true" defaultChecked /> Active
-          </label>
-          <Input name="startsAt" placeholder="Start Date" type="date" />
-          <Input name="expiresAt" placeholder="End Date" type="date" />
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onSuccess} disabled={loading}>Cancel</Button>
-            <Button type="submit" className="w-full" disabled={loading}>{loading ? "Creating..." : "Create Coupon"}</Button>
-          </DialogFooter>
-        </form>
-      );
     }
-  }, [q, status, type, start, end, page, pageSize, sort, order]);
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && <div className="text-red-500 text-sm">{error}</div>}
+        <Input name="code" placeholder="Code" required maxLength={32} />
+        <Input name="description" placeholder="Description" />
+        <select name="type" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+          <option value={CouponType.PERCENTAGE}>Percentage</option>
+          <option value={CouponType.FIXED_AMOUNT}>Fixed Amount</option>
+          <option value={CouponType.FREE_SHIPPING}>Free Shipping</option>
+        </select>
+        <Input name="value" placeholder="Value" type="number" step="0.01" required />
+        <Input name="minAmount" placeholder="Minimum Order Amount" type="number" step="0.01" />
+        <Input name="maxUses" placeholder="Max Uses" type="number" />
+        <label className="flex items-center gap-2">
+          <input type="checkbox" name="isActive" value="true" defaultChecked /> Active
+        </label>
+        <Input name="startsAt" placeholder="Start Date" type="date" min={new Date().toISOString().split('T')[0]} />
+        <Input name="expiresAt" placeholder="End Date" type="date" min={new Date().toISOString().split('T')[0]} />
+        <DialogFooter>
+          <div className="flex w-full gap-2">
+            <Button type="button" variant="ghost" onClick={onSuccess} disabled={loading} className="flex-1">Cancel</Button>
+            <Button type="submit" disabled={loading} className="flex-1">{loading ? "Creating..." : "Create Coupon"}</Button>
+          </div>
+        </DialogFooter>
+      </form>
+    );
+  }
 
   useEffect(() => { fetchCoupons(); }, [fetchCoupons]);
+
+  // Keep page within available bounds when total or pageSize changes
+  useEffect(() => {
+    if (page > pageCount) {
+      setPage(pageCount);
+    }
+  }, [page, pageCount]);
 
   function handleSelectAll(e: React.ChangeEvent<HTMLInputElement>) {
     setSelected(e.target.checked ? coupons.map(c => c.id) : []);
@@ -126,70 +138,118 @@ export default function AdminCouponsPage() {
     setSelected(sel => sel.includes(id) ? sel.filter(i => i !== id) : [...sel, id]);
   }
 
-  function openConfirmDialog(message: string, action: () => void) {
-    setConfirmDialog({ open: true, action, message });
-  }
-
   async function handleBulkDelete() {
+    let success = true;
     for (const id of selected) {
-      await fetch("/api/admin/coupons", {
+      const res = await fetch("/api/admin/coupons", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ couponId: id })
       });
+      if (!res.ok) success = false;
     }
     setSelected([]);
     fetchCoupons();
+    // Show toast after deletion
+    const message = success ? `Deleted ${selected.length} coupon(s).` : 'Some coupons could not be deleted.';
+    setToast({ message, type: success ? 'success' : 'error' });
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setToast(null), 3000);
   }
 
+  // Store pending activation dates for confirmation
+  const [pendingActivation, setPendingActivation] = useState<{start: string, end: string} | null>(null);
+  const [showFinalConfirm, setShowFinalConfirm] = useState(false);
+
   async function handleBulkActivate(active: boolean) {
+    let success = true;
+    let message = '';
     if (active) {
-      // Show timing dialog before activating
+      // Show timing dialog first
       setTimingDialog({
         open: true,
         couponIds: selected,
-        onConfirm: async (start, end) => {
-          for (const id of selected) {
-            await fetch(`/api/admin/coupons`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ couponId: id, isActive: true, startsAt: start, expiresAt: end })
-            });
-          }
-          // Optimistically update UI state for affected coupons
-          setCoupons(prev => prev.map(c =>
-            selected.includes(c.id)
-              ? { ...c, isActive: true, startsAt: start, expiresAt: end }
-              : c
-          ));
-          setSelected([]);
+        onConfirm: (start, end) => {
           setTimingDialog({ open: false, couponIds: [] });
-          // Optionally, you can still fetchCoupons() to sync with backend
-          // fetchCoupons();
+          setPendingActivation({ start, end });
+          setShowFinalConfirm(true);
         }
       });
     } else {
       for (const id of selected) {
-        await fetch(`/api/admin/coupons`, {
+        const res = await fetch(`/api/admin/coupons`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ couponId: id, isActive: false })
         });
+        if (!res.ok) success = false;
       }
       setSelected([]);
       fetchCoupons();
+      message = success ? `Deactivated ${selected.length} coupon(s).` : 'Some coupons could not be deactivated.';
+      setToast({ message, type: success ? 'success' : 'error' });
+      if (toastTimeout.current) clearTimeout(toastTimeout.current);
+      toastTimeout.current = setTimeout(() => setToast(null), 3000);
     }
+  }
+
+  // Final confirmation for activation with dates
+  async function confirmBulkActivateWithDates() {
+    if (!pendingActivation) return;
+    let success = true;
+    let message = '';
+    for (const id of selected) {
+      const res = await fetch(`/api/admin/coupons`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponId: id, isActive: true, startsAt: pendingActivation.start, expiresAt: pendingActivation.end })
+      });
+      if (!res.ok) success = false;
+    }
+    setCoupons(prev => prev.map(c =>
+      selected.includes(c.id)
+        ? { ...c, isActive: true, startsAt: pendingActivation.start, expiresAt: pendingActivation.end }
+        : c
+    ));
+    setSelected([]);
+    setPendingActivation(null);
+    setShowFinalConfirm(false);
+    message = success ? `Activated ${selected.length} coupon(s).` : 'Some coupons could not be activated.';
+    setToast({ message, type: success ? 'success' : 'error' });
+    if (toastTimeout.current) clearTimeout(toastTimeout.current);
+    toastTimeout.current = setTimeout(() => setToast(null), 3000);
   }
 
   return (
     <div className="space-y-8">
+      {toast && (
+        <div
+          className={`rounded-md border px-4 py-3 text-sm ${
+            toast.type === "success"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+              : "border-rose-200 bg-rose-50 text-rose-900"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
       <AdminPageHeader
         title="Discount Codes"
         breadcrumb={[{ label: "Discount Codes", href: "/admin/coupons" }]}
         actions={
-          <Button size="sm" className="gap-2" onClick={() => setNewDialogOpen(true)}>
-            + Create New Coupon
-          </Button>
+          <>
+            <Button size="sm" className="gap-2" onClick={() => setNewDialogOpen(true)}>
+              <Plus className="h-4 w-4" /> Create New Coupon
+            </Button>
+            <Dialog open={newDialogOpen} onOpenChange={setNewDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Coupon</DialogTitle>
+                </DialogHeader>
+                <NewCouponForm onSuccess={() => { setNewDialogOpen(false); fetchCoupons(); }} />
+              </DialogContent>
+            </Dialog>
+          </>
         }
         toolbar={
           <div className="flex w-full items-center justify-between gap-4">
@@ -222,16 +282,34 @@ export default function AdminCouponsPage() {
           <div className="flex flex-wrap gap-8 items-center">
             <div>Total Codes: <b>{usageStats?._count?.id ?? 0}</b></div>
             <div>Total Uses: <b>{usageStats?._sum?.usedCount ?? 0}</b></div>
-            {/* Add chart here if you want (e.g. with chart.js) */}
           </div>
           {/* Bulk actions */}
           {selected.length > 0 && (
             <div className="flex gap-2">
-              <Button size="sm" onClick={() => openConfirmDialog(`Activate ${selected.length} selected coupon(s)?`, () => handleBulkActivate(true))}>Activate</Button>
-              <Button size="sm" onClick={() => openConfirmDialog(`Deactivate ${selected.length} selected coupon(s)?`, () => handleBulkActivate(false))}>Deactivate</Button>
-              <Button size="sm" variant="destructive" onClick={() => openConfirmDialog(`Delete ${selected.length} selected coupon(s)?`, handleBulkDelete)}>Delete</Button>
+              <Button size="sm" onClick={() => handleBulkActivate(true)}>Activate</Button>
+              <Button size="sm" onClick={() => handleBulkActivate(false)}>Deactivate</Button>
+              <Button size="sm" variant="destructive" onClick={handleBulkDelete}>Delete</Button>
             </div>
           )}
+              {/* Final confirmation dialog for activation with dates */}
+              <Dialog open={showFinalConfirm} onOpenChange={open => { if (!open) setShowFinalConfirm(false); }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Activation</DialogTitle>
+                  </DialogHeader>
+                  <div>
+                    Are you sure you want to activate {selected.length} coupon(s) with the following dates?
+                    <div className="mt-2 text-sm">
+                      <b>Valid From:</b> {pendingActivation?.start || '-'}<br />
+                      <b>Valid To:</b> {pendingActivation?.end || '-'}
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="ghost" onClick={() => { setShowFinalConfirm(false); setPendingActivation(null); }}>Cancel</Button>
+                    <Button onClick={confirmBulkActivateWithDates}>Confirm</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
         </CardHeader>
         <CardContent>
           {error && <div className="text-red-500 mb-2">{error}</div>}
@@ -259,8 +337,12 @@ export default function AdminCouponsPage() {
                   <td className="px-6 py-4">
                     {(() => {
                       const now = new Date();
-                      const expired = coupon.expiresAt && new Date(coupon.expiresAt) < now;
-                      if (!coupon.isActive || expired) {
+                      const startsAt = coupon.startsAt ? new Date(coupon.startsAt) : null;
+                      const expiresAt = coupon.expiresAt ? new Date(coupon.expiresAt) : null;
+                      const isActive = coupon.isActive &&
+                        (!startsAt || now >= startsAt) &&
+                        (!expiresAt || now <= expiresAt);
+                      if (!isActive) {
                         return (
                           <span className="inline-flex items-center gap-1 text-red-600">
                             <span className="inline-block w-2 h-2 rounded-full bg-red-500" /> Inactive
@@ -284,14 +366,16 @@ export default function AdminCouponsPage() {
                       viewLinkProps={{ onClick: (e: any) => { e.preventDefault(); setDetailsCoupon(coupon); } }}
                       deleteConfig={{
                         action: async () => {
-                          openConfirmDialog(`Delete coupon ${coupon.code}?`, async () => {
-                            await fetch("/api/admin/coupons", {
-                              method: "DELETE",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ couponId: coupon.id })
-                            });
-                            fetchCoupons();
-                          });
+                          const res = await fetch("/api/admin/coupons", {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ couponId: coupon.id })
+                          })
+                          fetchCoupons()
+                          const message = res.ok ? `Deleted coupon ${coupon.code}.` : `Failed to delete coupon ${coupon.code}.`
+                          setToast({ message, type: res.ok ? "success" : "error" })
+                          if (toastTimeout.current) clearTimeout(toastTimeout.current)
+                          toastTimeout.current = setTimeout(() => setToast(null), 3000)
                         },
                         fields: {},
                         resourceLabel: `coupon ${coupon.code}`,
@@ -306,10 +390,17 @@ export default function AdminCouponsPage() {
             </tbody>
           </table>
           {/* Pagination Controls */}
-          <div className="flex items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground mt-4">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <span>Rows per page:</span>
-              <select className="rounded-md border border-border bg-transparent px-2 py-1 text-sm" value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}>
+              <select
+                className="rounded-md border border-border bg-transparent px-2 py-1 text-sm"
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
                 <option value="10">10</option>
                 <option value="20">20</option>
                 <option value="30">30</option>
@@ -317,9 +408,20 @@ export default function AdminCouponsPage() {
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <button className="px-3 py-1 rounded bg-brand-umber text-brand-beige disabled:opacity-50" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>{"Prev"}</button>
-              <span>{page}</span>
-              <button className="px-3 py-1 rounded bg-brand-umber text-brand-beige disabled:opacity-50" disabled={page * pageSize >= total} onClick={() => setPage(p => p + 1)}>{"Next"}</button>
+              <Button size="sm" variant="ghost" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+                Prev
+              </Button>
+              <span>
+                {page}
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={page >= pageCount}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              >
+                Next
+              </Button>
             </div>
           </div>
         </CardContent>
@@ -348,18 +450,6 @@ export default function AdminCouponsPage() {
         </DialogContent>
       </Dialog>
       {/* Confirmation Dialog */}
-      <Dialog open={confirmDialog.open} onOpenChange={open => { if (!open) setConfirmDialog({ ...confirmDialog, open: false }); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Action</DialogTitle>
-          </DialogHeader>
-          <div>{confirmDialog.message}</div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setConfirmDialog({ ...confirmDialog, open: false })}>Cancel</Button>
-            <Button variant="destructive" onClick={() => { if (confirmDialog.action) confirmDialog.action(); setConfirmDialog({ ...confirmDialog, open: false }); }}>Confirm</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       {/* Activation Timing Dialog */}
       <Dialog open={timingDialog.open} onOpenChange={open => { if (!open) setTimingDialog({ ...timingDialog, open: false }); }}>
         <DialogContent>

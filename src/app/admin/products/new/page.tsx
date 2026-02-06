@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { ProductType } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,8 +9,10 @@ import { createProductAction } from "@/server/admin/products"
 import { getCategoryOptions } from "@/server/admin/categories"
 import { ProductMediaFields } from "./ProductMediaFields"
 
-export default async function NewProductPage() {
+export default async function NewProductPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[]>> }) {
   const categories = await getCategoryOptions()
+  const params = (await searchParams) ?? {}
+  const error = Array.isArray(params.error) ? params.error[0] : params.error
   const createdAtDisplay = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
@@ -31,7 +34,23 @@ export default async function NewProductPage() {
         </div>
       </div>
 
-      <form action={createProductAction} className="space-y-8">
+      <form
+        action={async (formData) => {
+          "use server"
+          try {
+            await createProductAction(formData)
+          } catch (e) {
+            const message = e instanceof Error ? e.message : "Failed to create product"
+            redirect(`/admin/products/new?error=${encodeURIComponent(message)}`)
+          }
+        }}
+        className="space-y-8"
+      >
+        {error ? (
+          <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {error}
+          </div>
+        ) : null}
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <div className="space-y-6">
             <Card>

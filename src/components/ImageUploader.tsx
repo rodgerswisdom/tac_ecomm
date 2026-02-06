@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { AnimatePresence, motion } from "framer-motion"
 import { ImageIcon, Loader2, Upload, UploadCloud, X } from "lucide-react"
@@ -254,10 +254,6 @@ function MultipleImageUploader({
 
       const allUrls = [...uploadedUrls, ...newUrls]
       setUploadedUrls(allUrls)
-      setFiles((currentFiles) => {
-        onChange?.(currentFiles, allUrls)
-        return currentFiles
-      })
     } catch (error) {
       console.error("Upload error:", error)
       alert("Some files failed to upload. Please try again.")
@@ -275,7 +271,6 @@ function MultipleImageUploader({
     setFiles(newFiles)
     setPreviews(newPreviews)
     setUploadedUrls(newUrls)
-    onChange?.(newFiles, newUrls)
   }
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -293,6 +288,10 @@ function MultipleImageUploader({
     setIsDragging(false)
     void handleFileSelect(event.dataTransfer.files)
   }
+
+  useEffect(() => {
+    onChange?.(files, uploadedUrls)
+  }, [files, onChange, uploadedUrls])
 
   return (
     <div className="space-y-4">
