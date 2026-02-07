@@ -132,10 +132,10 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    # Email Service
    RESEND_API_KEY="your-resend-api-key"
    
-   # Image Upload
-   CLOUDINARY_CLOUD_NAME="your-cloudinary-cloud-name"
-   CLOUDINARY_API_KEY="your-cloudinary-api-key"
-   CLOUDINARY_API_SECRET="your-cloudinary-api-secret"
+   # Image Upload (one URL from Cloudinary dashboard)
+   CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="tac_accessories"
    ```
 
 4. **Set up the database**

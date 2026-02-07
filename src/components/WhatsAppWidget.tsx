@@ -9,7 +9,7 @@ interface WhatsAppWidgetProps {
 }
 
 export function WhatsAppWidget({
-  phoneNumber = "+1234567890", // Replace with your actual WhatsApp number
+  phoneNumber = "+254704800866",
   message = "Hello! I'm interested in your products.",
 }: WhatsAppWidgetProps) {
   const [isHovered, setIsHovered] = useState(false);

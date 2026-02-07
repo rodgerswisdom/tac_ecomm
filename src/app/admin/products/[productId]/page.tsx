@@ -5,6 +5,7 @@ import { ProductType } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { AddProductImageForm } from "./AddProductImageForm"
 import {
   addProductImageAction,
   addVariantAction,
@@ -247,15 +248,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
               </div>
             ))}
           </div>
-          <form action={addProductImageAction} className="space-y-2 rounded-lg border border-dashed border-border p-4">
-            <input type="hidden" name="productId" value={product.id} />
-            <Input name="url" placeholder="Image URL" required />
-            <Input name="alt" placeholder="Alt text" />
-            <Input name="order" type="number" min="0" placeholder="Display order" />
-            <Button type="submit" size="sm">
-              Add image
-            </Button>
-          </form>
+          <AddProductImageForm productId={product.id} addProductImageAction={addProductImageAction} />
         </CardContent>
       </Card>
     </div>

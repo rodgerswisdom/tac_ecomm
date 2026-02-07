@@ -76,7 +76,9 @@ function SingleImageUploader({
         onChange?.([file], [result.secure_url])
       } catch (error) {
         console.error(error)
-        alert("Failed to upload image. Please try again.")
+        const message =
+          error instanceof Error ? error.message : "Failed to upload image. Please try again."
+        alert(message)
       } finally {
         setUploading(false)
       }
