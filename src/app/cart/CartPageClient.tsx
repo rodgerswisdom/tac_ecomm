@@ -148,7 +148,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                               className="rounded-full bg-brand-jade/40 p-1 text-brand-umber/70 transition hover:bg-brand-jade/55"
                             >
                               <Minus className="h-4 w-4" />
-                            </button"
+                            </button>
                             <span>{item.quantity}</span>
                             <button
                               type="button"
