@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { cn, formatPrice } from "@/lib/utils"
-import { deleteProductAction, getProductList } from "@/server/admin/products"
+import { getProductList } from "@/server/admin/products"
+import { deleteProductAction } from "@/server/admin/product-actions"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
@@ -67,6 +68,13 @@ function getDiscountPercent(p: ProductListItem) {
 }
 
 function getStatus(p: ProductListItem) {
+  if (p.isDraft) {
+    return {
+      label: "Draft",
+      dot: "bg-amber-500",
+      text: "text-amber-600",
+    }
+  }
   const inStock = p.stock > 0 && p.isActive
   return {
     label: inStock ? "In stock" : "Out of stock",
@@ -181,7 +189,14 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                           )}
                         </div>
                         <div>
-                          <div className="font-medium">{product.name}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{product.name}</span>
+                            {product.isDraft ? (
+                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-amber-900">
+                                Draft
+                              </span>
+                            ) : null}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             SKU: {product.sku}
                           </div>

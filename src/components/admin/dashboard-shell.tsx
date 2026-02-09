@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 
 interface AdminDashboardShellProps {
   children: ReactNode
@@ -132,12 +133,13 @@ export function AdminDashboardShell({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <form action="/api/auth/signout" method="post" className="w-full">
-                    <button type="submit" className="flex w-full items-center gap-2 text-left">
-                      Sign out
-                    </button>
-                  </form>
+                <DropdownMenuItem
+                  onClick={() => {
+                    void signOut({ redirectTo: "/auth/signin" })
+                  }}
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
