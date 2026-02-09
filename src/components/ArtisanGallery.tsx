@@ -3,7 +3,7 @@
 import { memo, useMemo } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArtisanProfile } from "@/data/content";
+import { ArtisanProfile } from "@/types/artisan";
 import { patternAssets, regionPalettes } from "@/lib/patterns";
 
 interface ArtisanGalleryProps {

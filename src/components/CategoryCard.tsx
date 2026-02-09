@@ -5,19 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import type { CollectionSummary } from "@/types/collection";
+
 interface CategoryCardProps {
-  category: {
-    id: number;
-    name: string;
-    slug: string;
-    description: string;
-    image: string;
-    itemCount: number;
-    featuredRegions: string[];
-    artisanCount: number;
-    category: string;
-    subcategories: string[];
-  };
+  category: Pick<CollectionSummary, "id" | "name" | "slug" | "image">;
 }
 
 const CategoryCardComponent = ({ category }: CategoryCardProps) => {
@@ -40,7 +31,7 @@ const CategoryCardComponent = ({ category }: CategoryCardProps) => {
             fill
             sizes="(max-width: 768px) 50vw, 16rem"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
-            priority={category.id < 3}
+            priority={false}
           />
           <div className="absolute inset-0 bg-gradient-to-br from-brand-umber/20 via-transparent to-brand-teal/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
         </div>

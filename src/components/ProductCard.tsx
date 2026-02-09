@@ -15,44 +15,12 @@ import { Button } from "@/components/ui/button";
 import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
-
-export interface ProductCardData {
-  id: number;
-  name: string;
-  slug: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  gallery: string[];
-  description: string;
-  origin: string;
-  materials: string[];
-  category?: string;
-  subcategory?: string;
-  productType?: string;
-  isCorporateGift?: boolean;
-  communityImpact?: string;
-  sourcingStory?: string;
-  artisan: {
-    name: string;
-    region: string;
-    regionLabel: string;
-    quote: string;
-    portrait: string;
-  };
-  // New optional fields for enhanced product cards
-  brand?: string;
-  rating?: number;
-  reviewCount?: number;
-  isBestSeller?: boolean;
-  colors?: string[];
-  sizes?: string[];
-}
+import { ProductCardData } from "@/types/product";
 
 interface ProductCardProps {
   product: ProductCardData;
   isSelectedForComparison?: boolean;
-  onComparisonToggle?: (productId: number, isSelected: boolean) => void;
+  onComparisonToggle?: (productId: string, isSelected: boolean) => void;
   onQuickView?: (product: ProductCardData) => void;
 }
 
@@ -98,6 +66,16 @@ const ProductCardComponent = ({
   // Check if user is logged in (simple check for now)
   const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('nextauth.token');
 
+  const getGuestWishlist = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
+      if (Array.isArray(stored)) {
+        return stored.map((value) => value.toString());
+      }
+    } catch {}
+    return [] as string[];
+  };
+
   // Load wishlist state on mount (for guest: localStorage, for user: API)
   useEffect(() => {
     let ignore = false;
@@ -111,7 +89,7 @@ const ProductCardComponent = ({
           }
         } catch {}
       } else {
-        const guestWishlist = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
+        const guestWishlist = getGuestWishlist();
         setIsWishlisted(guestWishlist.includes(product.id));
       }
     }
@@ -145,13 +123,13 @@ const ProductCardComponent = ({
       } catch {}
     } else {
       // Guest: use localStorage
-      const guestWishlist = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
+      const guestWishlist = getGuestWishlist();
       if (!isWishlisted) {
         const updated = [...guestWishlist, product.id];
         localStorage.setItem('tac-wishlist', JSON.stringify(updated));
         setIsWishlisted(true);
       } else {
-        const updated = guestWishlist.filter((id: number) => id !== product.id);
+        const updated = guestWishlist.filter((id) => id !== product.id);
         localStorage.setItem('tac-wishlist', JSON.stringify(updated));
         setIsWishlisted(false);
       }
@@ -221,7 +199,7 @@ const ProductCardComponent = ({
                   fill
                   sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  priority={product.id < 3}
+                  priority={Boolean(product.isBestSeller)}
                 />
               </motion.div>
             </AnimatePresence>
