@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ProductCard, ProductCardData } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
+import { ProductCardData } from "@/types/product";
 import { useSession } from "next-auth/react";
 
 export default function WishlistPage() {

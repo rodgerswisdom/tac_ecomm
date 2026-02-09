@@ -1,4 +1,4 @@
-import { ProductCardData } from "@/components/ProductCard";
+import { ProductCardData } from "@/types/product";
 export interface ArtisanProfile {
   id: number;
   name: string;
@@ -12,7 +12,7 @@ import { LegacyMilestone } from "@/components/LegacyTimeline";
 
 export const featuredProducts: ProductCardData[] = [
   {
-    id: 1,
+    id: "1",
     name: "Kilimanjaro Bronze Collar",
     slug: "kilimanjaro-bronze-collar",
     price: 45000,
@@ -45,7 +45,7 @@ export const featuredProducts: ProductCardData[] = [
     },
   },
   {
-    id: 2,
+    id: "2",
     name: "Sankofa Adinkra Signet",
     slug: "sankofa-adinkra-signet",
     price: 28500,
@@ -78,7 +78,7 @@ export const featuredProducts: ProductCardData[] = [
     },
   },
   {
-    id: 3,
+    id: "3",
     name: "Timbuktu Desert Bangles",
     slug: "timbuktu-desert-bangles",
     price: 19500,
@@ -111,7 +111,7 @@ export const featuredProducts: ProductCardData[] = [
     },
   },
   {
-    id: 4,
+    id: "4",
     name: "Zulu Glasswork Hoop",
     slug: "zulu-glasswork-hoop",
     price: 16800,
@@ -143,7 +143,7 @@ export const featuredProducts: ProductCardData[] = [
     },
   },
   {
-    id: 5,
+    id: "5",
     name: "Ndebele Prism Cuff",
     slug: "ndebele-prism-cuff",
     price: 23600,
@@ -176,7 +176,7 @@ export const featuredProducts: ProductCardData[] = [
     },
   },
   {
-    id: 6,
+    id: "6",
     name: "Atlas Desert Shawl",
     slug: "atlas-desert-shawl",
     price: 31200,
@@ -314,7 +314,7 @@ export interface CollectionCategory {
   highlights?: CollectionCategoryHighlight[];
   spotlight?: CollectionCategorySpotlight;
   ctas?: CollectionCategoryCta[];
-  featuredProductIds?: number[];
+  featuredProductIds?: string[];
 }
 
 export const featuredCollections: CollectionCategory[] = [
@@ -357,7 +357,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Shop Necklaces", href: "#collection-products", variant: "primary" },
       { label: "Book Styling Session", href: "/contact", variant: "secondary" }
     ],
-    featuredProductIds: [1]
+    featuredProductIds: ["1"]
   },
   {
     id: 2,
@@ -398,7 +398,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Shop Rings", href: "#collection-products", variant: "primary" },
       { label: "Design a Custom Signet", href: "/bespoke", variant: "secondary" }
     ],
-    featuredProductIds: [2]
+    featuredProductIds: ["2"]
   },
   {
     id: 3,
@@ -439,7 +439,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Shop Bracelets", href: "#collection-products", variant: "primary" },
       { label: "Explore Styling Guides", href: "/collections", variant: "secondary" }
     ],
-    featuredProductIds: [3, 5]
+    featuredProductIds: ["3", "5"]
   },
   {
     id: 4,
@@ -480,7 +480,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Shop Earrings", href: "#collection-products", variant: "primary" },
       { label: "Discover Matching Sets", href: "/collections/matching-sets", variant: "secondary" }
     ],
-    featuredProductIds: [4]
+    featuredProductIds: ["4"]
   },
   {
     id: 5,
@@ -521,7 +521,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Shop Hair Accessories", href: "#collection-products", variant: "primary" },
       { label: "Request Bridal Styling", href: "/bespoke", variant: "secondary" }
     ],
-    featuredProductIds: [6]
+    featuredProductIds: ["6"]
   },
   {
     id: 6,
@@ -562,7 +562,7 @@ export const featuredCollections: CollectionCategory[] = [
       { label: "Explore Sets", href: "/collections/matching-sets", variant: "primary" },
       { label: "Corporate Gift Concierge", href: "/collections/corporate-gifts", variant: "secondary" }
     ],
-    featuredProductIds: [1, 2, 3, 4, 5, 6]
+    featuredProductIds: ["1", "2", "3", "4", "5", "6"]
   }
 ];
 

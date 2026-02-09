@@ -18,7 +18,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 interface ShowcaseProduct {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   price: number;
@@ -88,7 +88,7 @@ const ShowcaseCardComponent = ({ product }: ShowcaseCardProps) => {
               fill
               sizes="240px"
               className="object-cover"
-              priority={product.id < 3}
+
               onError={() => setCoverError(true)}
             />
           ) : (

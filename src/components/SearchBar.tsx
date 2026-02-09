@@ -4,12 +4,13 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, X } from "lucide-react";
-import { featuredProducts } from "@/data/content";
-import { ProductCardData } from "@/components/ProductCard";
+import { ProductCardData } from "@/types/product";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+
+const SEARCH_LIMIT = 6;
 
 export function SearchBar() {
   const { formatPrice } = useCurrency();
@@ -17,6 +18,7 @@ export function SearchBar() {
   const [results, setResults] = useState<ProductCardData[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -25,25 +27,36 @@ export function SearchBar() {
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setIsLoading(false);
       return;
     }
 
-    const timeoutId = setTimeout(() => {
-      const searchTerm = query.toLowerCase().trim();
-      const filtered = featuredProducts.filter((product) => {
-        const nameMatch = product.name.toLowerCase().includes(searchTerm);
-        const descMatch = product.description.toLowerCase().includes(searchTerm);
-        const categoryMatch = product.category?.toLowerCase().includes(searchTerm) ?? false;
-        const materialsMatch = product.materials.some((m) =>
-          m.toLowerCase().includes(searchTerm)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/products/search?q=${encodeURIComponent(query)}&limit=${SEARCH_LIMIT}`,
+          { signal: controller.signal }
         );
-        return nameMatch || descMatch || categoryMatch || materialsMatch;
-      });
-
-      setResults(filtered.slice(0, 6));
+        if (!response.ok) {
+          throw new Error("Failed to search products");
+        }
+        const data = await response.json();
+        setResults(Array.isArray(data.products) ? data.products : []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          setResults([]);
+        }
+      } finally {
+        setIsLoading(false);
+      }
     }, 300);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [query]);
 
   // Close on outside click
@@ -93,6 +106,8 @@ export function SearchBar() {
     setQuery("");
   };
 
+  const shouldShowDropdown = isOpen && query.trim();
+
   return (
     <div ref={searchRef} className="relative flex-1 max-w-md mx-4">
       <div className="relative">
@@ -139,7 +154,7 @@ export function SearchBar() {
       </div>
 
       <AnimatePresence>
-        {isOpen && query.trim() && results.length > 0 && (
+        {shouldShowDropdown && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -147,56 +162,54 @@ export function SearchBar() {
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 right-0 mt-2 bg-white/98 backdrop-blur-xl rounded-2xl border border-brand-umber/20 shadow-[0_20px_48px_rgba(74,43,40,0.15)] z-50 max-h-[400px] overflow-y-auto"
           >
-            <div className="p-2">
-              {results.map((product) => (
-                <motion.button
-                  key={product.id}
-                  onClick={() => handleResultClick(product.slug)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-brand-jade/10 transition-colors text-left group"
-                  whileHover={{ x: 2 }}
-                >
-                  <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-brand-umber/10">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-brand-umber truncate">
-                      {product.name}
-                    </p>
-                    <p className="text-xs text-brand-umber/60 truncate">
-                      {product.category}
-                    </p>
-                    <p className="text-xs font-semibold text-brand-coral mt-0.5">
-                      {formatPrice(product.price)}
-                    </p>
-                  </div>
-                </motion.button>
-              ))}
-              {results.length >= 6 && (
-                <button
-                  onClick={handleViewAll}
-                  className="w-full mt-2 p-3 rounded-xl bg-brand-teal/10 hover:bg-brand-teal/20 text-sm font-medium text-brand-teal transition-colors"
-                >
-                  View all results for "{query}"
-                </button>
-              )}
-            </div>
-          </motion.div>
-        )}
-        {isOpen && query.trim() && results.length === 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="absolute top-full left-0 right-0 mt-2 bg-white/98 backdrop-blur-xl rounded-2xl border border-brand-umber/20 shadow-[0_20px_48px_rgba(74,43,40,0.15)] z-50 p-4 text-center"
-          >
-            <p className="text-sm text-brand-umber/60">
-              No products found for "{query}"
-            </p>
+            {isLoading ? (
+              <div className="p-4 text-center text-sm text-brand-umber/60">
+                Searching for "{query}"…
+              </div>
+            ) : results.length > 0 ? (
+              <div className="p-2">
+                {results.map((product) => (
+                  <motion.button
+                    key={product.id}
+                    onClick={() => handleResultClick(product.slug)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-brand-jade/10 transition-colors text-left group"
+                    whileHover={{ x: 2 }}
+                  >
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 border border-brand-umber/10">
+                      <Image
+                        src={product.image}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-brand-umber truncate">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-brand-umber/60 truncate">
+                        {product.category}
+                      </p>
+                      <p className="text-xs font-semibold text-brand-coral mt-0.5">
+                        {formatPrice(product.price)}
+                      </p>
+                    </div>
+                  </motion.button>
+                ))}
+                {results.length >= SEARCH_LIMIT && (
+                  <button
+                    onClick={handleViewAll}
+                    className="w-full mt-2 p-3 rounded-xl bg-brand-teal/10 hover:bg-brand-teal/20 text-sm font-medium text-brand-teal transition-colors"
+                  >
+                    View all results for "{query}"
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="p-4 text-center text-sm text-brand-umber/60">
+                No products found for "{query}"
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

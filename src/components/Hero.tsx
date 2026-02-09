@@ -6,8 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
-import { featuredProducts } from "@/data/content";
-import { ProductCardData } from "@/components/ProductCard";
+import { ProductCardData } from "@/types/product";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Sparkles, ArrowRight, ShoppingBag } from "lucide-react";
 
@@ -53,7 +52,11 @@ interface Slide {
   badge?: string;
 }
 
-const HeroComponent = () => {
+interface HeroProps {
+  featuredProducts: ProductCardData[];
+}
+
+const HeroComponent = ({ featuredProducts }: HeroProps) => {
   const { formatPrice } = useCurrency();
   // Get featured products (first 3)
   const featuredProductSlides: Slide[] = featuredProducts.slice(0, 3).map((product) => ({

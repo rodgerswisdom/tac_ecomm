@@ -5,11 +5,11 @@ import Image from "next/image";
 import { X, GitCompare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ProductCardData } from "@/components/ProductCard";
+import { ProductCardData } from "@/types/product";
 
 interface ProductComparisonProps {
   selectedProducts: ProductCardData[];
-  onRemove: (productId: number) => void;
+  onRemove: (productId: string) => void;
   onClear: () => void;
 }
 

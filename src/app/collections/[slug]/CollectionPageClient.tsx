@@ -12,23 +12,22 @@ import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { SortDropdown } from "@/components/ui/custom-dropdown";
 import { CategoryCard } from "@/components/CategoryCard";
-import {
-  featuredCollections,
-  featuredProducts,
-  type CollectionCategory,
-} from "@/data/content";
+import type { CollectionSummary } from "@/types/collection";
+import { ProductCardData } from "@/types/product";
 import { cn } from "@/lib/utils";
 
 interface CollectionPageClientProps {
-  collection: CollectionCategory;
+  collection: CollectionSummary;
+  products: ProductCardData[];
+  relatedCollections?: CollectionSummary[];
 }
 
 type SortOption = "featured" | "price-low" | "price-high" | "newest" | "rating";
 
-const EXCLUDED_RELATED_SLUGS = new Set(["matching-sets", "corporate-gifts"]);
-
 export const CollectionPageClient = ({
   collection,
+  products,
+  relatedCollections = [],
 }: CollectionPageClientProps) => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<SortOption>("featured");
@@ -40,32 +39,18 @@ export const CollectionPageClient = ({
   const availableHighlights = collection.highlights ?? [];
 
   const baseProducts = useMemo(() => {
-    const matchesCategory = featuredProducts.filter((product) => {
-      if (collection.category === "sets") {
-        return (
-          product.productType === "matching-sets" || product.isCorporateGift
-        );
-      }
-
-      return product.category === collection.category;
-    });
-
     if (!collection.featuredProductIds?.length) {
-      return matchesCategory;
+      return products;
     }
 
-    const featuredOrder = new Map<number, number>();
+    const featuredOrder = new Map<string, number>();
     collection.featuredProductIds.forEach((id, index) => {
       featuredOrder.set(id, index);
     });
 
-    return [...matchesCategory].sort((a, b) => {
-      const orderA = featuredOrder.has(a.id)
-        ? featuredOrder.get(a.id)!
-        : Number.MAX_SAFE_INTEGER;
-      const orderB = featuredOrder.has(b.id)
-        ? featuredOrder.get(b.id)!
-        : Number.MAX_SAFE_INTEGER;
+    return [...products].sort((a, b) => {
+      const orderA = featuredOrder.get(a.id) ?? Number.MAX_SAFE_INTEGER;
+      const orderB = featuredOrder.get(b.id) ?? Number.MAX_SAFE_INTEGER;
 
       if (orderA === orderB) {
         return a.name.localeCompare(b.name);
@@ -73,7 +58,7 @@ export const CollectionPageClient = ({
 
       return orderA - orderB;
     });
-  }, [collection]);
+  }, [collection.featuredProductIds, products]);
 
   const subcategoryOptions = useMemo(() => {
     const productSubcategories = Array.from(
@@ -100,29 +85,22 @@ export const CollectionPageClient = ({
       );
     }
 
+    const getCreatedAtValue = (product: ProductCardData) =>
+      product.createdAt ? new Date(product.createdAt).getTime() : 0;
+
     switch (sortBy) {
       case "price-low":
         return [...products].sort((a, b) => a.price - b.price);
       case "price-high":
         return [...products].sort((a, b) => b.price - a.price);
       case "newest":
-        return [...products].sort((a, b) => b.id - a.id);
+        return [...products].sort((a, b) => getCreatedAtValue(b) - getCreatedAtValue(a));
       case "rating":
         return products;
       default:
         return products;
     }
   }, [baseProducts, selectedSubcategory, sortBy]);
-
-  const relatedCollections = useMemo(() => {
-    return featuredCollections
-      .filter(
-        (item) =>
-          item.slug !== collection.slug &&
-          !EXCLUDED_RELATED_SLUGS.has(item.slug)
-      )
-      .slice(0, 3);
-  }, [collection.slug]);
 
   const spotlight = collection.spotlight;
   const ctas = collection.ctas ?? [
