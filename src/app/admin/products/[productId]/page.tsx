@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { AddProductImageForm } from "./AddProductImageForm"
+import { getProductDetail } from "@/server/admin/products"
 import {
   addProductImageAction,
   addVariantAction,
   deleteProductAction,
   deleteProductImageAction,
   deleteVariantAction,
-  getProductDetail,
   updateProductAction,
-} from "@/server/admin/products"
+} from "@/server/admin/product-actions"
 import { getCategoryOptions } from "@/server/admin/categories"
 
 interface ProductDetailPageProps {

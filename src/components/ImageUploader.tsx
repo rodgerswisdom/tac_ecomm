@@ -1,15 +1,22 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import { AnimatePresence, motion } from "framer-motion"
 import { ImageIcon, Loader2, Upload, UploadCloud, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useCloudinary, validateImageFile } from "@/lib/cloudinary"
+import { useCloudinary, validateImageFile, type UploadResult } from "@/lib/cloudinary"
+
+interface UploadStatus {
+  uploading: boolean
+  progress?: number
+  error?: string
+}
 
 interface BaseUploaderProps {
-  onChange?: (files: File[], urls: string[]) => void
+  onChange?: (files: File[], urls: string[], assets?: UploadResult[]) => void
+  onUploadStateChange?: (status: UploadStatus) => void
   maxSizeMb?: number
   folder?: string
   tags?: string[]
@@ -46,6 +53,7 @@ function SingleImageUploader({
   maxSizeMb = 5,
   defaultValue = "",
   onChange,
+  onUploadStateChange,
   folder = "categories",
   tags = ["categories", "admin"],
 }: SingleUploaderProps) {
@@ -70,20 +78,23 @@ function SingleImageUploader({
       }
 
       setUploading(true)
+      onUploadStateChange?.({ uploading: true, progress: 0 })
       try {
         const result = await uploadImage(file, { folder, tags })
         setPreview(result.secure_url)
-        onChange?.([file], [result.secure_url])
+        onChange?.([file], [result.secure_url], [result])
+        onUploadStateChange?.({ uploading: false, progress: 100 })
       } catch (error) {
         console.error(error)
         const message =
           error instanceof Error ? error.message : "Failed to upload image. Please try again."
         alert(message)
+        onUploadStateChange?.({ uploading: false, error: message })
       } finally {
         setUploading(false)
       }
     },
-    [folder, maxSizeMb, onChange, tags, uploadImage]
+    [folder, maxSizeMb, onChange, onUploadStateChange, tags, uploadImage]
   )
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -166,7 +177,7 @@ function SingleImageUploader({
             className="h-8 gap-1 text-[#dd4c3a] hover:text-[#ff816e]"
             onClick={() => {
               setPreview("")
-              onChange?.([], [])
+              onChange?.([], [], [])
             }}
           >
             <X className="h-4 w-4" /> Remove
@@ -179,6 +190,7 @@ function SingleImageUploader({
 
 function MultipleImageUploader({
   onChange,
+  onUploadStateChange,
   label = "Reference Photos (Optional)",
   description,
   maxFiles = 5,
@@ -190,11 +202,30 @@ function MultipleImageUploader({
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>(defaultValues)
   const [uploadedUrls, setUploadedUrls] = useState<string[]>(defaultValues)
+  const [uploadedAssets, setUploadedAssets] = useState<UploadResult[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { uploadImage } = useCloudinary()
+
+  const aggregateProgress = useMemo(() => {
+    const values = Object.values(uploadProgress)
+    if (!values.length) {
+      return uploading ? 35 : 0
+    }
+    const total = values.reduce((sum, value) => sum + value, 0)
+    return Math.round(total / values.length)
+  }, [uploadProgress, uploading])
+
+  useEffect(() => {
+    if (!onUploadStateChange) return
+    if (uploading) {
+      onUploadStateChange({ uploading: true, progress: aggregateProgress })
+    } else if (aggregateProgress > 0) {
+      onUploadStateChange({ uploading: false, progress: aggregateProgress })
+    }
+  }, [aggregateProgress, onUploadStateChange, uploading])
 
   const handleFileSelect = async (selectedFiles: FileList | null) => {
     if (!selectedFiles || selectedFiles.length === 0) return
@@ -225,6 +256,7 @@ function MultipleImageUploader({
 
     if (errors.length > 0) {
       alert(errors.join("\n"))
+      onUploadStateChange?.({ uploading: false, error: errors.join(" ") })
     }
 
     if (newFiles.length > 0) {
@@ -235,33 +267,43 @@ function MultipleImageUploader({
 
   const uploadFiles = async (filesToUpload: File[], startIndex: number) => {
     setUploading(true)
+    onUploadStateChange?.({ uploading: true, progress: 0 })
     const newUrls: string[] = []
+    const newAssets: UploadResult[] = []
+    const errors: string[] = []
 
     try {
       await Promise.all(
         filesToUpload.map(async (file, index) => {
           const currentIndex = startIndex + index
           try {
-            setUploadProgress((prev) => ({ ...prev, [currentIndex]: 50 }))
+            setUploadProgress((prev) => ({ ...prev, [currentIndex]: 35 }))
             const result = await uploadImage(file, { folder, tags })
             newUrls.push(result.secure_url)
+            newAssets.push(result)
             setUploadProgress((prev) => ({ ...prev, [currentIndex]: 100 }))
           } catch (error) {
             console.error(`Failed to upload ${file.name}:`, error)
-            newUrls.push("")
+            errors.push(`${file.name} failed to upload`)
             setUploadProgress((prev) => ({ ...prev, [currentIndex]: 0 }))
           }
         })
       )
 
-      const allUrls = [...uploadedUrls, ...newUrls]
-      setUploadedUrls(allUrls)
-      setFiles((currentFiles) => {
-        onChange?.(currentFiles, allUrls)
-        return currentFiles
-      })
+      if (newUrls.length > 0) {
+        setUploadedUrls((prev) => [...prev, ...newUrls])
+      }
+      if (newAssets.length > 0) {
+        setUploadedAssets((prev) => [...prev, ...newAssets])
+      }
+
+      if (errors.length) {
+        onUploadStateChange?.({ uploading: false, error: errors.join(". ") })
+        alert("Some files failed to upload. Please try again.")
+      }
     } catch (error) {
       console.error("Upload error:", error)
+      onUploadStateChange?.({ uploading: false, error: "Image upload failed. Please try again." })
       alert("Some files failed to upload. Please try again.")
     } finally {
       setUploading(false)
@@ -273,11 +315,12 @@ function MultipleImageUploader({
     const newFiles = files.filter((_, i) => i !== index)
     const newPreviews = previews.filter((_, i) => i !== index)
     const newUrls = uploadedUrls.filter((_, i) => i !== index)
+    const newAssets = uploadedAssets.filter((_, i) => i !== index)
 
     setFiles(newFiles)
     setPreviews(newPreviews)
     setUploadedUrls(newUrls)
-    onChange?.(newFiles, newUrls)
+    setUploadedAssets(newAssets)
   }
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -295,6 +338,10 @@ function MultipleImageUploader({
     setIsDragging(false)
     void handleFileSelect(event.dataTransfer.files)
   }
+
+  useEffect(() => {
+    onChange?.(files, uploadedUrls, uploadedAssets)
+  }, [files, onChange, uploadedAssets, uploadedUrls])
 
   return (
     <div className="space-y-4">

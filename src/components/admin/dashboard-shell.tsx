@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { signOut } from "next-auth/react"
 
 interface AdminDashboardShellProps {
   children: ReactNode
@@ -55,7 +56,7 @@ export function AdminDashboardShell({
     <div className="min-h-screen" style={pageBackgroundStyle}>
       <header className="sticky top-0 z-30 border-b border-[#a17c4d] bg-[#d8b780] text-[#3f3324] shadow-sm">
         <div className="flex w-full flex-wrap items-center gap-4 px-4 py-3 lg:flex-nowrap lg:px-8">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 min-w-0">
             <Link href="/admin/overview" className="flex items-center gap-3">
               <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-base font-semibold text-[#2d3b34]">
                 TAC
@@ -79,7 +80,7 @@ export function AdminDashboardShell({
           <form
             action="/admin/products"
             role="search"
-            className="flex flex-1 items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner max-w-sm min-w-[100px]"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner max-w-full sm:max-w-sm"
           >
             <Search className="h-4 w-4" aria-hidden="true" />
             <label htmlFor="global-search" className="sr-only">
@@ -95,7 +96,7 @@ export function AdminDashboardShell({
             <input type="hidden" name="sort" value="recent" />
           </form>
 
-          <div className="ml-auto flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-4 min-w-0">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -132,12 +133,13 @@ export function AdminDashboardShell({
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <form action="/api/auth/signout" method="post" className="w-full">
-                    <button type="submit" className="flex w-full items-center gap-2 text-left">
-                      Sign out
-                    </button>
-                  </form>
+                <DropdownMenuItem
+                  onClick={() => {
+                    void signOut({ redirectTo: "/auth/signin" })
+                  }}
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                >
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

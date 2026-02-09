@@ -5,11 +5,16 @@ import { createCouponAction } from "@/server/admin/coupons"
 import { CouponType } from "@prisma/client"
 import { redirect } from "next/navigation"
 
-export default function NewCouponPage() {
+export default function NewCouponPage({ searchParams }: { searchParams?: { error?: string } }) {
   async function createCoupon(formData: FormData) {
     "use server"
-    await createCouponAction(formData)
-    redirect("/admin/coupons")
+    try {
+      await createCouponAction(formData)
+      redirect("/admin/coupons")
+    } catch (err: any) {
+      const message = err?.message ?? "Failed to create coupon"
+      redirect(`/admin/coupons/new?error=${encodeURIComponent(message)}`)
+    }
   }
 
   return (
@@ -18,6 +23,11 @@ export default function NewCouponPage() {
         <CardTitle>Create Discount Code</CardTitle>
       </CardHeader>
       <CardContent>
+        {searchParams?.error ? (
+          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {searchParams.error}
+          </div>
+        ) : null}
         <form action={createCoupon} className="space-y-4">
           <Input name="code" placeholder="Code" required maxLength={32} />
           <Input name="description" placeholder="Description" />

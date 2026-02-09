@@ -5,7 +5,7 @@ import { getCoupons, updateCouponAction, deleteCouponAction } from "@/server/adm
 import { CouponType } from "@prisma/client"
 import { notFound, redirect } from "next/navigation"
 
-export default async function EditCouponPage(props: { params: Promise<{ id: string }> }) {
+export default async function EditCouponPage(props: { params: Promise<{ id: string }>; searchParams?: { error?: string } }) {
   const { id } = await props.params;
   const coupons = await getCoupons();
   const coupon = coupons.find((c) => c.id === id);
@@ -14,8 +14,13 @@ export default async function EditCouponPage(props: { params: Promise<{ id: stri
   async function updateCoupon(formData: FormData) {
     "use server"
     if (!coupon) return notFound()
-    await updateCouponAction(coupon.id, formData)
-    redirect("/admin/coupons")
+    try {
+      await updateCouponAction(coupon.id, formData)
+      redirect("/admin/coupons")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update coupon"
+      redirect(`/admin/coupons/${coupon.id}/edit?error=${encodeURIComponent(message)}`)
+    }
   }
 
   async function deleteCoupon() {
@@ -31,6 +36,11 @@ export default async function EditCouponPage(props: { params: Promise<{ id: stri
         <CardTitle>Edit Discount Code</CardTitle>
       </CardHeader>
       <CardContent>
+        {props.searchParams?.error ? (
+          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {props.searchParams.error}
+          </div>
+        ) : null}
         <form action={updateCoupon} className="space-y-4">
           <Input name="code" defaultValue={coupon.code} required maxLength={32} />
           <Input name="description" defaultValue={coupon.description ?? ""} />

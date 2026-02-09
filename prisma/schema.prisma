@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")  // neon postgres url
+  url      = env("DATABASE_URL") // neon postgres url
 }
 
 model Account {
@@ -88,6 +88,7 @@ model Product {
   color            String?
   size             String?
   isActive         Boolean          @default(true)
+  isDraft          Boolean          @default(false)
   isFeatured       Boolean          @default(false)
   isDigital        Boolean          @default(false)
   isBespoke        Boolean          @default(false)
