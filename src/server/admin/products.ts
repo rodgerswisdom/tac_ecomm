@@ -22,7 +22,6 @@ export const productInputSchema = z.object({
     artisanId: z.string().optional().nullable(),
     weight: z.coerce.number().nonnegative().optional().nullable(),
     dimensions: z.string().max(120).optional().nullable(),
-    materials: z.array(z.string().min(2)).max(12).optional(),
 })
 
 export const variantSchema = z.object({
@@ -62,7 +61,6 @@ const formValueFields = [
     "stock",
     "productType",
     "artisanId",
-    "materials",
     "weight",
     "dimensions",
     "customSlug",
@@ -239,16 +237,6 @@ export function buildFieldErrors(issues: z.ZodIssue[]): Partial<Record<ProductFo
         }
         return acc
     }, {})
-}
-
-export function parseMaterialsInput(value: FormDataEntryValue | null) {
-    const raw = optionalString(value)
-    if (!raw) return undefined
-    const parsed = raw
-        .split(",")
-        .map((entry) => entry.trim())
-        .filter((entry) => entry.length > 0)
-    return parsed.length ? parsed : undefined
 }
 
 type MediaPayloadEntry = {

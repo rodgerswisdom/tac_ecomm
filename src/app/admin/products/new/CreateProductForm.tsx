@@ -5,7 +5,7 @@ import { useActionState, useEffect, useMemo, useState } from "react"
 import { CheckCircle2 } from "lucide-react"
 import { useFormStatus } from "react-dom"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
@@ -38,7 +38,6 @@ const baseValues: FormValues = {
   stock: "1",
   productType: PRODUCT_TYPES[0]?.value ?? "READY_TO_WEAR",
   artisanId: "",
-  materials: "",
   weight: "",
   dimensions: "",
   customSlug: "",
@@ -78,6 +77,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   const [hasEditedSku, setHasEditedSku] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [autosaveState, setAutosaveState] = useState<AutosaveState>({ status: "idle" })
+  const [hasPendingMediaUploads, setHasPendingMediaUploads] = useState(false)
   const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
 
   useEffect(() => {
@@ -131,13 +131,54 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!hasInteracted) return
+      if (!hasInteracted && !hasPendingMediaUploads) return
       event.preventDefault()
       event.returnValue = ""
     }
     window.addEventListener("beforeunload", handleBeforeUnload)
     return () => window.removeEventListener("beforeunload", handleBeforeUnload)
-  }, [hasInteracted])
+  }, [hasInteracted, hasPendingMediaUploads])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const shouldBlock = hasInteracted || hasPendingMediaUploads
+    if (!shouldBlock) return
+
+    const message = "You have unsaved changes. Leave this page?"
+
+    const handleLinkClick = (event: MouseEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) return
+      const anchor = target.closest("a[href]") as HTMLAnchorElement | null
+      if (!anchor) return
+      if (anchor.target === "_blank" || anchor.hasAttribute("download")) return
+      const href = anchor.getAttribute("href")
+      if (!href || href.startsWith("#")) return
+      const url = new URL(href, window.location.origin)
+      if (url.origin !== window.location.origin) return
+      if (url.pathname === window.location.pathname && url.search === window.location.search) return
+      const confirmLeave = window.confirm(message)
+      if (!confirmLeave) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+
+    const handlePopState = () => {
+      const confirmLeave = window.confirm(message)
+      if (!confirmLeave) {
+        window.history.forward()
+      }
+    }
+
+    document.addEventListener("click", handleLinkClick, true)
+    window.addEventListener("popstate", handlePopState)
+
+    return () => {
+      document.removeEventListener("click", handleLinkClick, true)
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [hasInteracted, hasPendingMediaUploads])
 
   useEffect(() => {
     if (!hasInteracted || autosaveState.status !== "saved" || !autosaveState.timestamp) return
@@ -145,6 +186,12 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
     const timeout = window.setTimeout(() => setShowDraftSavedToast(false), 2400)
     return () => window.clearTimeout(timeout)
   }, [autosaveState.status, autosaveState.timestamp, hasInteracted])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (state.status !== "idle") return
+    window.localStorage.removeItem(AUTOSAVE_KEY)
+  }, [state.status])
 
   const categoryNameLookup = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {
@@ -528,7 +575,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
               <CardTitle>Product images</CardTitle>
             </CardHeader>
             <CardContent>
-              <ProductMediaFields error={fieldError("media")} />
+              <ProductMediaFields error={fieldError("media")} onMediaStateChange={setHasPendingMediaUploads} />
             </CardContent>
           </Card>
 
@@ -571,6 +618,7 @@ function ActionsCard({
           </div> */}
         </dl>
         <div className="space-y-3">
+          <SaveDraftButton />
           <PublishButton />
           <Button asChild variant="ghost" className="w-full text-muted-foreground">
             <Link href="/admin/products">Cancel</Link>
@@ -578,6 +626,23 @@ function ActionsCard({
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+function SaveDraftButton() {
+  const { pending } = useFormStatus()
+
+  return (
+    <Button
+      type="submit"
+      name="intent"
+      value="draft"
+      variant="outline"
+      className="w-full border-dashed"
+      disabled={pending}
+    >
+      {pending ? "Working…" : "Save as draft"}
+    </Button>
   )
 }
 

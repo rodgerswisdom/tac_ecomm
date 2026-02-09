@@ -11,7 +11,6 @@ import {
   optionalString,
   optionalNumber,
   booleanFromForm,
-  parseMaterialsInput,
   buildFieldErrors,
   validateMediaPayload,
   resolveProductSlug,
@@ -51,7 +50,6 @@ export async function createProductAction(
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
-    materials: parseMaterialsInput(formData.get("materials")) ?? [],
   }
 
   const parsed = productInputSchema.safeParse(payload)
@@ -81,7 +79,7 @@ export async function createProductAction(
     data: {
       ...parsed.data,
       shortDescription: parsed.data.shortDescription ?? null,
-      materials: parsed.data.materials ?? [],
+      materials: [],
       slug,
       isDraft,
     },
@@ -123,7 +121,6 @@ export async function updateProductAction(formData: FormData) {
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
-    materials: parseMaterialsInput(formData.get("materials")),
   }
 
   const parsed = productInputSchema.safeParse(payload)

@@ -1,13 +1,14 @@
 "use client"
 
 import Image from "next/image"
-import { useCallback, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ImageUploader } from "@/components/ImageUploader"
 import type { UploadResult } from "@/lib/cloudinary"
 
 interface ProductMediaFieldsProps {
   maxFiles?: number
   error?: string
+  onMediaStateChange?: (hasMedia: boolean) => void
 }
 
 type MediaPayload = {
@@ -26,9 +27,10 @@ const formatFileSize = (bytes: number) => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function ProductMediaFields({ maxFiles = 5, error }: ProductMediaFieldsProps) {
+export function ProductMediaFields({ maxFiles = 5, error, onMediaStateChange }: ProductMediaFieldsProps) {
   const [mediaAssets, setMediaAssets] = useState<MediaPayload[]>([])
   const [localError, setLocalError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const handleFilesChange = useCallback(
     (_: File[], __: string[], assets?: UploadResult[]) => {
@@ -56,6 +58,7 @@ export function ProductMediaFields({ maxFiles = 5, error }: ProductMediaFieldsPr
   )
 
   const handleUploadStateChange = useCallback((state: { uploading: boolean; error?: string }) => {
+    setIsUploading(state.uploading)
     if (state.error) {
       setLocalError(state.error)
     }
@@ -64,6 +67,10 @@ export function ProductMediaFields({ maxFiles = 5, error }: ProductMediaFieldsPr
   const mediaPayloadValue = JSON.stringify(mediaAssets)
   const feedbackMessage = localError ?? error ?? null
   const mediaCount = mediaAssets.length
+
+  useEffect(() => {
+    onMediaStateChange?.(isUploading || mediaCount > 0)
+  }, [isUploading, mediaCount, onMediaStateChange])
 
   return (
     <div className="space-y-4">
