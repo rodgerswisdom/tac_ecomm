@@ -15,6 +15,11 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
   }
 
   const options = await getCategoryOptions()
+  const updateCategory = async (formData: FormData) => {
+    "use server"
+
+    await updateCategoryAction(undefined, formData)
+  }
   const parentOptions = options.filter((option) => option.id !== category.id)
 
   return (
@@ -31,6 +36,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
             <Link href="/admin/categories">Back to categories</Link>
           </Button>
         }
+        toolbarAlignment="end"
       />
 
       <Card>
@@ -38,12 +44,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
           <CardTitle>Category details</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            action={async (formData) => {
-              await updateCategoryAction(undefined, formData)
-            }}
-            className="space-y-6"
-          >
+          <form action={updateCategory} className="space-y-6">
             <input type="hidden" name="id" value={category.id} />
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
