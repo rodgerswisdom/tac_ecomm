@@ -37,6 +37,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   const hasItems = cart.length > 0;
 
   const cartItems = useMemo(() => cart.map((item) => ({ ...item })), [cart]);
+  const fallbackProductImage = patternAssets.kubaGrid;
 
   const handleAddRecommendation = (product: ProductCardData) => {
     addToCart({
@@ -126,7 +127,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                     >
                       <div className="relative h-24 w-24 overflow-hidden rounded-2xl">
                         <Image
-                          src={item.image}
+                          src={item.image || fallbackProductImage}
                           alt={item.name}
                           fill
                           sizes="96px"
@@ -219,7 +220,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                     <div key={product.id} className="group">
                       <div className="aspect-square overflow-hidden rounded-2xl mb-4">
                         <Image
-                          src={product.image}
+                          src={product.image || fallbackProductImage}
                           alt={product.name}
                           width={300}
                           height={300}

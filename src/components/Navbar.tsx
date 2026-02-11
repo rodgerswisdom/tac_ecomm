@@ -62,6 +62,7 @@ export const Navbar = () => {
   const { currency, setCurrency } = useCurrency();
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [hasMounted, setHasMounted] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSignOut = async () => {
@@ -85,8 +86,9 @@ export const Navbar = () => {
     return 'U';
   };
 
-  const userName = session?.user?.name ?? undefined;
-  const userEmail = session?.user?.email ?? undefined;
+  const sessionUser = hasMounted ? session?.user ?? null : null;
+  const userName = sessionUser?.name ?? undefined;
+  const userEmail = sessionUser?.email ?? undefined;
 
   const handleDropdownMouseEnter = (href: string) => {
     if (closeTimeoutRef.current) {
@@ -111,12 +113,55 @@ export const Navbar = () => {
   };
 
   useEffect(() => {
+    setHasMounted(true);
     return () => {
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
     };
   }, []);
+
+  const renderCurrencyControl = () => {
+    if (!hasMounted) {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-xs font-medium text-brand-umber/80"
+          aria-disabled
+        >
+          {currency}
+        </Button>
+      );
+    }
+
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs font-medium text-brand-umber/80 hover:text-brand-umber"
+          >
+            {currency}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-[100px]">
+          {CURRENCY_OPTIONS.map((opt) => (
+            <DropdownMenuItem
+              key={opt.code}
+              onClick={() => setCurrency(opt.code)}
+              className={cn(currency === opt.code && "bg-brand-teal/10 font-medium")}
+            >
+              {opt.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
+
+  const isAuthenticated = Boolean(sessionUser);
 
   return (
     <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
@@ -209,28 +254,7 @@ export const Navbar = () => {
           </div>
 
           <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs font-medium text-brand-umber/80 hover:text-brand-umber"
-                >
-                  {currency}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[100px]">
-                {CURRENCY_OPTIONS.map((opt) => (
-                  <DropdownMenuItem
-                    key={opt.code}
-                    onClick={() => setCurrency(opt.code)}
-                    className={cn(currency === opt.code && "bg-brand-teal/10 font-medium")}
-                  >
-                    {opt.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {renderCurrencyControl()}
             <div className="lg:hidden">
               <Button
                 variant="ghost"
@@ -258,11 +282,11 @@ export const Navbar = () => {
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 <div className="mt-8 flex flex-col gap-4 text-brand-umber">
-                  {session?.user && (
+                  {sessionUser && (
                     <div className="mb-4 pb-4 border-b border-brand-umber/10">
                       <div className="flex items-center gap-3 px-4">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
+                          <AvatarImage src={sessionUser.image || undefined} alt={userName || ''} />
                           <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
                             {getUserInitials(userName, userEmail)}
                           </AvatarFallback>
@@ -316,7 +340,7 @@ export const Navbar = () => {
                       </div>
                     );
                   })}
-                  {session?.user ? (
+                  {sessionUser ? (
                     <>
                       <div className="pt-2 border-t border-brand-umber/10">
                         <Link
@@ -368,7 +392,7 @@ export const Navbar = () => {
               </Link>
             </Button>
 
-            {session?.user ? (
+            {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -377,7 +401,7 @@ export const Navbar = () => {
                     className="relative h-9 w-9 rounded-full"
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
+                      <AvatarImage src={sessionUser?.image || undefined} alt={userName || ''} />
                       <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
                         {getUserInitials(userName, userEmail)}
                       </AvatarFallback>

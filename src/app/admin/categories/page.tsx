@@ -101,6 +101,8 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
     return `/admin/categories?${params.toString()}`
   }
 
+  const clearSearchHref = buildHref({ q: undefined, page: 1 })
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -118,11 +120,12 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
         }
         toolbar={
           <div className="flex w-full flex-wrap items-center gap-3">
-            <form action="/admin/categories" className="relative flex-1 min-w-[200px] max-w-sm">
+            <form action="/admin/categories" method="get" className="relative flex-1 min-w-[200px] max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="category-search"
                 name="q"
+                type="search"
                 defaultValue={search}
                 placeholder="Search categories..."
                 className="pl-9"
@@ -131,6 +134,16 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
               <input type="hidden" name="pageSize" value={pageSize} />
               <input type="hidden" name="page" value="1" />
             </form>
+            {search ? (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-xs font-medium text-muted-foreground hover:text-foreground"
+              >
+                <Link href={clearSearchHref}>Clear</Link>
+              </Button>
+            ) : null}
             <div className="ml-auto flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <span>Sort by</span>
               <AutoSubmitSelect
@@ -192,8 +205,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                     <td className="px-4 py-4">{category.parent?.name ?? "—"}</td>
                     <td className="px-4 py-4">
                       <RowActions
-                        viewHref={`/collections/${category.slug}`}
-                        viewLinkProps={{ target: "_blank", rel: "noopener noreferrer" }}
+                        viewHref={`/admin/categories/${category.id}`}
                         editHref={`/admin/categories/${category.id}`}
                         deleteConfig={{
                           action: deleteCategoryAction,

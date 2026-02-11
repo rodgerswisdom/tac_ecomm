@@ -33,27 +33,32 @@ function normalizeSlug(value: FormDataEntryValue | null) {
 }
 
 export async function getCategories() {
-    return prisma.category.findMany({
+    const categories = await prisma.category.findMany({
         orderBy: { name: "asc" },
         include: {
             parent: { select: { id: true, name: true } },
             _count: { select: { products: true, children: true } },
         },
     })
+
+    return ensureCategorySlugRecords(categories)
 }
+
 
 export async function getCategoryOptions() {
     return prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
 }
 
 export async function getCategoryById(id: string) {
-    return prisma.category.findUnique({
+    const category = await prisma.category.findUnique({
         where: { id },
         include: {
             parent: { select: { id: true, name: true } },
             _count: { select: { products: true, children: true } },
         },
     })
+
+    return category ? ensureCategorySlugRecord(category) : null
 }
 
 async function resolveCategorySlug(name: string, proposedSlug?: string, existingId?: string) {
@@ -70,6 +75,28 @@ async function resolveCategorySlug(name: string, proposedSlug?: string, existing
         suffix += 1
         candidate = `${base}-${suffix}`
     }
+}
+
+type CategoryRecord = Prisma.CategoryGetPayload<{
+    include: {
+        parent: { select: { id: true, name: true } }
+        _count: { select: { products: true, children: true } }
+    }
+}>
+
+async function ensureCategorySlugRecords<T extends CategoryRecord>(categories: T[]): Promise<T[]> {
+    return Promise.all(categories.map((category) => ensureCategorySlugRecord(category) as Promise<T>))
+}
+
+async function ensureCategorySlugRecord<T extends CategoryRecord>(category: T): Promise<T> {
+    if (category.slug) {
+        return category
+    }
+
+    const slug = await resolveCategorySlug(category.name, undefined, category.id)
+    await prisma.category.update({ where: { id: category.id }, data: { slug } })
+
+    return { ...category, slug } as T
 }
 
 export async function createCategoryAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {

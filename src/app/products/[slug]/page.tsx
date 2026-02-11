@@ -1,16 +1,4 @@
-"use client";
-
-import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
-import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { useCart } from "@/contexts/CartContext";
-import { useCurrency } from "@/contexts/CurrencyContext";
+import { use } from "react";
 import { notFound } from "next/navigation";
 
 import {
@@ -21,21 +9,23 @@ import {
 import { ProductDetailClient } from "./ProductDetailClient";
 
 interface ProductPageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
-export default async function ProductDetailPage({ params }: ProductPageProps) {
-  const product = await getProductCardBySlug(params.slug);
+export default function ProductDetailPage({ params }: ProductPageProps) {
+  const { slug } = use(params);
+  const product = use(getProductCardBySlug(slug));
 
   if (!product) {
     notFound();
   }
 
-  const related = await getRelatedProductCards({
+  const related = use(
+    getRelatedProductCards({
     productId: product.id,
     categorySlug: product.category,
-  });
+    }),
+  );
 
   return <ProductDetailClient product={product} related={related} />;
 }
-      // Same artisan (if available)

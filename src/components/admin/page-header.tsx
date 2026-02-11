@@ -11,6 +11,7 @@ interface AdminPageHeaderProps {
   toolbar?: ReactNode
   className?: string
   actionsAlignment?: "start" | "center" | "end"
+  toolbarAlignment?: "start" | "center" | "end"
 }
 
 export function AdminPageHeader({
@@ -21,14 +22,21 @@ export function AdminPageHeader({
   toolbar,
   className,
   actionsAlignment = "center",
+  toolbarAlignment = "start",
 }: AdminPageHeaderProps) {
   const actionsAlignmentClass =
     actionsAlignment === "end" ? "items-end" : actionsAlignment === "start" ? "items-start" : "items-center"
+  const toolbarAlignmentClass =
+    toolbarAlignment === "end"
+      ? "justify-end"
+      : toolbarAlignment === "center"
+      ? "justify-center"
+      : "justify-start"
 
   return (
     <div className={cn("space-y-3 border-b border-border/70 pb-4", className)}>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1">
+        <div className="space-y-2">
           {(() => {
             const normalized = (breadcrumb && breadcrumb.length > 0
               ? breadcrumb
@@ -80,12 +88,14 @@ export function AdminPageHeader({
               </nav>
             )
           })()}
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
           {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
         </div>
         {actions ? <div className={cn("flex flex-wrap gap-2", actionsAlignmentClass)}>{actions}</div> : null}
       </div>
-      {toolbar ? <div className="flex flex-wrap items-center gap-3">{toolbar}</div> : null}
+      {toolbar ? (
+        <div className={cn("flex flex-wrap items-center gap-3", toolbarAlignmentClass)}>{toolbar}</div>
+      ) : null}
     </div>
   )
 }

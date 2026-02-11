@@ -120,7 +120,9 @@ export async function getCollectionSummaryBySlug(slug: string) {
 
 export async function getCollectionSlugs() {
   const categories = await prisma.category.findMany({ select: { slug: true } })
-  return categories.map((category) => category.slug)
+  return categories
+    .map((category) => category.slug?.trim())
+    .filter((slug): slug is string => Boolean(slug))
 }
 
 function mapCategoryToSummary(category: CategoryWithActiveProducts): CollectionSummary {
