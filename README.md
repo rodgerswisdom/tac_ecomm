@@ -235,6 +235,8 @@ tac_ecomm/
 2. Configure environment variables for production
 3. Set up payment gateway accounts (PayPal, Pesapal)
    - In Pesapal, register an IPN listener pointing to `https://your-domain.com/api/pesapal/notification` and use the returned IPN ID for `PESAPAL_NOTIFICATION_ID`.
+   - For full instructions on setting up Pesapal, including obtaining an access token and registering your IPN listener, see [Pesapal Setup Guide](docs/pesapal-setup.md).
+
    - Use live consumer key/secret and set `PESAPAL_ENVIRONMENT="production"` for production traffic.
 4. Configure shipping APIs (ShipEngine, EasyPost)
 5. Set up email service (Resend)
