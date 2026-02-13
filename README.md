@@ -124,6 +124,9 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    PAYPAL_CLIENT_SECRET="your-paypal-client-secret"
    PESAPAL_CONSUMER_KEY="your-pesapal-consumer-key"
    PESAPAL_CONSUMER_SECRET="your-pesapal-consumer-secret"
+   PESAPAL_ENVIRONMENT="sandbox" # or "production"
+   # IPN ID returned after registering https://your-app.com/api/pesapal/notification in the Pesapal portal
+   PESAPAL_NOTIFICATION_ID="your-pesapal-ipn-id"
    
    # Shipping APIs
    SHIPENGINE_API_KEY="your-shipengine-api-key"
@@ -231,6 +234,8 @@ tac_ecomm/
 1. Set up a PostgreSQL database (e.g., Supabase, Railway, or AWS RDS)
 2. Configure environment variables for production
 3. Set up payment gateway accounts (PayPal, Pesapal)
+   - In Pesapal, register an IPN listener pointing to `https://your-domain.com/api/pesapal/notification` and use the returned IPN ID for `PESAPAL_NOTIFICATION_ID`.
+   - Use live consumer key/secret and set `PESAPAL_ENVIRONMENT="production"` for production traffic.
 4. Configure shipping APIs (ShipEngine, EasyPost)
 5. Set up email service (Resend)
 6. Configure image storage (Cloudinary)
@@ -301,3 +306,36 @@ For support, email <support@tacaccessories.com> or join our Discord community.
 ---
 
 **TAC Accessories** - Celebrating African Heritage Through Jewelry ✨
+
+curl -X POST https://pay.pesapal.com/v3/api/Auth/RequestToken \
+  -H "Content-Type: application/json" \
+  -d '{"consumer_key":"c86HNbUP8OrvSGRcMpo67VVwNAbw8xVB","consumer_secret":"cxyEwHwbxs1mccN25pzcKB6nxy0="}'
+
+  # Replace with your real sandbox key/secret
+
+$body = '{"consumer_key":"gEgCUuQPJd1HfANCReN6w/dvIjqMV7IZ","consumer_secret":"G9ZFq4eI1n0UneDBq4JKGeCNdfY="}'
+$tokenResp = Invoke-RestMethod -Method Post `
+  -Uri "https://pay.pesapal.com/v3/api/Auth/RequestToken" `
+  -ContentType "application/json" `
+  -Body $body
+$tokenResp
+
+$body = '{"consumer_key":"gEgCUuQPJd1HfANCReN6w/dvIjqMV7IZ","consumer_secret":"G9ZFq4eI1n0UneDBq4JKGeCNdfY="}'
+Invoke-RestMethod -Method Post `
+  -Uri "https://cybqa.pesapal.com/pesapalv3/api/Auth/RequestToken" `
+  -ContentType "application/json" `
+  -Headers @{ Accept = "application/json" } `
+  -Body $body
+
+  $token = $tokenResp.token
+$ipnBody = '{"url":"http://localhost:3000/api/pesapal/notification","ipn_notification_type":"POST"}'
+$ipnResp = Invoke-RestMethod -Method Post `
+  -Uri "https://pay.pesapal.com/v3/api/URLSetup/RegisterIPN" `
+  -ContentType "application/json" `
+  -Headers @{ Authorization = "Bearer $eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy5taWNyb3NvZnQuY29tL3dzLzIwMDgvMDYvaWRlbnRpdHkvY2xhaW1zL3VzZXJkYXRhIjoiO
+             TM4MjFjZjgtMDFjMy00Zjc4LTllNmUtZGFiZTZiMWFiN2VmIiwidWlkIjoiZ0VnQ1V1UVBKZDFIZkFOQ1JlTjZ3L2R2SWpxTVY3SVoiLCJuYmYiOjE3NzA5NzA1MzksImV
+             4cCI6MTc3MDk3MDgzOSwiaWF0IjoxNzcwOTcwNTM5LCJpc3MiOiJodHRwOi8vcGF5LnBlc2FwYWwuY29tLyIsImF1ZCI6Imh0dHA6Ly9wYXkucGVzYXBhbC5jb20vIn0.4
+             mRY6uAp9sJFVhhGhWptoXburHDXzUFXRSpvZpGunMY
+expiryDate : 2/13/2026 8:20:39 AM" } `
+  -Body $ipnBody
+$ipnResp

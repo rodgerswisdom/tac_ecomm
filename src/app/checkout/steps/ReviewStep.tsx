@@ -2,8 +2,15 @@ import React from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
+import type { PaymentMethod } from "./PaymentStep";
 
-export function ReviewStep({ shipping, delivery, payment, onPlaceOrder }: ReviewStepProps) {
+const paymentLabel: Record<PaymentMethod, string> = {
+  PESAPAL: "M-Pesa / Pesapal",
+  PAYPAL: "PayPal",
+  CARD: "Credit / Debit Card"
+};
+
+export function ReviewStep({ shipping, delivery, payment, onPlaceOrder, isSubmitting }: ReviewStepProps) {
   const { cart, getCartTotal } = useCart();
   const { formatPrice } = useCurrency();
 
@@ -23,7 +30,7 @@ export function ReviewStep({ shipping, delivery, payment, onPlaceOrder }: Review
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Payment</h3>
-        <div className="text-sm text-muted-foreground">{payment.method === "card" ? "Credit/Debit Card" : payment.method.toUpperCase()}</div>
+        <div className="text-sm text-muted-foreground">{paymentLabel[payment.method]}</div>
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Cart Items</h3>
@@ -39,7 +46,9 @@ export function ReviewStep({ shipping, delivery, payment, onPlaceOrder }: Review
         Total: {formatPrice(getCartTotal())}
       </div>
       <div className="flex justify-end">
-        <Button type="button" onClick={onPlaceOrder}>Place Order</Button>
+        <Button type="button" onClick={onPlaceOrder} disabled={isSubmitting}>
+          {isSubmitting ? "Processing..." : "Place Order"}
+        </Button>
       </div>
     </div>
   );
@@ -58,6 +67,8 @@ type ReviewStepProps = {
     country: string;
   };
   delivery: string;
-  payment: { method: string; card?: { number: string; expiry: string; cvc: string } };
+  payment: { method: PaymentMethod; card?: { number: string; expiry: string; cvc: string } };
   onPlaceOrder: () => void;
+  isSubmitting?: boolean;
 };
+

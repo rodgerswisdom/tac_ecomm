@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const paymentMethods = [
-  { id: "card", label: "Credit/Debit Card" },
-  { id: "mpesa", label: "M-Pesa" },
-  { id: "paypal", label: "PayPal" }
+const paymentMethods: Array<{ id: PaymentMethod; label: string }> = [
+  { id: "PESAPAL", label: "Pesapal" },
+  { id: "PAYPAL", label: "PayPal" },
+  { id: "CARD", label: "Credit / Debit Card" }
 ];
 
 export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => void }) {
-  const [method, setMethod] = useState<PaymentMethod>(paymentMethods[0].id as PaymentMethod);
+  const [method, setMethod] = useState<PaymentMethod>(paymentMethods[0].id);
   const [card, setCard] = useState({ number: "", expiry: "", cvc: "" });
   const [error, setError] = useState("");
 
@@ -19,7 +19,7 @@ export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => vo
       setError("Please select a payment method.");
       return;
     }
-    if (method === "card" && (!card.number || !card.expiry || !card.cvc)) {
+    if (method === "CARD" && (!card.number || !card.expiry || !card.cvc)) {
       setError("Please fill in all card details.");
       return;
     }
@@ -45,7 +45,7 @@ export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => vo
             </label>
           ))}
         </div>
-        {method === "card" && (
+        {method === "CARD" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input
               name="cardNumber"
@@ -79,7 +79,7 @@ export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => vo
   );
 }
 
-export type PaymentMethod = "card" | "mpesa" | "paypal";
+export type PaymentMethod = "PESAPAL" | "PAYPAL" | "CARD";
 export type PaymentFormData = {
   method: PaymentMethod;
   card?: {

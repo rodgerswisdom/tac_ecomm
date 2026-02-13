@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { getEmailConfig } from '@/lib/email'
 import { EmailService } from '@/lib/email'
+import { PaymentService, getPaymentConfig } from '@/lib/payments'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -10,7 +12,7 @@ export async function POST(req: NextRequest) {
   const {
     email, firstName, lastName, phone, address, city, state, zipCode, country,
     paymentMethod, shippingMethod, cartItems: clientCartItems,
-    couponCode, couponDiscount, couponType
+    couponCode, couponDiscount
   } = body
 
   // Require email and shipping fields (Order requires userId from user)
@@ -78,9 +80,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Calculate shipping and tax (re-calculate for security)
-  const shipping = shippingMethod === 'express' ? 25 : shippingMethod === 'standard' ? 15 : 0
+  // Temporarily zero out shipping charges; pricing to be reintroduced later
+  const shipping = 0
   const tax = subtotal * 0.08
   const total = subtotal + shipping + tax - (couponDiscount || 0)
+  const currencyCode = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
+  const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
   // Optionally: validate coupon here (not implemented)
 
@@ -125,7 +130,8 @@ export async function POST(req: NextRequest) {
       tax,
       shipping,
       total,
-      paymentMethod: paymentMethod ?? null,
+      currency: currencyCode,
+      paymentMethod: normalizedPaymentMethod,
       status: 'PENDING',
       shippingMethod: shippingMethod ?? null,
       items: {
@@ -137,6 +143,66 @@ export async function POST(req: NextRequest) {
       }
     }
   })
+
+  let redirectUrl: string | undefined
+
+  if (normalizedPaymentMethod === PaymentMethod.PESAPAL) {
+    const paymentService = new PaymentService(getPaymentConfig())
+    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
+    const callbackUrl = new URL('/api/payment/pesapal/callback', baseUrl)
+    callbackUrl.searchParams.set('orderId', order.id)
+    callbackUrl.searchParams.set('merchantReference', order.orderNumber)
+
+    try {
+      const paymentResponse = await paymentService.createPayment('pesapal', {
+        amount: total,
+        currency: currencyCode,
+        orderId: order.orderNumber,
+        customerEmail: emailTrim,
+        customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
+        customerPhone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : undefined,
+        description: `Order ${order.orderNumber}`,
+        returnUrl: callbackUrl.toString(),
+        cancelUrl: `${baseUrl}/checkout`,
+        billingAddress: {
+          line1: addressTrim,
+          city: cityTrim,
+          state: stateTrim,
+          postalCode: zipCodeTrim,
+          countryCode: countryTrim
+        }
+      })
+
+      if (!paymentResponse.success || !paymentResponse.redirectUrl || !paymentResponse.paymentId) {
+        throw new Error(paymentResponse.error || 'Pesapal did not return a redirect URL')
+      }
+
+      await prisma.payment.create({
+        data: {
+          orderId: order.id,
+          amount: total,
+          currency: currencyCode,
+          method: PaymentMethod.PESAPAL,
+          status: PaymentStatus.PENDING,
+          transactionId: paymentResponse.paymentId,
+          gatewayResponse: JSON.stringify({ redirectUrl: paymentResponse.redirectUrl })
+        }
+      })
+
+      redirectUrl = paymentResponse.redirectUrl
+    } catch (error) {
+      console.error('Pesapal payment initialization failed', error)
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.FAILED
+        }
+      })
+
+      return NextResponse.json({ error: 'Failed to initiate Pesapal payment. Please try again.' }, { status: 502 })
+    }
+  }
 
   if (couponCode) {
     try {
@@ -183,6 +249,22 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     success: true,
     orderId: order.id,
-    orderNumber: order.orderNumber
+    orderNumber: order.orderNumber,
+    redirectUrl
   })
+}
+
+const methodMap: Record<string, PaymentMethod> = {
+  PAYPAL: PaymentMethod.PAYPAL,
+  PESAPAL: PaymentMethod.PESAPAL,
+  MPESA: PaymentMethod.PESAPAL,
+  CREDIT_CARD: PaymentMethod.CREDIT_CARD,
+  CARD: PaymentMethod.CREDIT_CARD,
+  BANK_TRANSFER: PaymentMethod.BANK_TRANSFER
+}
+
+function normalizePaymentMethod(value: unknown): PaymentMethod | null {
+  if (typeof value !== 'string') return null
+  const upper = value.trim().toUpperCase()
+  return methodMap[upper] ?? null
 }

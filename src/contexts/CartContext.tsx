@@ -38,8 +38,10 @@ interface CartProviderProps {
 export function CartProvider({ children }: CartProviderProps) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
+  const [hasSyncedServerCart, setHasSyncedServerCart] = useState(false)
   const { data: session } = useSession()
   const user = session?.user
+  const userEmail = user?.email ?? null
 
   // Fetch user's server cart (production-ready)
   const fetchUserCart = async () => {
@@ -109,30 +111,46 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }, [user])
 
+  // Reset sync flag whenever the authenticated user changes
+  useEffect(() => {
+    setHasSyncedServerCart(false)
+  }, [userEmail])
+
   // On login only: merge local cart with server cart and save (not on every cart change — avoids blink)
   useEffect(() => {
-    if (!user || !isLoaded) return
+    if (!userEmail || !isLoaded || hasSyncedServerCart) return
     let cancelled = false
     ;(async () => {
       const serverCart = await fetchUserCart()
       if (cancelled) return
+
+      let mergedSnapshot: CartItem[] = serverCart
+      let needsSync = false
+
       setCart(prev => {
-        const merged: CartItem[] = [...prev]
-        serverCart.forEach((item: CartItem) => {
-          const existing = merged.find(i => i.id === item.id)
-          if (existing) {
-            existing.quantity += item.quantity
-          } else {
-            merged.push(item)
-          }
-        })
-        saveUserCart(merged)
-        localStorage.removeItem('tac-cart')
-        return merged
+        const result = mergeServerAndLocalCarts(serverCart, prev)
+        mergedSnapshot = result.merged
+        needsSync = result.needsSync
+        return result.merged
       })
+
+      if (cancelled) return
+
+      if (needsSync) {
+        queueMicrotask(() => saveUserCart(mergedSnapshot))
+      }
+
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('tac-cart')
+      }
+
+      setHasSyncedServerCart(true)
     })()
-    return () => { cancelled = true }
-  }, [user, isLoaded])
+
+    return () => {
+      cancelled = true
+    }
+  }, [userEmail, isLoaded, hasSyncedServerCart])
 
   // Save cart to localStorage whenever it changes (for guests)
   useEffect(() => {
@@ -221,6 +239,31 @@ export function CartProvider({ children }: CartProviderProps) {
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>
+}
+
+function mergeServerAndLocalCarts(serverCart: CartItem[], localCart: CartItem[]) {
+  const mergedMap = new Map<CartItem['id'], CartItem>()
+  serverCart.forEach(item => {
+    mergedMap.set(item.id, { ...item })
+  })
+
+  let needsSync = false
+
+  localCart.forEach(item => {
+    const existing = mergedMap.get(item.id)
+    if (!existing) {
+      mergedMap.set(item.id, { ...item })
+      needsSync = true
+      return
+    }
+
+    if (item.quantity > existing.quantity) {
+      mergedMap.set(item.id, { ...existing, quantity: item.quantity })
+      needsSync = true
+    }
+  })
+
+  return { merged: Array.from(mergedMap.values()), needsSync }
 }
 
 export function useCart() {
