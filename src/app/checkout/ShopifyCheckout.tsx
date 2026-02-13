@@ -38,6 +38,7 @@ export default function ShopifyCheckout() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
+  const [placingOrder, setPlacingOrder] = useState(false);
 
   useEffect(() => {
     if (cart.length === 0 && !orderPlaced) {
@@ -57,7 +58,12 @@ export default function ShopifyCheckout() {
   }
 
   async function handlePlaceOrder() {
+    if (!shipping || !delivery || !payment) {
+      setError("Please complete all steps before placing your order.");
+      return;
+    }
     setError("");
+    setPlacingOrder(true);
     try {
       const res = await fetch("/api/order", {
         method: "POST",
@@ -74,10 +80,17 @@ export default function ShopifyCheckout() {
         setError(data.error || "Failed to place order. Please try again.");
         return;
       }
+      if (data.redirectUrl) {
+        setPlacingOrder(false);
+        window.location.href = data.redirectUrl;
+        return;
+      }
       setOrderPlaced(true);
       clearCart();
     } catch {
       setError("Failed to place order. Please try again.");
+    } finally {
+      setPlacingOrder(false);
     }
   }
 
@@ -161,6 +174,7 @@ export default function ShopifyCheckout() {
                         delivery={delivery}
                         payment={payment}
                         onPlaceOrder={handlePlaceOrder}
+                        isSubmitting={placingOrder}
                       />
                     )}
                     {error && <div className="text-red-500 mt-4">{error}</div>}
