@@ -1,30 +1,28 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getToken } from "next-auth/jwt"
+import NextAuth from "next-auth"
+import { authConfig } from "./lib/auth.config"
 
-export async function middleware(request: NextRequest) {
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  })
-  
-  const isAdminRoute = request.nextUrl.pathname.startsWith('/admin')
+const { auth } = NextAuth(authConfig)
+
+export default auth((req) => {
+  const isAdminRoute = req.nextUrl.pathname.startsWith('/admin')
+  const isLoggedIn = !!req.auth
+  const role = req.auth?.user?.role
 
   if (isAdminRoute) {
-    const role = token?.role as string | undefined
-    if (!token || role !== "ADMIN") {
-      const signInUrl = new URL('/auth/signin', request.url)
-      signInUrl.searchParams.set('callbackUrl', request.nextUrl.pathname)
-      return NextResponse.redirect(signInUrl)
+    if (!isLoggedIn || role !== "ADMIN") {
+      const signInUrl = new URL('/auth/signin', req.nextUrl.origin)
+      signInUrl.searchParams.set('callbackUrl', req.nextUrl.pathname)
+      return Response.redirect(signInUrl)
     }
-    const requestHeaders = new Headers(request.headers)
-    requestHeaders.set('x-pathname', request.nextUrl.pathname)
-    return NextResponse.next({
-      request: { headers: requestHeaders }
-    })
-  }
 
-  return NextResponse.next()
-}
+    // Set headers for server components
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('x-pathname', req.nextUrl.pathname)
+
+    // We continue to the next middleware or route
+    return
+  }
+})
 
 export const config = {
   matcher: ["/admin/:path*", "/api/admin/:path*"],
