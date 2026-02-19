@@ -317,7 +317,6 @@ export class PesapalPayment {
   }
 
   private getBaseUrl() {
-    console.log("Pesapal environment:", this.config.environment)
     return this.config.environment === 'sandbox'
       ? 'https://cybqa.pesapal.com/pesapalv3/api'
       : 'https://pay.pesapal.com/v3/api'
@@ -461,7 +460,6 @@ export class PaymentService {
 
 // Utility functions
 export function getPaymentConfig(): PaymentConfig {
-  console.log("Pesapal ENV:", process.env.PESAPAL_ENVIRONMENT) 
   return {
     paypal: {
       clientId: process.env.PAYPAL_CLIENT_ID || '',
@@ -471,7 +469,7 @@ export function getPaymentConfig(): PaymentConfig {
     pesapal: {
       consumerKey: process.env.PESAPAL_CONSUMER_KEY || '',
       consumerSecret: process.env.PESAPAL_CONSUMER_SECRET || '',
-      environment: (process.env.PESAPAL_ENVIRONMENT as 'sandbox' | 'production') || 'production',
+      environment: (process.env.PESAPAL_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
       notificationId: process.env.PESAPAL_NOTIFICATION_ID
     }
   }
