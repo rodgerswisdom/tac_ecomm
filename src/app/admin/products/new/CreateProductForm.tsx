@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
-import { createProductInitialState, type CreateProductFormState } from "@/server/admin/products"
+import { createProductInitialState, type CreateProductFormState } from "@/lib/admin/create-product-form-state"
 import { createProductAction } from "@/server/admin/product-actions"
 import { generateSlug } from "@/lib/utils"
 

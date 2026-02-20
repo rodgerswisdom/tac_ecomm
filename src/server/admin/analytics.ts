@@ -10,9 +10,23 @@ const PAYMENT_CURRENCY_TO_CODE: Record<string, CurrencyCode> = {
     EUR: "EUR",
 }
 
+/** Default currency for payments with missing or wrong currency (e.g. legacy KES stored as USD). */
+const DEFAULT_PAYMENT_CURRENCY = (process.env.DEFAULT_CURRENCY || "USD").toUpperCase()
+const STORE_IS_KES = DEFAULT_PAYMENT_CURRENCY === "KES" || DEFAULT_PAYMENT_CURRENCY === "KSH"
+
+/**
+ * Convert payment amount to USD for revenue. When store default is KES, payments stored as "USD"
+ * are often legacy mistakes (amount was actually KES). Amounts in [1, 2000) are treated as KES.
+ */
 function paymentAmountToUsd(amount: number, currency: string | null): number {
-    const code = currency ? PAYMENT_CURRENCY_TO_CODE[currency.toUpperCase()] : undefined
-    return code ? convertToUsd(amount, code) : amount
+    const raw = (currency || "").trim().toUpperCase()
+    let code = raw ? PAYMENT_CURRENCY_TO_CODE[raw] : undefined
+    if (!code && STORE_IS_KES) code = "KSH"
+    if (!code) code = DEFAULT_PAYMENT_CURRENCY === "EUR" ? "EUR" : "USD"
+    if (code === "USD" && STORE_IS_KES && amount >= 1 && amount < 2000) {
+        return convertToUsd(amount, "KSH")
+    }
+    return code !== "USD" ? convertToUsd(amount, code) : amount
 }
 
 function startOfDay(date: Date) {

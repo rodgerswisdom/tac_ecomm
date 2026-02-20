@@ -84,7 +84,12 @@ export async function POST(req: NextRequest) {
   // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in USD (product prices are USD).
   const shipping = 0
   const tax = 0
-  const total = subtotal - (couponDiscount || 0)
+  // Coupon discount must be 0..subtotal (USD). Reject negative or oversized so total never exceeds subtotal.
+  const rawDiscount = Number(couponDiscount)
+  const couponDiscountUsd = Number.isFinite(rawDiscount)
+    ? Math.max(0, Math.min(rawDiscount, subtotal))
+    : 0
+  const total = Math.max(0, subtotal - couponDiscountUsd)
   const orderCurrency = 'USD' as const
   const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
   // For Pesapal we may charge in local currency (e.g. KES); convert order total (USD) to that currency for the gateway.
@@ -92,6 +97,11 @@ export async function POST(req: NextRequest) {
   const paymentAmount = payCurrencyCode === 'USD' ? total : Math.round(convertFromUsd(total, payCurrencyCode))
   const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
+
+  // Debug: log so you can verify order total (USD) vs amount sent to gateway (e.g. KES). 130 KSH = 1 USD at rate 130.
+  if (process.env.NODE_ENV !== 'production' || process.env.LOG_ORDER_AMOUNTS === '1') {
+    console.info('[order] subtotal:', subtotal, 'discount:', couponDiscountUsd, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, '| items:', validatedItems.map(i => ({ name: i.name, price: i.price, qty: i.quantity })))
+  }
 
   // Optionally: validate coupon here (not implemented)
 
