@@ -1,8 +1,11 @@
+"use server"
+
 import { Prisma, UserRole } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
+import { logAdminAction } from "./audit"
 
 /**
  * ================================
@@ -65,8 +68,8 @@ export async function getUsersSummary({
         : undefined
 
     try {
-        const [users, total] = await prisma.$transaction([
-            prisma.user.findMany({
+        const [usersData, total] = await prisma.$transaction([
+            (prisma.user as any).findMany({
                 where,
                 orderBy: { createdAt: "desc" },
                 skip: (sanitizedPage - 1) * sanitizedPageSize,
@@ -78,30 +81,34 @@ export async function getUsersSummary({
                     role: true,
                     updatedAt: true,
                     createdAt: true,
+                    lastActiveAt: true,
+                    status: true,
                     _count: { select: { orders: true } },
-                    sessions: {
-                        orderBy: { expires: "desc" },
-                        take: 1,
-                        select: { expires: true },
-                    },
                 },
             }),
             prisma.user.count({ where }),
         ])
 
+        const users = usersData as any[]
         const now = new Date()
-        const ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000 // 7 days fallback
+        const ACTIVE_THRESHOLD_MS = 5 * 60 * 1000 // 5 minutes
 
-        // Derive user status from latest session
-        const formattedUsers = users.map(({ sessions, ...user }) => ({
-            ...user,
-            status:
-                (sessions?.[0]?.expires && sessions[0].expires > now)
-                    ? "Active"
-                    : user.updatedAt && now.getTime() - user.updatedAt.getTime() < ACTIVE_WINDOW_MS
-                        ? "Active"
-                        : "Inactive",
-        }))
+        // Derive user status from lastActiveAt
+        const formattedUsers = users.map((user) => {
+            const isBanned = user.status === "BANNED"
+            const isInactive = user.status === "INACTIVE"
+            const isActiveByTime = user.lastActiveAt && (now.getTime() - new Date(user.lastActiveAt).getTime() < ACTIVE_THRESHOLD_MS)
+
+            let displayStatus = "Inactive"
+            if (isBanned) displayStatus = "Banned"
+            else if (isInactive) displayStatus = "Inactive"
+            else if (isActiveByTime) displayStatus = "Active"
+
+            return {
+                ...user,
+                status: displayStatus,
+            }
+        })
 
         return {
             users: formattedUsers,
@@ -132,7 +139,7 @@ export async function getUserDetail(userId: string) {
                 name: true,
                 email: true,
                 role: true,
-                    updatedAt: true,
+                updatedAt: true,
                 createdAt: true,
                 _count: { select: { orders: true } },
                 sessions: {
@@ -171,8 +178,6 @@ export async function getUserDetail(userId: string) {
 
 // Create new user
 export async function createUserAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
-    "use server"
-
     await assertAdmin()
 
     const parsed = createUserSchema.safeParse({
@@ -205,8 +210,6 @@ export async function createUserAction(_prev: ActionResult | undefined, formData
 
 // Update user role
 export async function updateUserRoleAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const parsed = roleSchema.safeParse({
@@ -256,8 +259,6 @@ export async function updateUserRoleAction(formData: FormData) {
 
 // Delete user
 export async function deleteUserAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const userId = formData.get("id")?.toString()
@@ -291,4 +292,36 @@ export async function deleteUserAction(formData: FormData) {
     })
 
     revalidatePath("/admin/users")
+}
+
+export async function bulkDeleteUsersAction(ids: string[]) {
+    await assertAdmin()
+    if (!ids.length) return { error: "No users selected" }
+
+    try {
+        // Prevent deleting the last admin is handled per-user in loop or bulk
+        // For simplicity in bulk, we'll filter out the current user and any admin if they are the only ones
+        const session = await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, role: true } })
+
+        const adminCount = await prisma.user.count({ where: { role: UserRole.ADMIN } })
+        const adminsToDelete = session.filter(u => u.role === UserRole.ADMIN)
+
+        if (adminsToDelete.length >= adminCount) {
+            return { error: "Cannot delete all admin users" }
+        }
+
+        await prisma.user.deleteMany({
+            where: { id: { in: ids } }
+        })
+
+        for (const id of ids) {
+            await logAdminAction("DELETE_USER", "User", id, "Bulk deleted user")
+        }
+
+        revalidatePath("/admin/users")
+        return { success: true }
+    } catch (error) {
+        console.error("Bulk delete users failed:", error)
+        return { error: "Failed to delete users. Most likely they have active orders." }
+    }
 }
