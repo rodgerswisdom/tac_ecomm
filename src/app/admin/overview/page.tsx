@@ -26,7 +26,7 @@ export default async function OverviewPage() {
         <StatsCard
           title="Total Revenue"
           value={metrics.totals.revenue}
-          prefix="$"
+          prefix="KSh "
           subtitle={
             metrics.totals.revenue === 0
               ? "Waiting for payments"
@@ -111,7 +111,7 @@ export default async function OverviewPage() {
                     {order.user?.email ?? "Customer"}
                   </td>
                   <td className="py-3 font-semibold">
-                    {formatPrice(order.total)}
+                    {formatPrice(order.total, "KES")}
                   </td>
                 </tr>
               ))}

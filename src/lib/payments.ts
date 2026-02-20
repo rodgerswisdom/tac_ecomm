@@ -113,25 +113,31 @@ export class PesapalPayment {
       const [firstName, ...rest] = request.customerName.trim().split(' ')
       const lastName = rest.join(' ') || firstName
       const notificationId = this.resolveNotificationId()
+      // Pesapal: id max 50 chars, alphanumeric and - _ . : only; state max 3 chars
+      const merchantId = String(request.orderId)
+        .replace(/[^a-zA-Z0-9\-_.:]/g, '-')
+        .slice(0, 50) || 'order'
+      const state = (request.billingAddress?.state ?? '').trim().slice(0, 3)
       const payload = {
-        id: request.orderId,
+        id: merchantId,
         currency: request.currency,
         amount: Number(request.amount.toFixed(2)),
-        description: request.description,
+        description: (request.description || 'Order').slice(0, 100),
         callback_url: request.returnUrl,
-        ...(notificationId ? { notification_id: notificationId } : {}),
+        notification_id: notificationId,
+        cancellation_url: request.cancelUrl,
         billing_address: {
           email_address: request.customerEmail,
           phone_number: request.customerPhone ?? '',
-          country_code: request.billingAddress?.countryCode ?? '',
+          country_code: (request.billingAddress?.countryCode ?? '').slice(0, 2),
           first_name: firstName,
           middle_name: '',
           last_name: lastName,
-          line_1: request.billingAddress?.line1 ?? '',
-          line_2: request.billingAddress?.line2 ?? '',
-          city: request.billingAddress?.city ?? '',
-          state: request.billingAddress?.state ?? '',
-          zip_code: request.billingAddress?.postalCode ?? ''
+          line_1: (request.billingAddress?.line1 ?? '').slice(0, 255),
+          line_2: (request.billingAddress?.line2 ?? '').slice(0, 255),
+          city: (request.billingAddress?.city ?? '').slice(0, 255),
+          state,
+          zip_code: String(request.billingAddress?.postalCode ?? '').slice(0, 20)
         },
       }
 
@@ -204,6 +210,10 @@ export class PesapalPayment {
     if (!this.config.consumerKey?.trim()) missing.push('PESAPAL_CONSUMER_KEY')
     if (!this.config.consumerSecret?.trim()) missing.push('PESAPAL_CONSUMER_SECRET')
     if (!this.config.environment?.trim()) missing.push('PESAPAL_ENVIRONMENT')
+    const notificationId = this.resolveNotificationId()
+    if (!notificationId) {
+      missing.push('PESAPAL_NOTIFICATION_ID (register an IPN URL in Pesapal dashboard first)')
+    }
     if (missing.length) {
       throw new Error(`Missing Pesapal configuration: ${missing.join(', ')}`)
     }
@@ -220,13 +230,52 @@ export class PesapalPayment {
   }
 
   private normalizeOrderResponse(raw: Record<string, unknown>) {
-    const redirectUrl =
-      this.getNestedString(raw, ['redirect_url']) ??
-      this.getNestedString(raw, ['redirectUrl'])
-    const orderTrackingId =
-      this.getNestedString(raw, ['order_tracking_id']) ??
-      this.getNestedString(raw, ['orderTrackingId'])
-    const statusMessage = this.getNestedString(raw, ['message'])
+    // Pesapal may return top-level or nested under data/payload
+    const data = this.getNestedValue(raw, ['data']) as Record<string, unknown> | undefined
+    const payload = this.getNestedValue(raw, ['payload']) as Record<string, unknown> | undefined
+    const sources: Record<string, unknown>[] = [raw]
+    if (data && typeof data === 'object') sources.push(data)
+    if (payload && typeof payload === 'object') sources.push(payload)
+
+    let redirectUrl: string | undefined
+    let orderTrackingId: string | undefined
+    let statusMessage: string | undefined
+
+    for (const src of sources) {
+      const rRaw =
+        this.getNestedValue(src, ['redirect_url']) ?? this.getNestedValue(src, ['redirectUrl'])
+      const tRaw =
+        this.getNestedValue(src, ['order_tracking_id']) ?? this.getNestedValue(src, ['orderTrackingId'])
+      const r = typeof rRaw === 'string' && rRaw.trim() ? rRaw : rRaw != null ? String(rRaw) : undefined
+      const t = typeof tRaw === 'string' && tRaw.trim() ? tRaw : tRaw != null ? String(tRaw) : undefined
+      const m =
+        this.getNestedString(src, ['message']) ??
+        this.getNestedString(src, ['status_description']) ??
+        this.getNestedString(src, ['statusDescription'])
+      const err = this.getNestedValue(src, ['error'])
+      if (err != null && err !== '' && !m) {
+        if (typeof err === 'string') {
+          statusMessage = err
+        } else if (typeof err === 'object' && err !== null && 'message' in err) {
+          const msg = (err as { message?: string }).message
+          const code = (err as { code?: string }).code
+          statusMessage =
+            typeof msg === 'string' && msg.trim()
+              ? (code ? `${msg} (${code})` : msg)
+              : undefined
+        } else {
+          statusMessage = String(err)
+        }
+      }
+      if (m) statusMessage = m
+      if (r != null && String(r).trim()) redirectUrl = String(r).trim()
+      if (t != null && String(t).trim()) orderTrackingId = String(t).trim()
+      if (redirectUrl && orderTrackingId) break
+    }
+
+    if ((!redirectUrl || !orderTrackingId) && process.env.NODE_ENV === 'development') {
+      console.warn('Pesapal SubmitOrderRequest response (missing redirect/tracking):', JSON.stringify(raw, null, 2))
+    }
 
     return { redirectUrl, orderTrackingId, statusMessage }
   }

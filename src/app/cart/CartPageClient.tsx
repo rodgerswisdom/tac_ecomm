@@ -30,9 +30,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   const { formatPrice } = useCurrency();
 
   const subtotal = getCartTotal();
-  const shipping = subtotal >= 50000 ? 0 : 2500;
-  const duty = subtotal * 0.12;
-  const total = subtotal + shipping + duty;
+  const total = subtotal;
 
   const hasItems = cart.length > 0;
 
@@ -174,11 +172,6 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
 
                 <div className="mt-10 space-y-4 text-sm text-brand-umber/70">
                   <Row label="Subtotal" value={formatPrice(subtotal)} />
-                  <Row
-                    label="Global shipping"
-                    value={shipping === 0 ? "Complimentary" : formatPrice(shipping)}
-                  />
-                  <Row label="Duties & care" value={formatPrice(duty)} />
                 </div>
 
                 <div className="mt-6 flex items-center justify-between rounded-2xl border border-brand-gold/40 bg-white/95 px-5 py-4">

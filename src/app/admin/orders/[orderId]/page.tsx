@@ -54,7 +54,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     notFound()
   }
 
-  const currency = order.currency ?? "USD"
+  const currency = order.currency ?? "KES"
   const address = order.shippingAddress
   const customerName = [address?.firstName, address?.lastName].filter(Boolean).join(" ") || order.user?.name || "Customer"
 

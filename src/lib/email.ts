@@ -192,14 +192,6 @@ export class EmailService {
                 <span>Subtotal:</span>
                 <span>$${data.subtotal.toFixed(2)}</span>
               </div>
-              <div class="item">
-                <span>Tax:</span>
-                <span>$${data.tax.toFixed(2)}</span>
-              </div>
-              <div class="item">
-                <span>Shipping:</span>
-                <span>$${data.shipping.toFixed(2)}</span>
-              </div>
               ${'couponCode' in data && data.couponCode ? `
                 <div class="item">
                   <span>Discount (${data.couponCode}):</span>
@@ -259,8 +251,6 @@ export class EmailService {
       ${data.items.map(item => `- ${item.name} (Qty: ${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`).join('\n')}
       
       Subtotal: $${data.subtotal.toFixed(2)}
-      Tax: $${data.tax.toFixed(2)}
-      Shipping: $${data.shipping.toFixed(2)}
       Total: $${data.total.toFixed(2)}
       
       Shipping Address:
@@ -452,7 +442,7 @@ export class EmailService {
             <ul>
               <li>Exclusive access to new collections</li>
               <li>Special member discounts</li>
-              <li>Free shipping on orders over $100</li>
+              <li>Insured delivery</li>
               <li>Priority customer support</li>
             </ul>
             
@@ -482,7 +472,7 @@ export class EmailService {
       As a new member, you'll enjoy:
       - Exclusive access to new collections
       - Special member discounts
-      - Free shipping on orders over $100
+      - Insured delivery
       - Priority customer support
       
       Start shopping now!

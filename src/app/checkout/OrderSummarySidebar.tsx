@@ -8,9 +8,7 @@ export function OrderSummarySidebar() {
   const { cart, getCartTotal, getCartItemCount } = useCart();
   const { formatPrice } = useCurrency();
   const subtotal = getCartTotal();
-  const shippingEst = subtotal >= 50000 ? 0 : 2500;
-  const duty = subtotal * 0.12;
-  const total = subtotal + shippingEst + duty;
+  const total = subtotal;
 
   return (
     <aside className="w-full md:w-80 shrink-0 rounded-[2.5rem] border border-brand-teal/20 bg-white p-6 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm md:sticky md:top-24 md:self-start">
@@ -27,14 +25,6 @@ export function OrderSummarySidebar() {
         <div className="flex justify-between text-brand-umber/80">
           <span>Subtotal</span>
           <span>{formatPrice(subtotal)}</span>
-        </div>
-        <div className="flex justify-between text-brand-umber/80">
-          <span>Shipping (est.)</span>
-          <span>{shippingEst === 0 ? "Free" : formatPrice(shippingEst)}</span>
-        </div>
-        <div className="flex justify-between text-brand-umber/80">
-          <span>Duty / Tax</span>
-          <span>{formatPrice(duty)}</span>
         </div>
         <div className="flex justify-between font-semibold text-brand-umber pt-2">
           <span>Total</span>

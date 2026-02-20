@@ -131,7 +131,7 @@ export default async function AnalyticsPage() {
                   <td className="py-3">
                     {analytics.ordersPerCustomer.find((entry) => entry.userId === customer.userId)?.orders ?? 0}
                   </td>
-                  <td className="py-3 font-semibold">{formatPrice(customer.total)}</td>
+                  <td className="py-3 font-semibold">{formatPrice(customer.total, "KES")}</td>
                 </tr>
               ))}
               {analytics.highValueCustomers.length === 0 && (

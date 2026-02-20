@@ -210,7 +210,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
                     <td className="px-4 py-4">
                       <div className="font-medium">
-                        {formatPrice(product.price, product.currency ?? "USD")}
+                        {formatPrice(product.price, product.currency ?? "KES")}
                       </div>
                       {discount && (
                         <div className="text-xs text-emerald-600">

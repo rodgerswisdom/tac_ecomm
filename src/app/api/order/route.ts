@@ -79,11 +79,10 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Calculate shipping and tax (re-calculate for security)
-  // Temporarily zero out shipping charges; pricing to be reintroduced later
+  // Total is subtotal minus any coupon (no shipping or duty/tax)
   const shipping = 0
-  const tax = subtotal * 0.08
-  const total = subtotal + shipping + tax - (couponDiscount || 0)
+  const tax = 0
+  const total = subtotal - (couponDiscount || 0)
   const currencyCode = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
@@ -191,6 +190,7 @@ export async function POST(req: NextRequest) {
 
       redirectUrl = paymentResponse.redirectUrl
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Pesapal payment failed'
       console.error('Pesapal payment initialization failed', error)
       await prisma.order.update({
         where: { id: order.id },
@@ -200,7 +200,10 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      return NextResponse.json({ error: 'Failed to initiate Pesapal payment. Please try again.' }, { status: 502 })
+      return NextResponse.json(
+        { error: message || 'Failed to initiate Pesapal payment. Please try again.' },
+        { status: 502 }
+      )
     }
   }
 

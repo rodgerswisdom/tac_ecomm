@@ -107,7 +107,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
               <div className="flex flex-col gap-3 rounded-3xl bg-brand-jade/25 p-6 text-sm text-brand-umber/70">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Complimentary global shipping & insured delivery.
+                  Insured delivery.
                 </div>
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />

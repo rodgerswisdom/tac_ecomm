@@ -177,7 +177,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="px-4 py-4 ">{formatPrice(order.total, order.currency ?? "USD")}</td>
+                      <td className="px-4 py-4 ">{formatPrice(order.total, order.currency ?? "KES")}</td>
                       <td className="px-4 py-4">
                         <StatusBadge
                           label={order.status.replace(/_/g, " ")}
