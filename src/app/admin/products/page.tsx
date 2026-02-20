@@ -4,7 +4,8 @@ import { Download, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { cn, formatPrice } from "@/lib/utils"
+import { cn } from "@/lib/utils"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { getProductList } from "@/server/admin/products"
 import { deleteProductAction } from "@/server/admin/product-actions"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
@@ -210,7 +211,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
                     <td className="px-4 py-4">
                       <div className="font-medium">
-                        {formatPrice(product.price, product.currency ?? "KES")}
+                        <AdminFormattedPrice amount={product.price} />
                       </div>
                       {discount && (
                         <div className="text-xs text-emerald-600">

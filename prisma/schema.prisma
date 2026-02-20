@@ -79,7 +79,7 @@ model Product {
   slug             String           @unique
   description      String
   shortDescription String?
-  price            Float
+  price            Float            // Always USD
   comparePrice     Float?
   sku              String           @unique
   stock            Int              @default(0)

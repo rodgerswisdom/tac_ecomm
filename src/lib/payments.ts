@@ -281,8 +281,38 @@ export class PesapalPayment {
   }
 
   private normalizeStatusResponse(raw: Record<string, unknown>) {
-    const gatewayStatus = (this.getNestedString(raw, ['payment_status']) ?? this.getNestedString(raw, ['status']) ?? 'PENDING').toUpperCase()
-    const statusCode = this.getNestedNumber(raw, ['status_code'])
+    const data = this.getNestedValue(raw, ['data']) as Record<string, unknown> | undefined
+    const payload = this.getNestedValue(raw, ['payload']) as Record<string, unknown> | undefined
+    const sources: Record<string, unknown>[] = [raw]
+    if (data && typeof data === 'object') sources.push(data)
+    if (payload && typeof payload === 'object') sources.push(payload)
+
+    let gatewayStatus = 'PENDING'
+    let statusCode: number | undefined
+    let transactionId: string | undefined
+    let amount: number | undefined
+    let currency: string | undefined
+    let error: string | undefined
+
+    for (const src of sources) {
+      const s = src as Record<string, unknown>
+      if (!gatewayStatus || gatewayStatus === 'PENDING') {
+        const g = this.getNestedString(s, ['payment_status']) ?? this.getNestedString(s, ['status'])
+        if (g) gatewayStatus = g.toUpperCase()
+      }
+      if (statusCode === undefined) statusCode = this.getNestedNumber(s, ['status_code'])
+      if (!transactionId) {
+        transactionId =
+          this.getNestedString(s, ['confirmation_code']) ??
+          this.getNestedString(s, ['payment_method']) ??
+          this.getNestedString(s, ['reference'])
+      }
+      if (amount === undefined) amount = this.getNestedNumber(s, ['amount'])
+      if (!currency) currency = this.getNestedString(s, ['currency'])
+      if (!error && (statusCode === 2 || statusCode === 3 || gatewayStatus === 'FAILED' || gatewayStatus === 'REVERSED')) {
+        error = this.getNestedString(s, ['status_description']) ?? this.getNestedString(s, ['payment_status_description'])
+      }
+    }
 
     const statusMap: Record<string, PaymentVerification['status']> = {
       COMPLETED: 'completed',
@@ -298,15 +328,6 @@ export class PesapalPayment {
 
     const statusFromCode = this.mapStatusCode(statusCode)
     const status = statusFromCode ?? statusMap[gatewayStatus] ?? 'pending'
-
-    const transactionId =
-      this.getNestedString(raw, ['confirmation_code']) ??
-      this.getNestedString(raw, ['payment_method']) ??
-      this.getNestedString(raw, ['reference'])
-
-    const amount = this.getNestedNumber(raw, ['amount'])
-    const currency = this.getNestedString(raw, ['currency'])
-    const error = status === 'failed' ? (this.getNestedString(raw, ['status_description']) ?? this.getNestedString(raw, ['payment_status_description'])) : undefined
 
     return { status, transactionId, amount, currency, error }
   }

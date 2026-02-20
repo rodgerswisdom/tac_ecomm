@@ -1,5 +1,19 @@
 import { PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { convertToUsd } from "@/lib/currency"
+import type { CurrencyCode } from "@/lib/currency"
+
+const PAYMENT_CURRENCY_TO_CODE: Record<string, CurrencyCode> = {
+    USD: "USD",
+    KES: "KSH",
+    KSH: "KSH",
+    EUR: "EUR",
+}
+
+function paymentAmountToUsd(amount: number, currency: string | null): number {
+    const code = currency ? PAYMENT_CURRENCY_TO_CODE[currency.toUpperCase()] : undefined
+    return code ? convertToUsd(amount, code) : amount
+}
 
 function startOfDay(date: Date) {
     const copy = new Date(date)
@@ -48,6 +62,7 @@ export async function getOverviewMetrics() {
         },
         select: {
             amount: true,
+            currency: true,
             createdAt: true,
         },
     })
@@ -77,14 +92,15 @@ export async function getOverviewMetrics() {
     for (const payment of paymentsLast30) {
         const key = formatDayKey(payment.createdAt)
         const bucket = revenueTrendMap.get(key)
+        const amountUsd = paymentAmountToUsd(payment.amount, payment.currency)
         if (bucket) {
-            bucket.revenue += payment.amount
+            bucket.revenue += amountUsd
             bucket.orders += 1
         }
     }
 
     const totalRevenue = paymentsLast30.reduce(
-        (sum, p) => sum + p.amount,
+        (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
         0
     )
 
@@ -169,17 +185,17 @@ export async function getDetailedAnalytics(days = 90) {
     let revenueTotal = 0
 
     for (const order of orders) {
-        const paidAmount = order.payments.reduce(
-            (sum, p) => sum + p.amount,
+        const paidAmountUsd = order.payments.reduce(
+            (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
             0
         )
 
-        revenueTotal += paidAmount
+        revenueTotal += paidAmountUsd
 
         const key = formatDayKey(order.createdAt)
         const bucket = revenueTrendMap.get(key)
         if (bucket) {
-            bucket.revenue += paidAmount
+            bucket.revenue += paidAmountUsd
             bucket.orders += 1
         }
     }

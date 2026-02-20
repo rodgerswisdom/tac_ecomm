@@ -399,7 +399,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <label htmlFor="price" className="text-sm font-semibold text-foreground">
                     <span className="flex items-center gap-1">
-                      Price
+                      Price (USD)
                       <RequiredMark />
                     </span>
                   </label>

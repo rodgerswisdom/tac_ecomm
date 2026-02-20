@@ -4,7 +4,7 @@ import { Mail, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { formatPrice } from "@/lib/utils"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { deleteOrderAction, getOrders } from "@/server/admin/orders"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
@@ -177,7 +177,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="px-4 py-4 ">{formatPrice(order.total, order.currency ?? "KES")}</td>
+                      <td className="px-4 py-4 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} /></td>
                       <td className="px-4 py-4">
                         <StatusBadge
                           label={order.status.replace(/_/g, " ")}

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/admin/stats-card"
 import { SimpleBarChart, SimplePieChart, TrendChart } from "@/components/admin/trend-chart"
 import { getDetailedAnalytics } from "@/server/admin/analytics"
-import { formatPrice } from "@/lib/utils"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { AdminPageHeader } from "@/components/admin/page-header"
 
 export default async function AnalyticsPage() {
@@ -131,7 +131,7 @@ export default async function AnalyticsPage() {
                   <td className="py-3">
                     {analytics.ordersPerCustomer.find((entry) => entry.userId === customer.userId)?.orders ?? 0}
                   </td>
-                  <td className="py-3 font-semibold">{formatPrice(customer.total, "KES")}</td>
+                  <td className="py-3 font-semibold"><AdminFormattedPrice amount={customer.total} /></td>
                 </tr>
               ))}
               {analytics.highValueCustomers.length === 0 && (

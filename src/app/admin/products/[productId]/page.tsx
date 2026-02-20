@@ -99,13 +99,20 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                 className="min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
               <div className="grid gap-4 md:grid-cols-2">
-                <Input name="price" type="number" step="0.01" defaultValue={product.price} required />
-                <Input
-                  name="comparePrice"
-                  type="number"
-                  step="0.01"
-                  defaultValue={product.comparePrice ?? ""}
-                />
+                <label className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Price (USD)</span>
+                  <Input name="price" type="number" step="0.01" defaultValue={product.price} required className="mt-1 block w-full" />
+                </label>
+                <label className="space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Compare at (USD)</span>
+                  <Input
+                    name="comparePrice"
+                    type="number"
+                    step="0.01"
+                    defaultValue={product.comparePrice ?? ""}
+                    className="mt-1 block w-full"
+                  />
+                </label>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <Input name="stock" type="number" min="0" defaultValue={product.stock} required />

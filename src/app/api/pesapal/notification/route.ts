@@ -60,7 +60,7 @@ async function handleNotification(req: NextRequest) {
         where: { method: PaymentMethod.PESAPAL },
         orderBy: { createdAt: 'desc' },
         take: 1,
-        select: { id: true }
+        select: { id: true, currency: true }
       }
     }
   })
@@ -76,15 +76,21 @@ async function handleNotification(req: NextRequest) {
 
   const paymentStatus = mapPaymentStatus(verification.status)
   const orderStatus = deriveOrderStatus(paymentStatus, order.status)
+  const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
+  const existingPayment = order.payments[0]
+  const paymentCurrency =
+    verification.currency ??
+    existingPayment?.currency ??
+    (defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KES' : defaultPaymentCurrency)
 
-  if (order.payments[0]) {
+  if (existingPayment) {
     await prisma.payment.update({
-      where: { id: order.payments[0].id },
+      where: { id: existingPayment.id },
       data: {
         status: paymentStatus,
         transactionId: verification.transactionId ?? orderTrackingId,
         amount: verification.amount ?? order.total,
-        currency: verification.currency ?? order.currency,
+        currency: paymentCurrency,
         gatewayResponse: JSON.stringify(verification)
       }
     })
@@ -96,7 +102,7 @@ async function handleNotification(req: NextRequest) {
         status: paymentStatus,
         transactionId: verification.transactionId ?? orderTrackingId,
         amount: verification.amount ?? order.total,
-        currency: verification.currency ?? order.currency,
+        currency: paymentCurrency,
         gatewayResponse: JSON.stringify(verification)
       }
     })

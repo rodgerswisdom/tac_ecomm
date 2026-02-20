@@ -5,6 +5,8 @@ import { auth } from '@/lib/auth'
 import { getEmailConfig } from '@/lib/email'
 import { EmailService } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
+import { convertFromUsd } from '@/lib/currency'
+import type { CurrencyCode } from '@/lib/currency'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -79,11 +81,16 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Total is subtotal minus any coupon (no shipping or duty/tax)
+  // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in USD (product prices are USD).
   const shipping = 0
   const tax = 0
   const total = subtotal - (couponDiscount || 0)
-  const currencyCode = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
+  const orderCurrency = 'USD' as const
+  const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
+  // For Pesapal we may charge in local currency (e.g. KES); convert order total (USD) to that currency for the gateway.
+  const payCurrencyCode: CurrencyCode = defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KSH' : defaultPaymentCurrency === 'EUR' ? 'EUR' : 'USD'
+  const paymentAmount = payCurrencyCode === 'USD' ? total : Math.round(convertFromUsd(total, payCurrencyCode))
+  const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
   // Optionally: validate coupon here (not implemented)
@@ -129,7 +136,7 @@ export async function POST(req: NextRequest) {
       tax,
       shipping,
       total,
-      currency: currencyCode,
+      currency: orderCurrency,
       paymentMethod: normalizedPaymentMethod,
       status: 'PENDING',
       shippingMethod: shippingMethod ?? null,
@@ -154,8 +161,8 @@ export async function POST(req: NextRequest) {
 
     try {
       const paymentResponse = await paymentService.createPayment('pesapal', {
-        amount: total,
-        currency: currencyCode,
+        amount: paymentAmount,
+        currency: paymentCurrency,
         orderId: order.orderNumber,
         customerEmail: emailTrim,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
@@ -179,8 +186,8 @@ export async function POST(req: NextRequest) {
       await prisma.payment.create({
         data: {
           orderId: order.id,
-          amount: total,
-          currency: currencyCode,
+          amount: paymentAmount,
+          currency: paymentCurrency,
           method: PaymentMethod.PESAPAL,
           status: PaymentStatus.PENDING,
           transactionId: paymentResponse.paymentId,

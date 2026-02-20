@@ -10,6 +10,8 @@ interface StatsCardProps {
   title: string
   value: number
   prefix?: string
+  /** When set, shown instead of prefix+value (e.g. currency-formatted amount) */
+  formattedValue?: string
   subtitle?: string
   change?: number
   icon?: ReactNode
@@ -19,6 +21,7 @@ export function StatsCard({
   title,
   value,
   prefix,
+  formattedValue,
   subtitle,
   change,
   icon,
@@ -49,9 +52,8 @@ export function StatsCard({
       <CardContent className="space-y-1">
         {/* Value */}
         <div className="flex items-center gap-2">
-          <span className="text-3xl font-bold tracking-tight">
-            {prefix}
-            {animatedValue.toLocaleString()}
+            <span className="text-3xl font-bold tracking-tight">
+            {formattedValue != null ? formattedValue : `${prefix ?? ""}${animatedValue.toLocaleString()}`}
           </span>
 
           {change !== undefined && (

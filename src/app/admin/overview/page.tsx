@@ -1,10 +1,11 @@
-import { DollarSign, Package, ShoppingBag, Users } from "lucide-react"
+import { Package, ShoppingBag, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/admin/stats-card"
+import { AdminRevenueCard } from "@/components/admin/admin-revenue-card"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { TrendChart, SimpleBarChart } from "@/components/admin/trend-chart"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { getOverviewMetrics } from "@/server/admin/analytics"
-import { formatPrice } from "@/lib/utils"
 
 export default async function OverviewPage() {
   const metrics = await getOverviewMetrics()
@@ -23,17 +24,7 @@ export default async function OverviewPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Revenue"
-          value={metrics.totals.revenue}
-          prefix="KSh "
-          subtitle={
-            metrics.totals.revenue === 0
-              ? "Waiting for payments"
-              : "Paid orders only"
-          }
-          icon={<DollarSign className="h-8 w-5 text-emerald-500" />}
-        />
+        <AdminRevenueCard revenue={metrics.totals.revenue} />
         <StatsCard
           title="Paid Orders"
           value={metrics.totals.orders}
@@ -111,7 +102,7 @@ export default async function OverviewPage() {
                     {order.user?.email ?? "Customer"}
                   </td>
                   <td className="py-3 font-semibold">
-                    {formatPrice(order.total, "KES")}
+                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} />
                   </td>
                 </tr>
               ))}

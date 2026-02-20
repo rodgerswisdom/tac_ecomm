@@ -3,6 +3,10 @@
 import { useCallback, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { Menu, Search, Settings, UserRound } from "lucide-react"
+import { useCurrency } from "@/contexts/CurrencyContext"
+import { CurrencyCode } from "@/lib/currency"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { SidebarNav, type AdminNavItem } from "@/components/admin/sidebar-nav"
 import {
   DropdownMenu,
@@ -12,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { cn } from "@/lib/utils"
 import { signOut } from "next-auth/react"
 
 interface AdminDashboardShellProps {
@@ -23,6 +26,12 @@ interface AdminDashboardShellProps {
   userEmail: string
 }
 
+const ADMIN_CURRENCY_OPTIONS: { code: CurrencyCode; label: string }[] = [
+  { code: "KSH", label: "KES" },
+  { code: "USD", label: "USD" },
+  { code: "EUR", label: "EUR" },
+]
+
 export function AdminDashboardShell({
   children,
   navItems,
@@ -32,6 +41,7 @@ export function AdminDashboardShell({
 }: AdminDashboardShellProps) {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const { currency, setCurrency } = useCurrency()
   const pageBackgroundStyle = {
     backgroundColor: "#dfe7d9",
     backgroundImage:
@@ -96,7 +106,29 @@ export function AdminDashboardShell({
             <input type="hidden" name="sort" value="recent" />
           </form>
 
-          <div className="ml-auto flex items-center gap-4 min-w-0">
+          <div className="ml-auto flex items-center gap-3 min-w-0">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 border-[#3f3324]/40 bg-[#b8d3c2] text-[#2d3b34] text-sm font-medium hover:bg-[#a9c2b0]"
+                >
+                  {ADMIN_CURRENCY_OPTIONS.find((o) => o.code === currency)?.label ?? currency}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[100px]">
+                {ADMIN_CURRENCY_OPTIONS.map((opt) => (
+                  <DropdownMenuItem
+                    key={opt.code}
+                    onClick={() => setCurrency(opt.code)}
+                    className={cn(currency === opt.code && "bg-primary/10 font-medium")}
+                  >
+                    {opt.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
