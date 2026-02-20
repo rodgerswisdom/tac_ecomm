@@ -1,3 +1,5 @@
+"use server"
+
 import { Prisma } from "@prisma/client"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
@@ -100,8 +102,6 @@ async function ensureCategorySlugRecord<T extends CategoryRecord>(category: T): 
 }
 
 export async function createCategoryAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
-    "use server"
-
     await assertAdmin()
 
     const parsed = categorySchema.safeParse({
@@ -137,8 +137,6 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
 }
 
 export async function updateCategoryAction(_prev: ActionResult | undefined, formData: FormData): Promise<ActionResult> {
-    "use server"
-
     await assertAdmin()
 
     const parsed = categorySchema.safeParse({
@@ -176,8 +174,6 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
 }
 
 export async function deleteCategoryAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const categoryId = formData.get("categoryId")?.toString()

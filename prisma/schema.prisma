@@ -43,12 +43,14 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   passwordHash  String?
+  lastActiveAt  DateTime?  @default(now())
   accounts      Account[]
   addresses     Address[]
   cart          CartItem[]
   orders        Order[]
   reviews       Review[]
   sessions      Session[]
+  status        String?    @default("ACTIVE") // Physical status
 }
 
 model VerificationToken {
@@ -312,6 +314,20 @@ model ProductSet {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   products    Product[] @relation("ProductToProductSet")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
+  entity    String   // e.g., "Product", "Order"
+  entityId  String   // The ID of the affected entity
+  details   String?  // Summary of changes or specific metadata
+  adminId   String
+  adminName String?
+  createdAt DateTime @default(now())
+
+  @@index([adminId])
+  @@index([entity, entityId])
 }
 
 enum UserRole {

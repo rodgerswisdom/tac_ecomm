@@ -19,6 +19,7 @@ import {
   imageSchema,
 } from "./products"
 import type { CreateProductFormState } from "./products"
+import { logAdminAction } from "./audit"
 
 export async function createProductAction(
   _prevState: CreateProductFormState,
@@ -314,9 +315,80 @@ export async function deleteProductImageAction(formData: FormData) {
   revalidateProductRoute(deleted.productId)
 }
 
+export async function reorderImagesAction(productId: string, imageIds: string[]) {
+  await assertAdmin()
+
+  if (!productId || !imageIds.length) {
+    throw new Error("Product ID and image IDs are required")
+  }
+
+  // Update image orders in a transaction
+  await prisma.$transaction(
+    imageIds.map((id, index) =>
+      prisma.productImage.update({
+        where: { id },
+        data: { order: index },
+      })
+    )
+  )
+
+  await logAdminAction(
+    "UPDATE_PRODUCT",
+    "Product",
+    productId,
+    `Reordered ${imageIds.length} images`
+  )
+
+  revalidateProductRoute(productId)
+}
+
 function revalidateProductRoute(productId?: string) {
   revalidatePath("/admin/products")
   if (productId) {
     revalidatePath(`/admin/products/${productId}`)
+  }
+}
+
+export async function bulkArchiveProducts(ids: string[]) {
+  await assertAdmin()
+  if (!ids.length) return { error: "No products selected" }
+
+  try {
+    await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { isActive: false },
+    })
+
+    for (const id of ids) {
+      await logAdminAction("ARCHIVE_PRODUCT", "Product", id, "Bulk archived product")
+    }
+
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (error) {
+    console.error("Bulk archive failed:", error)
+    return { error: "Failed to archive products" }
+  }
+}
+
+export async function bulkDeleteProducts(ids: string[]) {
+  await assertAdmin()
+  if (!ids.length) return { error: "No products selected" }
+
+  try {
+    // We should probably check if they have orders first, but prisma delete handles foreign keys
+    await prisma.product.deleteMany({
+      where: { id: { in: ids } },
+    })
+
+    for (const id of ids) {
+      await logAdminAction("DELETE_PRODUCT", "Product", id, "Bulk deleted product")
+    }
+
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (error) {
+    console.error("Bulk delete failed:", error)
+    return { error: "Failed to delete products. Some might be referenced in orders." }
   }
 }

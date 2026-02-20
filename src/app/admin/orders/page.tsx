@@ -1,15 +1,16 @@
 import Link from "next/link"
-import { OrderStatus, PaymentStatus } from "@prisma/client"
-import { Mail, Search } from "lucide-react"
+import { OrderStatus } from "@prisma/client"
+import { CheckCircle, Clock, Mail, Search, XCircle, RotateCw, Ban, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { formatPrice } from "@/lib/utils"
 import { deleteOrderAction, getOrders } from "@/server/admin/orders"
-import { StatusBadge } from "@/components/admin/status-badge"
 import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
+import { ExportButton } from "@/components/admin/ExportButton"
+import { exportOrdersAction } from "@/server/admin/exports"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -29,24 +30,6 @@ const statusFilterOptions = [
   })),
 ] as const
 const rowsPerPageOptions = [10, 20, 30, 50] as const
-
-const orderStatusVariantMap: Record<OrderStatus, "success" | "warning" | "danger" | "info"> = {
-  PENDING: "warning",
-  CONFIRMED: "info",
-  PROCESSING: "info",
-  SHIPPED: "info",
-  DELIVERED: "success",
-  CANCELLED: "danger",
-  REFUNDED: "danger",
-}
-
-const paymentStatusVariantMap: Record<PaymentStatus, "success" | "warning" | "danger" | "info"> = {
-  PENDING: "warning",
-  COMPLETED: "success",
-  FAILED: "danger",
-  REFUNDED: "info",
-  CANCELLED: "danger",
-}
 
 const orderDateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -118,19 +101,26 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 className="h-10 rounded-full border border-transparent bg-white/95 pl-12 pr-6 text-base text-[#4a2b28] shadow-[0_14px_36px_rgba(74,43,40,0.18)] focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#4b9286]/35"
               />
             </form>
-            <div className="ml-auto flex items-center gap-3 min-w-[200px] max-w-[260px]">
-              <p className="text-xs font-medium text-muted-foreground whitespace-nowrap">Status</p>
-              <AutoSubmitSelect
-                action="/admin/orders"
-                name="status"
-                defaultValue={status ?? ""}
-                options={statusFilterOptions}
-                selectClassName="w-full rounded-full border border-[#d8b685] bg-[#f8ebd2] px-4 py-2 text-sm text-[#4a2b28] shadow-[0_4px_12px_rgba(74,43,40,0.12)]"
-                hiddenFields={{
-                  q: search ?? undefined,
-                  pageSize: String(pageSize),
-                  page: "1",
-                }}
+            <div className="ml-auto flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-[200px] max-w-[260px]">
+                <p className="text-xs font-medium text-muted-foreground whitespace-nowrap">Status</p>
+                <AutoSubmitSelect
+                  action="/admin/orders"
+                  name="status"
+                  defaultValue={status ?? ""}
+                  options={statusFilterOptions}
+                  selectClassName="w-full rounded-full border border-[#d8b685] bg-[#f8ebd2] px-4 py-2 text-sm text-[#4a2b28] shadow-[0_4px_12px_rgba(74,43,40,0.12)]"
+                  hiddenFields={{
+                    q: search ?? undefined,
+                    pageSize: String(pageSize),
+                    page: "1",
+                  }}
+                />
+              </div>
+              <ExportButton
+                action={exportOrdersAction}
+                filename="orders_export"
+                className="h-10 rounded-full border-[#d8b685] bg-[#f8ebd2]/50 px-5 text-[#4a2b28] shadow-sm hover:bg-[#f8ebd2]"
               />
             </div>
           </div>
@@ -168,29 +158,85 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                   const detailHref = `/admin/orders/${order.id}`
                   return (
                     <tr key={order.id} className="border-b last:border-b-0">
-                      <td className="px-4 py-4 ">{order.orderNumber}</td>
-                      <td className="px-4 py-4 ">{formatOrderDate(order.createdAt)}</td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3 ">{order.orderNumber}</td>
+                      <td className="px-4 py-3 ">
+                        {formatOrderDate(order.createdAt)}
+                        <br />
+                        <span className="text-xs text-gray-500">
+                          {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
                         <div className="font-medium">{order.user?.name ?? "Customer"}</div>
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="px-4 py-4 ">{formatPrice(order.total, order.currency ?? "KES")}</td>
-                      <td className="px-4 py-4">
-                        <StatusBadge
-                          label={order.status.replace(/_/g, " ")}
-                          variant={orderStatusVariantMap[order.status] ?? "info"}
-                        />
+                      <td className="px-4 py-3 ">{formatPrice(order.total, order.currency ?? "KES")}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"
+                          style={{
+                            backgroundColor:
+                              order.status === "CONFIRMED"
+                                ? "#e7f0fa"
+                                : order.status === "PENDING"
+                                ? "#fef3c7"
+                                : order.status === "CANCELLED"
+                                ? "#fde2e1"
+                                : "#f3f4f6",
+                            color:
+                              order.status === "CONFIRMED"
+                                ? "#2563eb"
+                                : order.status === "PENDING"
+                                ? "#92400e"
+                                : order.status === "CANCELLED"
+                                ? "#b91c1c"
+                                : "#374151",
+                          }}
+                        >
+                          {(() => {
+                            switch (order.status) {
+                              case "CONFIRMED":
+                                return <><CheckCircle className="h-3 w-3 text-blue-500 inline mr-1" />Confirmed</>;
+                              case "PENDING":
+                                return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
+                              case "CANCELLED":
+                                return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Cancelled</>;
+                              default:
+                                return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.status}</>;
+                            }
+                          })()}
+                        </span>
                       </td>
-                      <td className="px-4 py-4">
-                        <StatusBadge
-                          label={order.paymentStatus.replace(/_/g, " ")}
-                          variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
-                        />
+                      <td className="px-4 py-3 ">
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"
+                          style={{
+                            backgroundColor: order.paymentStatus === "COMPLETED" ? "#f0fdf4" : order.paymentStatus === "FAILED" ? "#fde2e1" : order.paymentStatus === "PENDING" ? "#fef3c7" : "#f3f4f6",
+                            color: order.paymentStatus === "COMPLETED" ? "#166534" : order.paymentStatus === "FAILED" ? "#b91c1c" : order.paymentStatus === "PENDING" ? "#92400e" : "#374151"
+                           }}
+                        >
+                          {(() => {
+                            switch (order.paymentStatus) {
+                              case "COMPLETED":
+                                return <><CheckCircle className="h-3 w-3 text-emerald-500 inline mr-1" />Paid</>;
+                              case "PENDING":
+                                return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
+                              case "FAILED":
+                                return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Failed</>;
+                              case "REFUNDED":
+                                return <><RotateCw className="h-3 w-3 text-blue-500 inline mr-1" />Refunded</>;
+                              case "CANCELLED":
+                                return <><Ban className="h-3 w-3 text-gray-500 inline mr-1" />Cancelled</>;
+                              default:
+                                return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.paymentStatus}</>;
+                            }
+                          })()}
+                        </span>
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-3">
                         <RowActions
                           containerClassName="justify-end gap-2"
                           buttonClassName="border border-border"

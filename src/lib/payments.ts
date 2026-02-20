@@ -62,37 +62,144 @@ export interface PaymentVerificationOptions {
 // PayPal Integration
 export class PayPalPayment {
   private config: PaymentConfig['paypal']
+  private tokenCache?: { token: string; expiresAt: number }
 
   constructor(config: PaymentConfig['paypal']) {
     this.config = config
   }
 
-  async createPayment(_request: PaymentRequest): Promise<PaymentResponse> {
-    void _request
+  private getBaseUrl() {
+    return this.config.mode === 'live'
+      ? 'https://api-m.paypal.com'
+      : 'https://api-m.sandbox.paypal.com'
+  }
+
+  private async getAccessToken(): Promise<string> {
+    const now = Date.now()
+    if (this.tokenCache && now < this.tokenCache.expiresAt - 60_000) {
+      return this.tokenCache.token
+    }
+
+    const auth = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString('base64')
+    const response = await fetch(`${this.getBaseUrl()}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: 'grant_type=client_credentials'
+    })
+
+    if (!response.ok) {
+      throw new Error(`PayPal Auth failed: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+    this.tokenCache = {
+      token: data.access_token,
+      expiresAt: now + (data.expires_in * 1000)
+    }
+    return data.access_token
+  }
+
+  async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
     try {
-      // TODO: Replace with real PayPal API integration
-      // Example: Use fetch or axios to call PayPal REST API
-      throw new Error('PayPal integration not implemented. Please integrate with PayPal REST API.');
+      const token = await this.getAccessToken()
+      const response = await fetch(`${this.getBaseUrl()}/v2/checkout/orders`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          intent: 'CAPTURE',
+          purchase_units: [{
+            reference_id: request.orderId,
+            amount: {
+              currency_code: request.currency,
+              value: request.amount.toFixed(2)
+            },
+            description: request.description
+          }],
+          application_context: {
+            return_url: request.returnUrl,
+            cancel_url: request.cancelUrl,
+            user_action: 'PAY_NOW'
+          }
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Failed to create PayPal order')
+      }
+
+      const order = await response.json()
+      const approveLink = order.links.find((l: any) => l.rel === 'approve')
+
+      return {
+        success: true,
+        paymentId: order.id,
+        redirectUrl: approveLink?.href
+      }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Payment creation failed'
+        error: error instanceof Error ? error.message : 'PayPal payment creation failed'
       }
     }
   }
 
-  async verifyPayment(_paymentId: string, _payerId?: string): Promise<PaymentVerification> {
-    void _paymentId
-    void _payerId
+  async verifyPayment(paymentId: string): Promise<PaymentVerification> {
     try {
-      // TODO: Replace with real PayPal payment verification
-      throw new Error('PayPal payment verification not implemented. Please integrate with PayPal REST API.');
+      const token = await this.getAccessToken()
+      const response = await fetch(`${this.getBaseUrl()}/v2/checkout/orders/${paymentId}/capture`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        // If already captured, we should check status
+        if (error.name === 'ORDER_ALREADY_CAPTURED') {
+          return this.getOrderStatus(paymentId, token)
+        }
+        throw new Error(error.message || 'Failed to capture PayPal payment')
+      }
+
+      const capture = await response.json()
+      const isCompleted = capture.status === 'COMPLETED'
+
+      return {
+        success: isCompleted,
+        status: isCompleted ? 'completed' : 'pending',
+        transactionId: capture.purchase_units?.[0]?.payments?.captures?.[0]?.id,
+        amount: Number(capture.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.value),
+        currency: capture.purchase_units?.[0]?.payments?.captures?.[0]?.amount?.currency_code
+      }
     } catch (error) {
       return {
         success: false,
         status: 'failed',
-        error: error instanceof Error ? error.message : 'Payment verification failed'
+        error: error instanceof Error ? error.message : 'PayPal payment verification failed'
       }
+    }
+  }
+
+  private async getOrderStatus(paymentId: string, token: string): Promise<PaymentVerification> {
+    const response = await fetch(`${this.getBaseUrl()}/v2/checkout/orders/${paymentId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    const order = await response.json()
+    const isCompleted = order.status === 'COMPLETED' || order.status === 'APPROVED'
+
+    return {
+      success: isCompleted,
+      status: isCompleted ? 'completed' : 'pending',
+      transactionId: order.purchase_units?.[0]?.payments?.captures?.[0]?.id || order.id
     }
   }
 }
@@ -498,7 +605,7 @@ export class PaymentService {
   async verifyPayment(method: 'paypal' | 'pesapal', paymentId: string, additionalData?: PaymentVerificationOptions): Promise<PaymentVerification> {
     switch (method) {
       case 'paypal':
-        return this.paypal.verifyPayment(paymentId, additionalData?.payerId)
+        return this.paypal.verifyPayment(paymentId)
       case 'pesapal':
         return this.pesapal.verifyPayment(paymentId, { merchantReference: additionalData?.merchantReference })
       default:

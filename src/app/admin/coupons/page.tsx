@@ -36,8 +36,8 @@ export default function AdminCouponsPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState(""); // Default: show all, not just active
   const [type, setType] = useState("");
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
+  const [start] = useState("");
+  const [end] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [sort, setSort] = useState("createdAt");

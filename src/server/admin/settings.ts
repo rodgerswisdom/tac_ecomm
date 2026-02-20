@@ -1,3 +1,5 @@
+"use server"
+
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -21,8 +23,6 @@ const productFlagSchema = z.object({
 })
 
 export async function toggleProductFlagAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const parsed = productFlagSchema.safeParse({
@@ -50,8 +50,6 @@ const couponToggleSchema = z.object({
 })
 
 export async function toggleCouponAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const parsed = couponToggleSchema.safeParse({

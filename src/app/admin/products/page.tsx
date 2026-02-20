@@ -10,6 +10,7 @@ import { deleteProductAction } from "@/server/admin/product-actions"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
+import { ProductTable } from "./ProductTable"
 
 interface ProductsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -156,96 +157,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </span>
         </CardHeader>
 
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs">Product</th>
-                <th className="px-4 py-3 text-left text-xs">Category</th>
-                <th className="px-4 py-3 text-left text-xs">Price</th>
-                <th className="px-4 py-3 text-left text-xs">Stock</th>
-                <th className="px-4 py-3 text-left text-xs">Status</th>
-                <th className="px-4 py-3 text-right text-xs">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {items.map((product) => {
-                const image = getPrimaryImage(product)
-                const discount = getDiscountPercent(product)
-                const status = getStatus(product)
-
-                return (
-                  <tr key={product.id} className="border-b last:border-b-0">
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted">
-                          {image ? (
-                            <Image src={image.url} alt={product.name} width={40} height={40} />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs">
-                              {product.name.slice(0, 2).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{product.name}</span>
-                            {product.isDraft ? (
-                              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wide text-amber-900">
-                                Draft
-                              </span>
-                            ) : null}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            SKU: {product.sku}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="px-4 py-4 text-muted-foreground">
-                      {product.category?.name ?? "—"}
-                    </td>
-
-                    <td className="px-4 py-4">
-                      <div className="font-medium">
-                        {formatPrice(product.price, product.currency ?? "KES")}
-                      </div>
-                      {discount && (
-                        <div className="text-xs text-emerald-600">
-                          {discount}% off
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="px-4 py-4">{product.stock}</td>
-
-                    <td className="px-4 py-4">
-                      <span className={cn("inline-flex items-center gap-2", status.text)}>
-                        <span className={cn("h-2 w-2 rounded-full", status.dot)} />
-                        {status.label}
-                      </span>
-                    </td>
-
-                    <td className="px-4 py-4 text-right">
-                      <RowActions
-                        viewHref={`/admin/products/${product.id}`}
-                        editHref={`/admin/products/${product.id}`}
-                        deleteConfig={{
-                          action: deleteProductAction,
-                          fields: { productId: product.id },
-                          resourceLabel: product.name,
-                          confirmTitle: `Delete ${product.name}?`,
-                          confirmDescription: `This will permanently remove ${product.name}.`,
-                        }}
-                      />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <CardContent className="p-0">
+          <ProductTable products={items as any} />
         </CardContent>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground">
           {/* Pagination restored */}
@@ -261,20 +174,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
             />
           </div>
           <div className="flex items-center gap-2">
-              <Button asChild size="sm" variant="ghost" disabled={page <= 1}>
-                <Link href={`/admin/products?${buildQueryString(baseParams, { page: page - 1 })}`}>
-                  Prev
-                </Link>
-              </Button>
-              <span>
-                {page}
-              </span>
-              <Button asChild size="sm" variant="ghost" disabled={page >= totalPages}>
-                <Link href={`/admin/products?${buildQueryString(baseParams, { page: page + 1, totalPages })}`}>
-                  Next
-                </Link>
-              </Button>
-            </div>
+            <Button asChild size="sm" variant="ghost" disabled={page <= 1}>
+              <Link href={`/admin/products?${buildQueryString(baseParams, { page: page - 1 })}`}>
+                Prev
+              </Link>
+            </Button>
+            <span>
+              {page}
+            </span>
+            <Button asChild size="sm" variant="ghost" disabled={page >= totalPages}>
+              <Link href={`/admin/products?${buildQueryString(baseParams, { page: page + 1, totalPages })}`}>
+                Next
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

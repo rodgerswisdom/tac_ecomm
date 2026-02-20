@@ -55,8 +55,8 @@ export default async function EditCouponPage(props: { params: Promise<{ id: stri
           <label className="flex items-center gap-2">
             <input type="checkbox" name="isActive" value="true" defaultChecked={coupon.isActive} /> Active
           </label>
-          <Input name="startsAt" type="date" defaultValue={coupon.startsAt ? coupon.startsAt.toISOString().slice(0,10) : ""} />
-          <Input name="expiresAt" type="date" defaultValue={coupon.expiresAt ? coupon.expiresAt.toISOString().slice(0,10) : ""} />
+          <Input name="startsAt" type="date" defaultValue={coupon.startsAt ? coupon.startsAt.toISOString().slice(0, 10) : ""} />
+          <Input name="expiresAt" type="date" defaultValue={coupon.expiresAt ? coupon.expiresAt.toISOString().slice(0, 10) : ""} />
           <Button type="submit" className="w-full">Update Coupon</Button>
         </form>
         <form action={deleteCoupon} className="mt-4">

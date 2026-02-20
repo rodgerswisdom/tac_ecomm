@@ -162,12 +162,12 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Categories ({filtered.length})</CardTitle>
-              <span className="text-sm text-muted-foreground">
-                Showing {visibleCategories.length} of {filtered.length} 
-              </span>
+          <CardTitle className="text-base">Categories ({filtered.length})</CardTitle>
+          <span className="text-sm text-muted-foreground">
+            Showing {visibleCategories.length} of {filtered.length}
+          </span>
         </CardHeader>
-        
+
         <CardContent className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/40">
@@ -191,15 +191,17 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                   <tr key={category.id} className="border-b last:border-b-0">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-xs font-semibold uppercase">
+                        {category.parentId && <div className="ml-8 border-l border-border h-8 mr-2 -mt-4 mb-4" />}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-xs font-semibold uppercase shrink-0">
                           {getInitials(category.name)}
                         </div>
                         <div>
                           <p className="font-medium text-foreground">{category.name}</p>
-                          <p className="text-xs text-muted-foreground">{category.description ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{category.description ?? "—"}</p>
                         </div>
                       </div>
                     </td>
+
                     <td className="px-4 py-4">{category.slug}</td>
                     <td className="px-4 py-4">{category._count.products}</td>
                     <td className="px-4 py-4">{category.parent?.name ?? "—"}</td>

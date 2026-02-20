@@ -12,8 +12,11 @@ export async function POST(req: NextRequest) {
   const {
     email, firstName, lastName, phone, address, city, state, zipCode, country,
     paymentMethod, shippingMethod, cartItems: clientCartItems,
-    couponCode, couponDiscount
+    couponCode, couponDiscount: _couponDiscount
   } = body
+
+  // Client-provided coupon discount is ignored; validation is server-side
+  void _couponDiscount
 
   // Require email and shipping fields (Order requires userId from user)
   const required = { email, firstName, lastName, address, city, state, zipCode, country }
@@ -79,23 +82,82 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Total is subtotal minus any coupon (no shipping or duty/tax)
-  const shipping = 0
-  const tax = 0
-  const total = subtotal - (couponDiscount || 0)
-  const currencyCode = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
+  // Calculate shipping and tax (re-calculate for security)
+  // Temporarily zero out shipping charges; pricing to be reintroduced later
+  let shipping = 0
+  const tax = subtotal * 0.08
+  let couponDiscount = 0
+
+  // Validate coupon server-side (ignore client-provided discount)
+  let appliedCouponCode: string | undefined
+  if (couponCode && typeof couponCode === 'string' && couponCode.trim()) {
+    const code = couponCode.trim().toUpperCase()
+    const coupon = await prisma.coupon.findUnique({ where: { code } })
+    const now = new Date()
+
+    if (!coupon || !coupon.isActive) {
+      return NextResponse.json({ error: 'Coupon is invalid or inactive' }, { status: 400 })
+    }
+    if (coupon.startsAt && now < coupon.startsAt) {
+      return NextResponse.json({ error: 'Coupon is not yet active' }, { status: 400 })
+    }
+    if (coupon.expiresAt && now > coupon.expiresAt) {
+      return NextResponse.json({ error: 'Coupon has expired' }, { status: 400 })
+    }
+    if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses) {
+      return NextResponse.json({ error: 'Coupon usage limit reached' }, { status: 400 })
+    }
+    if (coupon.minAmount != null && subtotal < coupon.minAmount) {
+      return NextResponse.json({ error: `Order must be at least ${coupon.minAmount} to use this coupon` }, { status: 400 })
+    }
+
+    switch (coupon.type) {
+      case 'PERCENTAGE': {
+        couponDiscount = subtotal * (coupon.value / 100)
+        break
+      }
+      case 'FIXED_AMOUNT': {
+        couponDiscount = coupon.value
+        break
+      }
+      case 'FREE_SHIPPING': {
+        shipping = 0
+        couponDiscount = 0
+        break
+      }
+      default:
+        couponDiscount = 0
+    }
+
+    const maxDiscountable = subtotal + shipping + tax
+    couponDiscount = Math.min(Math.max(couponDiscount, 0), maxDiscountable)
+    appliedCouponCode = code
+  }
+
+  const total = subtotal + shipping + tax - (couponDiscount || 0 )
+  const currencyCode = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
-  // Optionally: validate coupon here (not implemented)
+  // Generate sequential atomic order number (e.g., TAC01)
+  async function generateOrderNumber() {
+    try {
+      // Ensure sequence exists (one-time setup or safe check)
+      await prisma.$executeRawUnsafe(`CREATE SEQUENCE IF NOT EXISTS order_number_seq START WITH 1`)
 
+      // Fetch next value atomically
+      const result = await prisma.$queryRawUnsafe<{ nextval: bigint }[]>(`SELECT nextval('order_number_seq')`)
+      const nextId = Number(result[0].nextval)
 
-  // Generate unique order number
-  function generateOrderNumber() {
-    const now = Date.now()
-    const rand = Math.floor(1000 + Math.random() * 9000)
-    return `TAC${now}${rand}`
+      // Pad to at least 2 digits (e.g., 1 -> 01, 10 -> 10)
+      const paddedNumber = nextId.toString().padStart(2, '0')
+      return `TAC${paddedNumber}`
+    } catch (err) {
+      console.error('Failed to generate atomic order number, falling back to count:', err)
+      const count = await prisma.order.count()
+      return `TAC${(count + 1).toString().padStart(2, '0')}`
+    }
   }
-  const orderNumber = generateOrderNumber()
+  const orderNumber = await generateOrderNumber()
 
   // Get or create user (Order and Address require userId)
   const user = await prisma.user.upsert({
@@ -152,6 +214,10 @@ export async function POST(req: NextRequest) {
     callbackUrl.searchParams.set('orderId', order.id)
     callbackUrl.searchParams.set('merchantReference', order.orderNumber)
 
+    const cancelUrl = new URL('/checkout/cancel', baseUrl)
+    cancelUrl.searchParams.set('orderId', order.id)
+    cancelUrl.searchParams.set('orderNumber', order.orderNumber)
+
     try {
       const paymentResponse = await paymentService.createPayment('pesapal', {
         amount: total,
@@ -162,7 +228,7 @@ export async function POST(req: NextRequest) {
         customerPhone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : undefined,
         description: `Order ${order.orderNumber}`,
         returnUrl: callbackUrl.toString(),
-        cancelUrl: `${baseUrl}/checkout`,
+        cancelUrl: cancelUrl.toString(),
         billingAddress: {
           line1: addressTrim,
           city: cityTrim,
@@ -207,10 +273,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (couponCode) {
+  if (appliedCouponCode) {
     try {
       await prisma.coupon.update({
-        where: { code: couponCode },
+        where: { code: appliedCouponCode },
         data: { usedCount: { increment: 1 } }
       })
     } catch {
@@ -243,7 +309,7 @@ export async function POST(req: NextRequest) {
         zipCode: zipCodeTrim,
         country: countryTrim
       },
-      ...(couponCode && { couponCode, couponDiscount: couponDiscount ?? 0 })
+      ...(appliedCouponCode && { couponCode: appliedCouponCode, couponDiscount: couponDiscount ?? 0 })
     })
   } catch (err) {
     console.error('Order confirmation email failed:', err)
@@ -253,7 +319,8 @@ export async function POST(req: NextRequest) {
     success: true,
     orderId: order.id,
     orderNumber: order.orderNumber,
-    redirectUrl
+    redirectUrl,
+    ...(appliedCouponCode ? { couponCode: appliedCouponCode, couponDiscount } : {})
   })
 }
 

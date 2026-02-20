@@ -7,12 +7,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { AddProductImageForm } from "./AddProductImageForm"
 import { getProductDetail } from "@/server/admin/products"
+import { ImageSortableGallery } from "./ImageSortableGallery"
 import {
   addProductImageAction,
   addVariantAction,
   deleteProductAction,
   deleteProductImageAction,
   deleteVariantAction,
+  reorderImagesAction,
   updateProductAction,
 } from "@/server/admin/product-actions"
 import { getCategoryOptions } from "@/server/admin/categories"
@@ -230,24 +232,13 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
         <CardHeader>
           <CardTitle>Images</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-4">
-            {product.images.length === 0 && <p className="text-sm text-muted-foreground">No images uploaded.</p>}
-            {product.images.map((image) => (
-              <div key={image.id} className="w-48 rounded-lg border border-border p-2">
-                <div className="relative h-32 w-full overflow-hidden rounded-md bg-muted">
-                  <Image src={image.url} alt={image.alt ?? product.name} fill sizes="192px" className="object-cover" />
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">Order {image.order}</p>
-                <form action={deleteProductImageAction} className="mt-2">
-                  <input type="hidden" name="imageId" value={image.id} />
-                  <Button type="submit" variant="ghost" size="sm" className="w-full">
-                    Remove
-                  </Button>
-                </form>
-              </div>
-            ))}
-          </div>
+        <CardContent className="space-y-6">
+          <ImageSortableGallery
+            productId={product.id}
+            initialImages={product.images}
+            onDeleteAction={deleteProductImageAction}
+            onReorderAction={reorderImagesAction}
+          />
           <AddProductImageForm productId={product.id} addProductImageAction={addProductImageAction} />
         </CardContent>
       </Card>
