@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
         data: {
           orderId: order.id,
           amount: paymentAmount,
-          currency: paymentCurrency,
+          currency: 'KES',
           method: PaymentMethod.PESAPAL,
           status: PaymentStatus.PENDING,
           transactionId: paymentResponse.paymentId,

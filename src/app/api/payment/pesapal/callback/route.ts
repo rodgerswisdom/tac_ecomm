@@ -62,12 +62,8 @@ export async function GET(req: NextRequest) {
 
     const paymentStatus = mapPaymentStatus(verification.status)
     const orderStatus = deriveOrderStatus(paymentStatus, order.status)
-    const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
     const existingPayment = order.payments[0]
-    const paymentCurrency =
-      verification.currency ??
-      existingPayment?.currency ??
-      (defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KES' : defaultPaymentCurrency)
+    const paymentCurrency = 'KES'
 
     if (existingPayment) {
       await prisma.payment.update({
