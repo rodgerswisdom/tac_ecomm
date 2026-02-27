@@ -6,6 +6,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
+import { createEmailService } from "@/lib/email"
 
 /**
  * ================================
@@ -190,19 +191,14 @@ export async function createUserAction(_prev: ActionResult | undefined, formData
         return { error: parsed.error.issues[0]?.message ?? "Invalid user payload" }
     }
 
-    try {
-        await prisma.user.create({
-            data: parsed.data,
-        })
-    } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-        ) {
-            return { error: "A user with that email already exists" }
-        }
-        return { error: "Failed to create user" }
-    }
+    const newUser = await prisma.user.create({
+        data: parsed.data,
+    })
+
+    // Fire welcome email asynchronously
+    void createEmailService()
+        .sendWelcomeEmail(newUser.name ?? parsed.data.name, newUser.email)
+        .catch((err) => console.error('[email] admin create user welcome failed:', err))
 
     revalidatePath("/admin/users")
     return { success: true }

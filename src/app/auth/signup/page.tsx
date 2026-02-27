@@ -21,14 +21,22 @@ export default function SignUpPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [passwordsMatch, setPasswordsMatch] = useState(true)
   const router = useRouter()
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value }
+      if (name === 'password' || name === 'confirmPassword') {
+        setPasswordsMatch(
+          name === 'password'
+            ? value === prev.confirmPassword
+            : prev.password === value
+        )
+      }
+      return updated
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -262,6 +270,9 @@ export default function SignUpPage() {
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {!passwordsMatch && formData.confirmPassword && (
+                    <p className="mt-2 text-xs text-red-600">Passwords do not match</p>
+                  )}
                 </div>
 
                 <Button

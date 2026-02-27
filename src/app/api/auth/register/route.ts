@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { createEmailService } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail }
+      where: { email: normalizedEmail },
     })
 
     if (existingUser) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash password with bcrypt (12 rounds for good security/performance balance)
+    // Hash password with bcrypt (12 rounds — good security/performance balance)
     const hashedPassword = await hash(plainPassword, 12)
 
     // Create user in database
@@ -52,17 +53,22 @@ export async function POST(request: NextRequest) {
         name: trimmedName,
         email: normalizedEmail,
         passwordHash: hashedPassword,
-        role: 'CUSTOMER', // Set as customer by default
-        emailVerified: null
+        role: 'CUSTOMER',
+        emailVerified: null,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     })
+
+    // Fire welcome email asynchronously — never block the response
+    void createEmailService()
+      .sendWelcomeEmail(trimmedName, normalizedEmail)
+      .catch((err) => console.error('[email] welcome email failed:', err))
 
     return NextResponse.json(
       {
@@ -71,8 +77,8 @@ export async function POST(request: NextRequest) {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
-        }
+          role: user.role,
+        },
       },
       { status: 201 }
     )
@@ -84,3 +90,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+

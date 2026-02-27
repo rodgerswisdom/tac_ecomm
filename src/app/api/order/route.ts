@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { getEmailConfig } from '@/lib/email'
-import { EmailService } from '@/lib/email'
+import { createEmailService } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 
 export async function POST(req: NextRequest) {
@@ -134,11 +133,14 @@ export async function POST(req: NextRequest) {
     appliedCouponCode = code
   }
 
-  const total = subtotal + shipping + tax - (couponDiscount || 0 )
-  const currencyCode = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
+  const total = subtotal + shipping + tax - (couponDiscount || 0)
+  // Payment amount sent to gateway is in KES (rate: 130 KES = 1 USD)
+  const KES_RATE = 130
+  const paymentAmount = Math.round(total * KES_RATE)
+  const paymentCurrency = 'KES'
+  const orderCurrency = (process.env.DEFAULT_CURRENCY ?? 'USD').toUpperCase()
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
-  // Debug: log so you can verify order total (USD) vs amount sent to gateway (e.g. KES). 130 KSH = 1 USD at rate 130.
   if (process.env.NODE_ENV !== 'production' || process.env.LOG_ORDER_AMOUNTS === '1') {
     console.info('[order] subtotal:', subtotal, 'discount:', couponDiscount, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, '| items:', validatedItems.map(i => ({ name: i.name, price: i.price, qty: i.quantity })))
   }
@@ -197,8 +199,9 @@ export async function POST(req: NextRequest) {
       shipping,
       total,
       currency: orderCurrency,
-      paymentMethod: normalizedPaymentMethod,
-      status: 'PENDING',
+      paymentMethod: normalizedPaymentMethod ?? undefined,
+      paymentStatus: PaymentStatus.PENDING,
+      status: OrderStatus.PENDING,
       shippingMethod: shippingMethod ?? null,
       items: {
         create: validatedItems.map(({ productId, quantity, price }) => ({
@@ -290,35 +293,33 @@ export async function POST(req: NextRequest) {
   }
 
   // Send order confirmation email (do not fail the request if email fails)
-  try {
-    const emailService = new EmailService(getEmailConfig())
-    await emailService.sendOrderConfirmation({
+  void createEmailService()
+    .sendOrderConfirmation({
       customerName: `${firstNameTrim} ${lastNameTrim}`,
       customerEmail: emailTrim,
       orderNumber,
       orderDate: new Date(order.createdAt).toLocaleDateString('en-GB', {
         day: '2-digit',
         month: 'short',
-        year: 'numeric'
+        year: 'numeric',
       }),
       items: validatedItems.map(({ name, quantity, price }) => ({ name, quantity, price })),
       subtotal,
       tax,
       shipping,
       total,
+      currency: orderCurrency,
       shippingAddress: {
         name: `${firstNameTrim} ${lastNameTrim}`,
         address: addressTrim,
         city: cityTrim,
         state: stateTrim,
         zipCode: zipCodeTrim,
-        country: countryTrim
+        country: countryTrim,
       },
-      ...(appliedCouponCode && { couponCode: appliedCouponCode, couponDiscount: couponDiscount ?? 0 })
+      ...(appliedCouponCode && { couponCode: appliedCouponCode, couponDiscount: couponDiscount ?? 0 }),
     })
-  } catch (err) {
-    console.error('Order confirmation email failed:', err)
-  }
+    .catch((err) => console.error('[email] order confirmation failed:', err))
 
   return NextResponse.json({
     success: true,

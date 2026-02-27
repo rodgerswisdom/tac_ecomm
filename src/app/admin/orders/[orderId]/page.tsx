@@ -238,6 +238,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 defaultStatus={order.status}
                 defaultPaymentStatus={order.paymentStatus}
                 defaultNote={order.notes}
+                defaultTrackingNumber={order.trackingNumber}
                 statusOptions={orderStatusOptions}
                 paymentStatusOptions={paymentStatusOptions}
               />
