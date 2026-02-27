@@ -7,7 +7,6 @@ import { redirect } from "next/navigation"
 
 export default function NewCouponPage({ searchParams }: { searchParams?: { error?: string } }) {
   async function createCoupon(formData: FormData) {
-    "use server"
     try {
       await createCouponAction(formData)
       redirect("/admin/coupons")

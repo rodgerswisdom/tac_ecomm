@@ -153,7 +153,7 @@ function SignInForm() {
                       onChange={handleInputChange}
                       required
                       className="pl-10 h-12 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 focus:ring-primary/20 transition-all duration-200"
-                      placeholder="admin@tacjewellery.com"
+                      placeholder="admin@tacaccessory.com"
                     />
                   </div>
                 </div>

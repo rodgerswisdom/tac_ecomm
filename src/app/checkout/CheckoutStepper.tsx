@@ -1,8 +1,7 @@
 import React from "react";
 
 const steps = [
-  "Shipping",
-  "Payment",
+  "Shipping & delivery",
   "Review"
 ];
 

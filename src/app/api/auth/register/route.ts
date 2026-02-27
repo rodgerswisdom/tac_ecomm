@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { EmailService, getEmailConfig } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +64,14 @@ export async function POST(request: NextRequest) {
         createdAt: true
       }
     })
+
+    // Fire-and-forget welcome email (signup should still succeed if this fails)
+    try {
+      const emailService = new EmailService(getEmailConfig())
+      await emailService.sendWelcomeEmail(trimmedName, normalizedEmail)
+    } catch (err) {
+      console.error('Welcome email failed:', err)
+    }
 
     return NextResponse.json(
       {

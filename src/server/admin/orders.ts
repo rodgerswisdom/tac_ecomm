@@ -1,3 +1,5 @@
+"use server"
+
 import { OrderStatus, PaymentStatus } from "@prisma/client"
 import type { Prisma } from "@prisma/client"
 import { z } from "zod"
@@ -59,8 +61,16 @@ export async function getOrders(filters: OrderFilters = {}) {
 }
 
 export async function getOrderDetail(orderId: string) {
-    return prisma.order.findUnique({
-        where: { id: orderId },
+    const identifier = orderId?.trim()
+    if (!identifier) return null
+
+    return prisma.order.findFirst({
+        where: {
+            OR: [
+                { id: identifier },
+                { orderNumber: identifier },
+            ],
+        },
         include: {
             user: true,
             shippingAddress: true,
@@ -94,8 +104,6 @@ export async function updateOrderStatusAction(
     _prevState: UpdateOrderStatusFormState,
     formData: FormData,
 ): Promise<UpdateOrderStatusFormState> {
-    "use server"
-
     try {
         await assertAdmin()
     } catch (error) {
@@ -145,8 +153,6 @@ export async function updateOrderStatusAction(
 }
 
 export async function deleteOrderAction(formData: FormData) {
-    "use server"
-
     await assertAdmin()
 
     const parsed = deleteOrderSchema.safeParse({

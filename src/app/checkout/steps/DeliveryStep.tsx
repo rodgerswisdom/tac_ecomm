@@ -42,7 +42,7 @@ export function DeliveryStep({ onNext }: { onNext?: (method: DeliveryMethod) => 
         ))}
         {error && <div className="text-red-500">{error}</div>}
         <div className="flex justify-end">
-          <Button type="submit">Continue to Payment</Button>
+          <Button type="submit">Review order</Button>
         </div>
       </form>
     </div>

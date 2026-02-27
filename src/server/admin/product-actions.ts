@@ -246,6 +246,42 @@ export async function archiveProductAction(formData: FormData) {
   revalidateProductRoute(productId)
 }
 
+export async function bulkArchiveProducts(
+  ids: string[]
+): Promise<{ success?: boolean; error?: string }> {
+  await assertAdmin()
+  if (ids.length === 0) return { success: true }
+  try {
+    await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { isActive: false },
+    })
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Failed to archive" }
+  }
+}
+
+export async function bulkDeleteProducts(
+  ids: string[]
+): Promise<{ success?: boolean; error?: string }> {
+  await assertAdmin()
+  if (ids.length === 0) return { success: true }
+  try {
+    for (const id of ids) {
+      await prisma.product.delete({ where: { id } })
+    }
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return { success: false, error: "Cannot delete products linked to orders or cart items" }
+    }
+    return { success: false, error: error instanceof Error ? error.message : "Failed to delete" }
+  }
+}
+
 export async function addVariantAction(formData: FormData) {
   await assertAdmin()
 
@@ -312,6 +348,17 @@ export async function deleteProductImageAction(formData: FormData) {
 
   const deleted = await prisma.productImage.delete({ where: { id: imageId }, select: { productId: true } })
   revalidateProductRoute(deleted.productId)
+}
+
+export async function reorderImagesAction(productId: string, imageIds: string[]): Promise<void> {
+  await assertAdmin()
+  if (!productId || !Array.isArray(imageIds) || imageIds.length === 0) return
+  await prisma.$transaction(
+    imageIds.map((id, index) =>
+      prisma.productImage.update({ where: { id, productId }, data: { order: index } })
+    )
+  )
+  revalidateProductRoute(productId)
 }
 
 function revalidateProductRoute(productId?: string) {

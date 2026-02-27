@@ -55,6 +55,31 @@ export const authOptions: NextAuthConfig = {
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user, trigger }) {
+      // Basic token population
+      if (user) {
+        token.id = user.id
+        token.role = (user as any).role
+      }
+
+      // Refresh lastActiveAt (throttled)
+      if (token.id && (trigger === "signIn" || trigger === "update" || !token.lastRefreshed || Date.now() - (token.lastRefreshed as number) > 60000)) {
+        try {
+          await (prisma.user as any).update({
+            where: { id: token.id as string },
+            data: { lastActiveAt: new Date() }
+          })
+          token.lastRefreshed = Date.now()
+        } catch (e) {
+          console.error("Failed to update lastActiveAt:", e)
+        }
+      }
+
+      return token
+    }
+  }
 }
 
 // Export auth function for NextAuth v5

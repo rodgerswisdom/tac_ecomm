@@ -1,4 +1,6 @@
-// Email notification system using Resend
+// Email notification system (Resend or SMTP via Brevo)
+
+import nodemailer from 'nodemailer'
 
 export interface EmailConfig {
   apiKey: string
@@ -66,7 +68,11 @@ export class EmailService {
         text: data.text || this.htmlToText(data.html)
       }
 
-      if (this.config.apiKey) {
+      const hasRealResendKey =
+        this.config.apiKey && !this.config.apiKey.toLowerCase().startsWith('your-')
+
+      if (hasRealResendKey) {
+        // Primary path: Resend HTTP API
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -79,7 +85,32 @@ export class EmailService {
           const err = await res.text()
           throw new Error(`Resend API error: ${res.status} ${err}`)
         }
+      } else if (
+        process.env.BREVO_SMTP_HOST &&
+        process.env.BREVO_SMTP_USER &&
+        process.env.BREVO_SMTP_PASS
+      ) {
+        // Fallback: Brevo SMTP via Nodemailer
+        const transporter = nodemailer.createTransport({
+          host: process.env.BREVO_SMTP_HOST,
+          port: Number(process.env.BREVO_SMTP_PORT ?? '587'),
+          secure: false,
+          auth: {
+            user: process.env.BREVO_SMTP_USER,
+            pass: process.env.BREVO_SMTP_PASS,
+          },
+        })
+
+        await transporter.sendMail({
+          from,
+          to: data.to,
+          subject: data.subject,
+          html: data.html,
+          text: data.text || this.htmlToText(data.html),
+          replyTo: process.env.EMAIL_REPLY_TO || undefined,
+        })
       } else {
+        // Last resort: simulate API call so the rest of the app keeps working
         await this.simulateApiCall('/emails', payload)
       }
 
