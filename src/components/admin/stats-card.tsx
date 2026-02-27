@@ -11,6 +11,8 @@ interface StatsCardProps {
   title: string
   value: number
   prefix?: string
+  /** When set, shown instead of prefix+value (e.g. currency-formatted amount) */
+  formattedValue?: string
   subtitle?: string
   change?: number
   icon?: ReactNode
@@ -21,6 +23,7 @@ export function StatsCard({
   title,
   value,
   prefix,
+  formattedValue,
   subtitle,
   change,
   icon,

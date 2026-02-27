@@ -4,13 +4,14 @@ import { CheckCircle, Clock, Mail, Search, XCircle, RotateCw, Ban, HelpCircle } 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { formatPrice } from "@/lib/utils"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { deleteOrderAction, getOrders } from "@/server/admin/orders"
 import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
 import { ExportButton } from "@/components/admin/ExportButton"
 import { exportOrdersAction } from "@/server/admin/exports"
+import { formatPrice } from "@/lib/utils"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>

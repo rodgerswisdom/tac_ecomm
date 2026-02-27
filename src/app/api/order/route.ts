@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
   // Calculate shipping and tax (re-calculate for security)
   // Temporarily zero out shipping charges; pricing to be reintroduced later
   let shipping = 0
-  const tax = subtotal * 0.08
+  const tax = 0
   let couponDiscount = 0
 
   // Validate coupon server-side (ignore client-provided discount)
@@ -137,6 +137,11 @@ export async function POST(req: NextRequest) {
   const total = subtotal + shipping + tax - (couponDiscount || 0 )
   const currencyCode = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
+
+  // Debug: log so you can verify order total (USD) vs amount sent to gateway (e.g. KES). 130 KSH = 1 USD at rate 130.
+  if (process.env.NODE_ENV !== 'production' || process.env.LOG_ORDER_AMOUNTS === '1') {
+    console.info('[order] subtotal:', subtotal, 'discount:', couponDiscount, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, '| items:', validatedItems.map(i => ({ name: i.name, price: i.price, qty: i.quantity })))
+  }
 
   // Generate sequential atomic order number (e.g., TAC01)
   async function generateOrderNumber() {
@@ -191,7 +196,7 @@ export async function POST(req: NextRequest) {
       tax,
       shipping,
       total,
-      currency: currencyCode,
+      currency: orderCurrency,
       paymentMethod: normalizedPaymentMethod,
       status: 'PENDING',
       shippingMethod: shippingMethod ?? null,
@@ -220,8 +225,8 @@ export async function POST(req: NextRequest) {
 
     try {
       const paymentResponse = await paymentService.createPayment('pesapal', {
-        amount: total,
-        currency: currencyCode,
+        amount: paymentAmount,
+        currency: paymentCurrency,
         orderId: order.orderNumber,
         customerEmail: emailTrim,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
@@ -245,8 +250,8 @@ export async function POST(req: NextRequest) {
       await prisma.payment.create({
         data: {
           orderId: order.id,
-          amount: total,
-          currency: currencyCode,
+          amount: paymentAmount,
+          currency: 'KES',
           method: PaymentMethod.PESAPAL,
           status: PaymentStatus.PENDING,
           transactionId: paymentResponse.paymentId,

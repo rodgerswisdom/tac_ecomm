@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
-import { createProductInitialState, type CreateProductFormState } from "@/server/admin/products"
+import { createProductInitialState, type CreateProductFormState } from "@/lib/admin/create-product-form-state"
 import { createProductAction } from "@/server/admin/product-actions"
 import { generateSlug } from "@/lib/utils"
 
@@ -399,7 +399,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <label htmlFor="price" className="text-sm font-semibold text-foreground">
                     <span className="flex items-center gap-1">
-                      Price
+                      Price (USD)
                       <RequiredMark />
                     </span>
                   </label>

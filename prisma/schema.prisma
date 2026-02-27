@@ -2,9 +2,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// In Prisma 7+, connection URL is configured in prisma.config.ts (not here).
+// If you're on Prisma 6.x and see "Argument url is missing", add: url = env("DATABASE_URL")
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL") // neon postgres url
 }
 
 model Account {
@@ -81,7 +82,7 @@ model Product {
   slug             String           @unique
   description      String
   shortDescription String?
-  price            Float
+  price            Float // Always USD
   comparePrice     Float?
   sku              String           @unique
   stock            Int              @default(0)
@@ -318,10 +319,10 @@ model ProductSet {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String   // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
-  entity    String   // e.g., "Product", "Order"
-  entityId  String   // The ID of the affected entity
-  details   String?  // Summary of changes or specific metadata
+  action    String // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
+  entity    String // e.g., "Product", "Order"
+  entityId  String // The ID of the affected entity
+  details   String? // Summary of changes or specific metadata
   adminId   String
   adminName String?
   createdAt DateTime @default(now())

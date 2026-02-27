@@ -9,7 +9,7 @@ export const productInputSchema = z.object({
     name: z.string().min(2, "Name is required"),
     description: z.string().min(10, "Description is required"),
     shortDescription: z.string().max(240).optional().nullable(),
-    price: z.coerce.number().positive(),
+    price: z.coerce.number().positive(), // Product prices are always stored in USD
     comparePrice: z.coerce.number().positive().optional().nullable(),
     stock: z.coerce.number().int().nonnegative(),
     sku: z.string().min(1, "SKU is required"),
@@ -50,43 +50,16 @@ export type ProductListFilters = {
     sort?: ProductSortOption
 }
 
-const formValueFields = [
-    "name",
-    "sku",
-    "description",
-    "shortDescription",
-    "categoryId",
-    "price",
-    "comparePrice",
-    "stock",
-    "productType",
-    "artisanId",
-    "weight",
-    "dimensions",
-    "customSlug",
-] as const
+import {
+    createProductInitialState,
+    formValueFields,
+    type CreateProductFormState,
+    type ProductFormField,
+    type ProductFormValues,
+} from "@/lib/admin/create-product-form-state"
 
-const extraErrorFields = ["media"] as const
-
-type FormValueField = (typeof formValueFields)[number]
-type ProductFormField = FormValueField | (typeof extraErrorFields)[number]
-export type ProductFormValues = Record<FormValueField, string>
-
-export type CreateProductFormState = {
-    status: "idle" | "error"
-    message?: string
-    fieldErrors: Partial<Record<ProductFormField, string>>
-    values: ProductFormValues
-}
-
-export const createProductInitialState: CreateProductFormState = {
-    status: "idle",
-    fieldErrors: {},
-    values: formValueFields.reduce<ProductFormValues>((acc, field) => {
-        acc[field] = ""
-        return acc
-    }, {} as ProductFormValues),
-}
+export type { CreateProductFormState, ProductFormField, ProductFormValues }
+export { createProductInitialState }
 
 const MAX_MEDIA_BYTES = 6 * 1024 * 1024
 const ALLOWED_MEDIA_FORMATS = ["jpg", "jpeg", "png", "gif", "webp"]

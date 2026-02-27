@@ -3,8 +3,8 @@ import { notFound } from "next/navigation"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatPrice } from "@/lib/utils"
 import { AdminPageHeader } from "@/components/admin/page-header"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { getOrderDetail } from "@/server/admin/orders"
 import { StatusUpdateForm } from "./StatusUpdateForm"
@@ -54,8 +54,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
     notFound()
   }
 
-  const currency = order.currency ?? "KES"
   const address = order.shippingAddress
+  // Order amounts (subtotal, total, line items) are always stored in USD. Payment amount can be in payment currency (e.g. KES).
+  const orderCurrency = order.currency === "USD" ? undefined : order.currency
   const customerName = [address?.firstName, address?.lastName].filter(Boolean).join(" ") || order.user?.name || "Customer"
 
   return (
@@ -115,19 +116,19 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-lg border border-border p-3">
                 <p className="text-muted-foreground">Subtotal</p>
-                <p className="text-base font-semibold">{formatPrice(order.subtotal, currency)}</p>
+                <p className="text-base font-semibold"><AdminFormattedPrice amount={order.subtotal} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
               <div className="rounded-lg border border-border p-3">
                 <p className="text-muted-foreground">Shipping</p>
-                <p className="text-base font-semibold">{formatPrice(order.shipping, currency)}</p>
+                <p className="text-base font-semibold"><AdminFormattedPrice amount={order.shipping} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
               <div className="rounded-lg border border-border p-3">
                 <p className="text-muted-foreground">Tax</p>
-                <p className="text-base font-semibold">{formatPrice(order.tax, currency)}</p>
+                <p className="text-base font-semibold"><AdminFormattedPrice amount={order.tax} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
               <div className="rounded-lg border border-border p-3">
                 <p className="text-muted-foreground">Total</p>
-                <p className="text-base font-semibold">{formatPrice(order.total, currency)}</p>
+                <p className="text-base font-semibold"><AdminFormattedPrice amount={order.total} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
             </div>
 
@@ -154,9 +155,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                       </div>
                       <div className="text-right text-sm">
                         <p className="text-xs text-muted-foreground">Unit</p>
-                        <p className="font-semibold">{formatPrice(item.price, currency)}</p>
+                        <p className="font-semibold"><AdminFormattedPrice amount={item.price} amountCurrency={orderCurrency ?? undefined} /></p>
                         <p className="text-xs text-muted-foreground">Subtotal</p>
-                        <p className="font-semibold">{formatPrice(item.price * item.quantity, currency)}</p>
+                        <p className="font-semibold"><AdminFormattedPrice amount={item.price * item.quantity} amountCurrency={orderCurrency ?? undefined} /></p>
                       </div>
                     </div>
                   ))
@@ -180,7 +181,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-base font-semibold">{formatPrice(payment.amount, payment.currency)}</p>
+                        <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "USD" ? undefined : payment.currency} /></p>
                       </div>
                     </div>
                   ))

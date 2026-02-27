@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/admin/stats-card"
 import { SimpleBarChart, SimplePieChart, TrendChart } from "@/components/admin/trend-chart"
 import { getDetailedAnalytics } from "@/server/admin/analytics"
-import { formatPrice } from "@/lib/utils"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { AnalyticsDateFilters } from "@/components/admin/AnalyticsDateFilters"
 import { SmartInsight } from "@/components/admin/smart-insight"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { DollarSign, ShoppingBag, Users, BarChart3, TrendingUp, Star, Download, Trophy, Medal } from "lucide-react"
+import { formatPrice } from "@/lib/utils"
 
 interface AnalyticsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -288,7 +289,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                   <td className="px-6 py-5 text-right pr-8 font-black text-brand-umber text-base tabular-nums">
                     {formatPrice(customer.total)}
                   </td>
-                  <td className="py-3 font-semibold">{formatPrice(customer.total, "KES")}</td>
+                  <td className="py-3 font-semibold"><AdminFormattedPrice amount={customer.total} /></td>
                 </tr>
               ))}
               {analytics.highValueCustomers.length === 0 && (

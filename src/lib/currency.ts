@@ -45,3 +45,9 @@ export function formatInCurrency(amountUsd: number, currency: CurrencyCode): str
 export function convertFromUsd(amountUsd: number, currency: CurrencyCode): number {
   return amountUsd * CURRENCIES[currency].rateFromUsd;
 }
+
+/** Convert amount from a given currency to USD (for order/payment amounts stored in order currency). */
+export function convertToUsd(amount: number, fromCurrency: CurrencyCode): number {
+  const rate = CURRENCIES[fromCurrency].rateFromUsd;
+  return rate === 0 ? amount : amount / rate;
+}

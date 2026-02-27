@@ -1,5 +1,33 @@
 import { PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { convertToUsd } from "@/lib/currency"
+import type { CurrencyCode } from "@/lib/currency"
+
+const PAYMENT_CURRENCY_TO_CODE: Record<string, CurrencyCode> = {
+    USD: "USD",
+    KES: "KSH",
+    KSH: "KSH",
+    EUR: "EUR",
+}
+
+/** Default currency for payments with missing or wrong currency (e.g. legacy KES stored as USD). */
+const DEFAULT_PAYMENT_CURRENCY = (process.env.DEFAULT_CURRENCY || "USD").toUpperCase()
+const STORE_IS_KES = DEFAULT_PAYMENT_CURRENCY === "KES" || DEFAULT_PAYMENT_CURRENCY === "KSH"
+
+/**
+ * Convert payment amount to USD for revenue. When store default is KES, payments stored as "USD"
+ * are often legacy mistakes (amount was actually KES). Amounts in [1, 2000) are treated as KES.
+ */
+function paymentAmountToUsd(amount: number, currency: string | null): number {
+    const raw = (currency || "").trim().toUpperCase()
+    let code = raw ? PAYMENT_CURRENCY_TO_CODE[raw] : undefined
+    if (!code && STORE_IS_KES) code = "KSH"
+    if (!code) code = DEFAULT_PAYMENT_CURRENCY === "EUR" ? "EUR" : "USD"
+    if (code === "USD" && STORE_IS_KES && amount >= 1 && amount < 2000) {
+        return convertToUsd(amount, "KSH")
+    }
+    return code !== "USD" ? convertToUsd(amount, code) : amount
+}
 
 function startOfDay(date: Date) {
     const copy = new Date(date)
@@ -117,8 +145,9 @@ export async function getOverviewMetrics() {
     for (const payment of paymentsLast30) {
         const key = formatDayKey(payment.createdAt)
         const bucket = revenueTrendMap.get(key)
+        const amountUsd = paymentAmountToUsd(payment.amount, payment.currency)
         if (bucket) {
-            bucket.revenue += payment.amount
+            bucket.revenue += amountUsd
             bucket.orders += 1
         }
     }
@@ -253,11 +282,18 @@ export async function getDetailedAnalytics(days?: number, startDate?: Date, endD
     }
 
     for (const order of orders) {
-        const paidAmount = order.payments.reduce((sum, p) => sum + p.amount, 0)
+            let revenueTotal = 0;
+        const paidAmountUsd = order.payments.reduce(
+            (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
+            0
+        )
+
+        revenueTotal += paidAmountUsd
+
         const key = formatDayKey(order.createdAt)
         const bucket = revenueTrendMap.get(key)
         if (bucket) {
-            bucket.revenue += paidAmount
+            bucket.revenue += paidAmountUsd
             bucket.orders += 1
         }
     }
