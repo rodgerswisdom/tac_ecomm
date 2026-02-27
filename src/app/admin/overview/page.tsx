@@ -170,7 +170,7 @@ export default async function OverviewPage() {
                     </span>
                   </td>
                   <td className="py-3 font-semibold">
-                    {formatPrice(order.total)}
+                    {formatPrice(order.total, order.currency)}
                   </td>
                 </tr>
               ))}

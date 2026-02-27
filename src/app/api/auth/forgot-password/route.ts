@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         const recentRequests = await prisma.verificationToken.count({
             where: {
                 identifier: `password-reset:${normalizedEmail}`,
-                createdAt: { gte: oneHourAgo },
+                expires: { gte: oneHourAgo },
             },
         })
         if (recentRequests >= 3) {
