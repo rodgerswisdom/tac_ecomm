@@ -1,15 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { StatsCard } from "@/components/admin/stats-card"
 import { SimpleBarChart, SimplePieChart, TrendChart } from "@/components/admin/trend-chart"
 import { getDetailedAnalytics } from "@/server/admin/analytics"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { AnalyticsDateFilters } from "@/components/admin/AnalyticsDateFilters"
 import { SmartInsight } from "@/components/admin/smart-insight"
+import { AnalyticsKpiCards } from "./AnalyticsKpiCards"
+import { RevenueTrendChart } from "./RevenueTrendChart"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
-import { DollarSign, ShoppingBag, Users, BarChart3, TrendingUp, Star, Download, Trophy, Medal } from "lucide-react"
+import { ShoppingBag, Users, TrendingUp, Star, Download, Trophy, Medal } from "lucide-react"
 
 interface AnalyticsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -95,43 +96,19 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         </Card>
       </div>
 
-      {/* Top Level KPIs */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Revenue"
-          value={analytics.revenueTotal ?? 0}
-          prefix="KES "
-          subtitle={days === 1000 ? "Lifetime Earnings" : `Past ${days} days`}
-          change={analytics.comparisons.revenueGrowth}
-          icon={<DollarSign className="h-6 w-6" />}
-          delay={0.1}
-        />
-        <StatsCard
-          title="Avg Order Value"
-          value={analytics.averageOrderValue}
-          prefix="KES "
-          subtitle="Revenue per transaction"
-          change={analytics.comparisons.aovGrowth}
-          icon={<BarChart3 className="h-6 w-6" />}
-          delay={0.2}
-        />
-        <StatsCard
-          title="Repeat Buyers"
-          value={analytics.repeatVsFirst.repeat}
-          subtitle={`${analytics.repeatVsFirst.firstTime} first-time buyers`}
-          change={repeatRate} // Using repeat rate as the "growth" metric for context
-          icon={<Users className="h-6 w-6" />}
-          delay={0.3}
-        />
-        <StatsCard
-          title="Order Volume"
-          value={analytics.revenueTrend.reduce((sum, d) => sum + (d.orders ?? 0), 0)}
-          subtitle="Total successful orders"
-          change={analytics.comparisons.orderGrowth}
-          icon={<ShoppingBag className="h-6 w-6" />}
-          delay={0.4}
-        />
-      </div>
+      {/* Top Level KPIs — amounts in USD, display follows admin currency switcher */}
+      <AnalyticsKpiCards
+        revenueTotal={analytics.revenueTotal ?? 0}
+        averageOrderValue={analytics.averageOrderValue}
+        repeatBuyers={analytics.repeatVsFirst.repeat}
+        firstTimeBuyers={analytics.repeatVsFirst.firstTime}
+        orderVolume={analytics.revenueTrend.reduce((sum, d) => sum + (d.orders ?? 0), 0)}
+        revenueGrowth={analytics.comparisons.revenueGrowth}
+        aovGrowth={analytics.comparisons.aovGrowth}
+        orderGrowth={analytics.comparisons.orderGrowth}
+        repeatRate={repeatRate}
+        days={days}
+      />
 
       {/* Trends Section */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -147,7 +124,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-            <TrendChart data={analytics.revenueTrend} yKey="revenue" label="Revenue (KES)" />
+            <RevenueTrendChart data={analytics.revenueTrend} />
           </CardContent>
         </Card>
         <Card className="border-brand-teal/10 shadow-sm overflow-hidden">
@@ -286,9 +263,8 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
                     </div>
                   </td>
                   <td className="px-6 py-5 text-right pr-8 font-black text-brand-umber text-base tabular-nums">
-                    {formatPrice(customer.total)}
+                    <AdminFormattedPrice amount={customer.total} />
                   </td>
-                  <td className="py-3 font-semibold"><AdminFormattedPrice amount={customer.total} /></td>
                 </tr>
               ))}
               {analytics.highValueCustomers.length === 0 && (

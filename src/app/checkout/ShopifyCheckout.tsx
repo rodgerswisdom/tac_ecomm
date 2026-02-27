@@ -11,12 +11,11 @@ import Link from "next/link";
 import { CheckoutStepper } from "./CheckoutStepper";
 import { ShippingStep, ShippingFormData } from "./steps/ShippingStep";
 import { DeliveryStep, DeliveryMethod } from "./steps/DeliveryStep";
-import { PaymentStep, PaymentFormData } from "./steps/PaymentStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 2;
 
 export default function ShopifyCheckout() {
   const router = useRouter();
@@ -34,7 +33,7 @@ export default function ShopifyCheckout() {
       .finally(() => setShippingLoading(false));
   }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
-  const [payment, setPayment] = useState<PaymentFormData | null>(null);
+  const defaultPayment = { method: "PESAPAL" as const };
   const [orderPlaced, setOrderPlaced] = useState(false);
   const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
@@ -58,8 +57,8 @@ export default function ShopifyCheckout() {
   }
 
   async function handlePlaceOrder() {
-    if (!shipping || !delivery || !payment) {
-      setError("Please complete all steps before placing your order.");
+    if (!shipping || !delivery) {
+      setError("Please complete shipping and delivery before placing your order.");
       return;
     }
     setError("");
@@ -70,7 +69,7 @@ export default function ShopifyCheckout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...shipping,
-          paymentMethod: payment?.method,
+          paymentMethod: "PESAPAL",
           shippingMethod: delivery,
           cartItems: cart,
         })
@@ -150,33 +149,25 @@ export default function ShopifyCheckout() {
                       }
                     }}
                   />
-                        {shipping && (
-                          <DeliveryStep
-                            onNext={method => {
-                              setDelivery(method);
-                              handleNextStep();
-                            }}
-                          />
-                        )}
-                      </div>
-                    )}
-                    {currentStep === 2 && (
-                      <PaymentStep
-                        onNext={data => {
-                          setPayment(data);
-                          handleNextStep();
-                        }}
-                      />
-                    )}
-                    {currentStep === 3 && shipping && delivery && payment && (
-                      <ReviewStep
-                        shipping={shipping}
-                        delivery={delivery}
-                        payment={payment}
-                        onPlaceOrder={handlePlaceOrder}
-                        isSubmitting={placingOrder}
-                      />
-                    )}
+                  {shipping && (
+                    <DeliveryStep
+                      onNext={method => {
+                        setDelivery(method);
+                        handleNextStep();
+                      }}
+                    />
+                  )}
+                </div>
+              )}
+              {currentStep === 2 && shipping && delivery && (
+                <ReviewStep
+                  shipping={shipping}
+                  delivery={delivery}
+                  payment={defaultPayment}
+                  onPlaceOrder={handlePlaceOrder}
+                  isSubmitting={placingOrder}
+                />
+              )}
                     {error && <div className="text-red-500 mt-4">{error}</div>}
                     <div className="flex justify-between mt-8">
                       <Button

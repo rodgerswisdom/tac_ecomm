@@ -15,18 +15,29 @@ const COLORS = {
 
 const PIE_COLORS = [COLORS.primary, COLORS.warning, COLORS.success, COLORS.danger, COLORS.umber]
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Use a relaxed prop type here because Recharts passes a rich TooltipProps object
+// and we only care about a few fields (active, payload, label).
+function CustomTooltip(props: any) {
+  const { active, payload, label, formatValue } = props as {
+    active?: boolean
+    payload?: Array<{ name: string; value: number; color: string }>
+    label?: string | number
+    formatValue?: (n: number) => string
+  }
   if (active && payload && payload.length) {
+    const fmt = (n: number) => (formatValue ? formatValue(n) : n.toLocaleString())
     return (
       <div className="rounded-xl border border-brand-teal/20 bg-white/90 p-4 shadow-xl backdrop-blur-md">
         <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
-          {new Date(label).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+          {label != null
+            ? new Date(label).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })
+            : null}
         </p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
             <p className="text-sm font-bold text-slate-700">
-              {entry.name}: <span className="text-brand-umber">{entry.value.toLocaleString()}</span>
+              {entry.name}: <span className="text-brand-umber">{fmt(entry.value)}</span>
             </p>
           </div>
         ))}
@@ -42,9 +53,11 @@ interface TrendChartProps {
   label: string
   color?: string
   height?: number
+  /** When provided, tooltip values are formatted with this (e.g. currency). */
+  formatValue?: (n: number) => string
 }
 
-export function TrendChart({ data, yKey, label, color, height = 240 }: TrendChartProps) {
+export function TrendChart({ data, yKey, label, color, height = 240, formatValue }: TrendChartProps) {
   const strokeColor = color ?? COLORS.primary
   const gradientId = `colorValue-${strokeColor.replace('#', '')}`
 
@@ -72,7 +85,7 @@ export function TrendChart({ data, yKey, label, color, height = 240 }: TrendChar
           tickLine={false}
           width={80}
         />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={(props) => <CustomTooltip {...props} formatValue={formatValue} />} />
         <Area
           type="monotone"
           dataKey={yKey as string}

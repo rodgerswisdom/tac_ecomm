@@ -138,8 +138,10 @@ export async function getOverviewMetrics() {
 
 export async function getDetailedAnalytics(days = 90) {
     const { start } = dayRange(days)
+    const previousStart = new Date(start)
+    previousStart.setDate(previousStart.getDate() - days)
 
-    const [orders, users, orderStatusGroups, paymentGroups, customerStats] =
+    const [orders, users, orderStatusGroups, paymentGroups, customerStats, previousPayments, previousOrderCount] =
         await Promise.all([
             prisma.order.findMany({
                 where: {
@@ -179,6 +181,19 @@ export async function getDetailedAnalytics(days = 90) {
                 _sum: { total: true },
                 where: { paymentStatus: PaymentStatus.COMPLETED },
             }),
+            prisma.payment.findMany({
+                where: {
+                    status: PaymentStatus.COMPLETED,
+                    createdAt: { gte: previousStart, lt: start },
+                },
+                select: { amount: true, currency: true },
+            }),
+            prisma.order.count({
+                where: {
+                    paymentStatus: PaymentStatus.COMPLETED,
+                    createdAt: { gte: previousStart, lt: start },
+                },
+            }),
         ])
 
     const revenueTrendMap = new Map<
@@ -217,6 +232,22 @@ export async function getDetailedAnalytics(days = 90) {
     const averageOrderValue = orders.length
         ? revenueTotal / orders.length
         : 0
+
+    const previousRevenue = previousPayments.reduce(
+        (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
+        0
+    )
+    const revenueGrowth = previousRevenue > 0
+        ? ((revenueTotal - previousRevenue) / previousRevenue) * 100
+        : (revenueTotal > 0 ? 100 : 0)
+    const orderGrowth = previousOrderCount > 0
+        ? ((orders.length - previousOrderCount) / previousOrderCount) * 100
+        : (orders.length > 0 ? 100 : 0)
+    const previousAov =
+        previousOrderCount > 0 ? previousRevenue / previousOrderCount : 0
+    const aovGrowth = previousAov > 0
+        ? ((averageOrderValue - previousAov) / previousAov) * 100
+        : (averageOrderValue > 0 ? 100 : 0)
 
     const productStats = new Map<
         string,
@@ -277,6 +308,7 @@ export async function getDetailedAnalytics(days = 90) {
 
     return {
         revenueTrend: Array.from(revenueTrendMap.values()),
+        revenueTotal,
         averageOrderValue,
         topProducts: Array.from(productStats.values())
             .sort((a, b) => b.revenue - a.revenue)
@@ -295,12 +327,31 @@ export async function getDetailedAnalytics(days = 90) {
             userId: c.userId,
             orders: c._count._all,
         })),
-        highValueCustomers: customerStats
-            .filter((c) => (c._sum.total ?? 0) >= 2000)
-            .map((c) => ({
-                userId: c.userId,
-                total: c._sum.total ?? 0,
-            })),
+        highValueCustomers: await (async () => {
+            const highValue = customerStats.filter(
+                (c) => (c._sum.total ?? 0) >= 2000
+            )
+            if (highValue.length === 0) return []
+            const users = await prisma.user.findMany({
+                where: { id: { in: highValue.map((c) => c.userId) } },
+                select: { id: true, name: true, email: true, image: true },
+            })
+            const userMap = new Map(users.map((u) => [u.id, u]))
+            return highValue.map((c) => {
+                const u = userMap.get(c.userId)
+                const total = c._sum.total ?? 0
+                return {
+                    userId: c.userId,
+                    name: u?.name ?? "Unknown",
+                    email: u?.email ?? "",
+                    image: u?.image ?? null,
+                    orderCount: c._count._all,
+                    total,
+                    contribution:
+                        revenueTotal > 0 ? (total / revenueTotal) * 100 : 0,
+                }
+            })
+        })(),
         orderStatusDistribution: orderStatusGroups.map((g) => ({
             status: g.status,
             count: g._count._all,
@@ -309,5 +360,6 @@ export async function getDetailedAnalytics(days = 90) {
             method: g.method ?? PaymentMethod.CREDIT_CARD,
             count: g._count._all,
         })),
+        comparisons: { revenueGrowth, orderGrowth, aovGrowth },
     }
 }
