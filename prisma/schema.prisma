@@ -374,3 +374,34 @@ enum CouponType {
   FIXED_AMOUNT
   FREE_SHIPPING
 }
+
+enum BespokeRequestStatus {
+  NEW
+  CONTACTED
+  IN_PROGRESS
+  QUOTED
+  COMPLETED
+  CANCELLED
+}
+
+model BespokeRequest {
+  id             String              @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  vision         String
+  category       String              // e.g. earrings, rings
+  categoryLabel  String              // e.g. Earrings
+  budget         String              // e.g. 500-1000
+  timeline       String              // e.g. 4-6 weeks
+  isExpress      Boolean             @default(false)
+  expressPremium Float               @default(0)
+  photoUrls      String[]            @default([])
+  status         BespokeRequestStatus @default(NEW)
+  adminNotes     String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}

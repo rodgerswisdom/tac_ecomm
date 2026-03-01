@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
+import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { getEmailConfig } from '@/lib/email'
@@ -84,11 +84,44 @@ export async function POST(req: NextRequest) {
   // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in USD (product prices are USD).
   const shipping = 0
   const tax = 0
-  // Coupon discount must be 0..subtotal (USD). Reject negative or oversized so total never exceeds subtotal.
-  const rawDiscount = Number(couponDiscount)
-  const couponDiscountUsd = Number.isFinite(rawDiscount)
-    ? Math.max(0, Math.min(rawDiscount, subtotal))
-    : 0
+
+  let couponDiscountUsd = 0
+  let appliedCoupon: { id: string; code: string } | null = null
+  const couponCodeRaw = typeof couponCode === 'string' ? couponCode.trim() : ''
+  if (couponCodeRaw) {
+    const coupon = await prisma.coupon.findFirst({
+      where: { code: { equals: couponCodeRaw, mode: 'insensitive' } }
+    })
+    if (!coupon) {
+      return NextResponse.json({ error: 'Invalid or expired coupon.' }, { status: 400 })
+    }
+    if (!coupon.isActive) {
+      return NextResponse.json({ error: 'This coupon is no longer active.' }, { status: 400 })
+    }
+    const now = new Date()
+    if (coupon.startsAt && now < coupon.startsAt) {
+      return NextResponse.json({ error: 'This coupon is not yet valid.' }, { status: 400 })
+    }
+    if (coupon.expiresAt && now > coupon.expiresAt) {
+      return NextResponse.json({ error: 'This coupon has expired.' }, { status: 400 })
+    }
+    if (coupon.maxUses != null && coupon.usedCount >= coupon.maxUses) {
+      return NextResponse.json({ error: 'This coupon has reached its usage limit.' }, { status: 400 })
+    }
+    if (coupon.minAmount != null && subtotal < coupon.minAmount) {
+      return NextResponse.json({
+        error: `Minimum order amount for this coupon is $${coupon.minAmount.toFixed(2)}`
+      }, { status: 400 })
+    }
+    if (coupon.type === CouponType.PERCENTAGE) {
+      couponDiscountUsd = subtotal * (coupon.value / 100)
+    } else if (coupon.type === CouponType.FIXED_AMOUNT) {
+      couponDiscountUsd = Math.min(coupon.value, subtotal)
+    }
+    couponDiscountUsd = Math.max(0, Math.min(couponDiscountUsd, subtotal))
+    appliedCoupon = { id: coupon.id, code: coupon.code }
+  }
+
   const total = Math.max(0, subtotal - couponDiscountUsd)
   const orderCurrency = 'USD' as const
   const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
@@ -98,10 +131,8 @@ export async function POST(req: NextRequest) {
   const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
-  // Debug: log so you can verify order total (USD) vs amount sent to gateway (e.g. KES). 130 KSH = 1 USD at rate 130.
-  if (process.env.NODE_ENV !== 'production' || process.env.LOG_ORDER_AMOUNTS === '1') {
-    console.info('[order] subtotal:', subtotal, 'discount:', couponDiscountUsd, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, '| items:', validatedItems.map(i => ({ name: i.name, price: i.price, qty: i.quantity })))
-  }
+  // Log order totals and payment amount so checkout display matches Pesapal (amount in KES).
+  console.info('[order] subtotal (USD):', subtotal, 'couponDiscount (USD):', couponDiscountUsd, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)')
 
   // Optionally: validate coupon here (not implemented)
 
@@ -224,10 +255,10 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (couponCode) {
+  if (appliedCoupon) {
     try {
       await prisma.coupon.update({
-        where: { code: couponCode },
+        where: { id: appliedCoupon.id },
         data: { usedCount: { increment: 1 } }
       })
     } catch {
@@ -260,7 +291,7 @@ export async function POST(req: NextRequest) {
         zipCode: zipCodeTrim,
         country: countryTrim
       },
-      ...(couponCode && { couponCode, couponDiscount: couponDiscount ?? 0 })
+      ...(appliedCoupon && { couponCode: appliedCoupon.code, couponDiscount: couponDiscountUsd })
     })
   } catch (err) {
     console.error('Order confirmation email failed:', err)

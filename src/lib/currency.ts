@@ -16,6 +16,15 @@ export const CURRENCIES: Record<
 
 const STORAGE_KEY = "tac-currency";
 
+/** Payment currency used for checkout (and sent to gateway). Use for checkout display so amount matches Pesapal. */
+export function getPaymentCurrencyForCheckout(): CurrencyCode {
+  if (typeof window === "undefined") return "USD";
+  const c = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY?.toUpperCase();
+  if (c === "KES" || c === "KSH") return "KSH";
+  if (c === "EUR") return "EUR";
+  return "USD";
+}
+
 export function getStoredCurrency(): CurrencyCode {
   if (typeof window === "undefined") return "USD";
   const stored = localStorage.getItem(STORAGE_KEY);

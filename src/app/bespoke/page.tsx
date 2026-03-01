@@ -86,18 +86,49 @@ export default function BespokeStudioPage() {
     isExpress: false,
   });
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+    setSubmitError("");
     const submissionData = {
       ...formData,
       photos: uploadedPhotos,
       categoryLabel: categories.find((c) => c.value === formData.category)?.label || "",
-      expressPremium: formData.isExpress ? 0.2 : 0, // 20% premium
+      expressPremium: formData.isExpress ? 0.2 : 0,
     };
-    console.log("Bespoke consultation request:", submissionData);
-    // TODO: Send to API endpoint
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/bespoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: submissionData.name,
+          email: submissionData.email,
+          phone: submissionData.phone || undefined,
+          vision: submissionData.vision,
+          category: submissionData.category,
+          categoryLabel: submissionData.categoryLabel,
+          budget: submissionData.budget,
+          timeline: submissionData.timeline,
+          isExpress: submissionData.isExpress,
+          expressPremium: submissionData.expressPremium,
+          photos: submissionData.photos,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSubmitError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      setSubmitSuccess(true);
+    } catch {
+      setSubmitError("Unable to submit. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handlePhotosChange = (files: File[], urls: string[]) => {
@@ -209,7 +240,40 @@ export default function BespokeStudioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {submitSuccess ? (
+                  <div className="rounded-lg border border-brand-teal/30 bg-brand-jade/10 p-8 text-center">
+                    <h3 className="font-heading text-xl text-brand-umber mb-2">Thank you</h3>
+                    <p className="text-brand-umber/80 mb-4">
+                      Your consultation request has been received. We&apos;ll be in touch soon.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSubmitSuccess(false);
+                        setFormData({
+                          name: "",
+                          email: "",
+                          phone: "",
+                          vision: "",
+                          budget: "",
+                          category: "",
+                          timeline: "",
+                          isExpress: false,
+                        });
+                        setUploadedPhotos([]);
+                      }}
+                      className="border-brand-teal/30 text-brand-umber"
+                    >
+                      Submit another request
+                    </Button>
+                  </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {submitError && (
+                    <div className="rounded-lg border border-brand-coral/50 bg-brand-coral/10 px-4 py-3 text-sm text-brand-coral">
+                      {submitError}
+                    </div>
+                  )}
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
                       <label className="block text-sm font-medium text-brand-umber mb-2">
@@ -368,11 +432,22 @@ export default function BespokeStudioPage() {
                     )}
                   </div>
 
-                  <Button type="submit" className="w-full h-12 text-lg">
-                    <Sparkles className="mr-2 h-5 w-5" />
-                    Request Consultation
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-lg"
+                    disabled={submitting}
+                  >
+                    {submitting ? (
+                      <>Sending...</>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        Request Consultation
+                      </>
+                    )}
                   </Button>
                 </form>
+                )}
               </CardContent>
             </Card>
           </div>

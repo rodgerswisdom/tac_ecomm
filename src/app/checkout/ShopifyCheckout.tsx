@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Lock } from "lucide-react";
@@ -34,6 +34,9 @@ export default function ShopifyCheckout() {
   }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
   const defaultPayment = { method: "PESAPAL" as const };
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
+  const appliedCouponRef = useRef(appliedCoupon);
+  appliedCouponRef.current = appliedCoupon;
   const [orderPlaced, setOrderPlaced] = useState(false);
   const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
@@ -63,16 +66,22 @@ export default function ShopifyCheckout() {
     }
     setError("");
     setPlacingOrder(true);
+    const coupon = appliedCouponRef.current;
     try {
+      const body: Record<string, unknown> = {
+        ...shipping,
+        paymentMethod: "PESAPAL",
+        shippingMethod: delivery,
+        cartItems: cart,
+      };
+      if (coupon) {
+        body.couponCode = coupon.code;
+        body.couponDiscount = coupon.discount;
+      }
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...shipping,
-          paymentMethod: "PESAPAL",
-          shippingMethod: delivery,
-          cartItems: cart,
-        })
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
@@ -164,6 +173,7 @@ export default function ShopifyCheckout() {
                   shipping={shipping}
                   delivery={delivery}
                   payment={defaultPayment}
+                  appliedCoupon={appliedCoupon}
                   onPlaceOrder={handlePlaceOrder}
                   isSubmitting={placingOrder}
                 />
@@ -183,7 +193,10 @@ export default function ShopifyCheckout() {
                 )}
               </div>
             </div>
-            <OrderSummarySidebar />
+            <OrderSummarySidebar
+              appliedCoupon={appliedCoupon}
+              onAppliedCouponChange={setAppliedCoupon}
+            />
           </div>
         </div>
       </section>
