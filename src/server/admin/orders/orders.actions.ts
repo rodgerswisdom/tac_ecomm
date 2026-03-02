@@ -5,23 +5,39 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
+import { EmailService, getEmailConfig } from "@/lib/email"
+
+// ─────────────────────────────────────────────
+// Schema
+// ─────────────────────────────────────────────
 
 const updateStatusSchema = z.object({
     orderId: z.string().cuid(),
     status: z.nativeEnum(OrderStatus),
     paymentStatus: z.nativeEnum(PaymentStatus).optional(),
+    trackingNumber: z.string().max(120).optional().nullable(),
+    estimatedDelivery: z.string().max(100).optional().nullable(),
     note: z.string().max(500).optional().nullable(),
 })
+
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
 
 export type UpdateOrderStatusFormState = {
     status: "idle" | "success" | "error"
     message?: string
 }
 
+// ─────────────────────────────────────────────
+// Actions
+// ─────────────────────────────────────────────
+
 export async function updateOrderStatusAction(
     _prevState: UpdateOrderStatusFormState,
     formData: FormData,
 ): Promise<UpdateOrderStatusFormState> {
+    // Auth guard
     try {
         await assertAdmin()
     } catch (error) {
@@ -31,10 +47,13 @@ export async function updateOrderStatusAction(
         }
     }
 
+    // Validate input
     const parsed = updateStatusSchema.safeParse({
         orderId: formData.get("orderId"),
         status: formData.get("status"),
         paymentStatus: formData.get("paymentStatus"),
+        trackingNumber: formData.get("trackingNumber") || null,
+        estimatedDelivery: formData.get("estimatedDelivery") || null,
         note: formData.get("note"),
     })
 
@@ -45,19 +64,122 @@ export async function updateOrderStatusAction(
         }
     }
 
+    const { orderId, status, paymentStatus, trackingNumber, estimatedDelivery, note } = parsed.data
+
+    // Fetch current order state BEFORE update (to detect status transitions)
+    const previousOrder = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { status: true },
+    })
+
+    if (!previousOrder) {
+        return { status: "error", message: "Order not found" }
+    }
+
+    // Persist the update
     await prisma.order.update({
-        where: { id: parsed.data.orderId },
+        where: { id: orderId },
         data: {
-            status: parsed.data.status,
-            paymentStatus: parsed.data.paymentStatus,
-            notes: parsed.data.note ?? undefined,
+            status,
+            paymentStatus: paymentStatus ?? undefined,
+            trackingNumber: trackingNumber ?? undefined,
+            notes: note ?? undefined,
         },
     })
 
     revalidatePath("/admin/orders")
-    revalidatePath(`/admin/orders/${parsed.data.orderId}`)
+    revalidatePath(`/admin/orders/${orderId}`)
 
-    return { status: "success", message: "Order status updated" }
+    // ── Trigger email notifications on status transitions ──────────────────────
+
+    const statusChanged = previousOrder.status !== status
+    const nowShipped = statusChanged && status === OrderStatus.SHIPPED
+    const nowDelivered = statusChanged && status === OrderStatus.DELIVERED
+
+    if (nowShipped || nowDelivered) {
+        // Fetch full order details needed for email templates
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                user: { select: { name: true, email: true } },
+                shippingAddress: true,
+                items: {
+                    include: {
+                        product: { select: { name: true } },
+                    },
+                },
+            },
+        })
+
+        if (order && order.user?.email) {
+            const customerName =
+                [order.shippingAddress?.firstName, order.shippingAddress?.lastName]
+                    .filter(Boolean)
+                    .join(" ") ||
+                order.user?.name ||
+                "Valued Customer"
+
+            const emailData = {
+                customerName,
+                customerEmail: order.user.email,
+                orderNumber: order.orderNumber,
+                orderDate: order.createdAt.toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                }),
+                items: order.items.map((item) => ({
+                    name: item.product?.name ?? "Product",
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
+                subtotal: order.subtotal,
+                tax: order.tax,
+                shipping: order.shipping,
+                total: order.total,
+                currency: order.currency ?? "USD",
+                shippingAddress: {
+                    name: customerName,
+                    address: order.shippingAddress?.address1 ?? "",
+                    city: order.shippingAddress?.city ?? "",
+                    state: order.shippingAddress?.state ?? "",
+                    zipCode: order.shippingAddress?.postalCode ?? "",
+                    country: order.shippingAddress?.country ?? "",
+                },
+                trackingNumber: order.trackingNumber ?? undefined,
+                estimatedDelivery: estimatedDelivery ?? undefined,
+            }
+
+            const emailService = new EmailService(getEmailConfig())
+
+            // Helper to send email and log errors
+            async function sendEmail(type: "shipped" | "delivered", data: typeof emailData) {
+                try {
+                    if (type === "shipped") {
+                        await emailService.sendOrderShipped(data)
+                    } else if (type === "delivered") {
+                        await emailService.sendOrderDelivered(data)
+                    }
+                } catch (err) {
+                    console.error(`[email] order ${type} failed:`, err)
+                }
+            }
+
+            if (nowShipped) {
+                await sendEmail("shipped", emailData)
+            }
+
+            if (nowDelivered) {
+                await sendEmail("delivered", emailData)
+            }
+        }
+    }
+
+    const statusLabel = status.replace(/_/g, " ").toLowerCase()
+    return {
+        status: "success",
+        message: `Order updated to ${statusLabel}${nowShipped ? " — shipment email sent" : nowDelivered ? " — delivery email sent" : ""}`,
+    }
 }
 
 export async function deleteOrderAction(formData: FormData) {

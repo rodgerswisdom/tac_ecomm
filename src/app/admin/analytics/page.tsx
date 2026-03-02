@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { ShoppingBag, Users, TrendingUp, Star, Download, Trophy, Medal } from "lucide-react"
+import { formatPrice } from "@/lib/utils"
 
 interface AnalyticsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>

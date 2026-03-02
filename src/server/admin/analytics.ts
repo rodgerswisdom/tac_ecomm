@@ -50,6 +50,7 @@ function dayRange(days: number) {
 /* ---------------- OVERVIEW ---------------- */
 
 export async function getOverviewMetrics() {
+    const DAYS = 30
     const [{ _count: userCount }, { _count: productCount }, statusGroups, recentOrders] =
         await Promise.all([
             prisma.user.aggregate({ _count: { _all: true } }),
@@ -67,24 +68,62 @@ export async function getOverviewMetrics() {
             }),
         ])
 
-    const { start } = dayRange(30)
+    const { start } = dayRange(DAYS)
+    const prevStart = new Date(start)
+    const prevEnd = new Date(start)
 
-    const paymentsLast30 = await prisma.payment.findMany({
-        where: {
-            status: PaymentStatus.COMPLETED,
-            createdAt: { gte: start },
-        },
-        select: {
-            amount: true,
-            currency: true,
-            createdAt: true,
-        },
-    })
+    prevStart.setDate(prevStart.getDate() - DAYS)
+    prevEnd.setMilliseconds(prevEnd.getMilliseconds() - 1)
 
-    const paidOrdersCount = await prisma.order.count({
-        where: {
-            paymentStatus: PaymentStatus.COMPLETED,
-        },
+    const [
+        paymentsLast30,
+        paymentsPrev30,
+        currentOrdersWindow,
+        prevOrdersWindow,
+        currentUsersWindow,
+        prevUsersWindow,
+        currentProductsWindow,
+        prevProductsWindow,
+    ] = await Promise.all([
+        prisma.payment.findMany({
+            where: {
+                status: PaymentStatus.COMPLETED,
+                createdAt: { gte: start },
+            },
+            select: { amount: true, currency: true, createdAt: true },
+        }),
+        prisma.payment.findMany({
+            where: {
+                status: PaymentStatus.COMPLETED,
+                createdAt: { gte: prevStart, lt: prevEnd },
+            },
+            select: { amount: true, currency: true },
+        }),
+        prisma.order.count({
+            where: {
+                paymentStatus: PaymentStatus.COMPLETED,
+                createdAt: { gte: start },
+            },
+        }),
+        prisma.order.count({
+            where: {
+                paymentStatus: PaymentStatus.COMPLETED,
+                createdAt: { gte: prevStart, lt: prevEnd },
+            },
+        }),
+        prisma.user.count({ where: { createdAt: { gte: start } } }),
+        prisma.user.count({ where: { createdAt: { gte: prevStart, lt: prevEnd } } }),
+        prisma.product.count({ where: { createdAt: { gte: start } } }),
+        prisma.product.count({ where: { createdAt: { gte: prevStart, lt: prevEnd } } }),
+    ])
+
+    const pctChange = (current: number, previous: number) => {
+        if (previous === 0) return current > 0 ? 100 : 0
+        return ((current - previous) / previous) * 100
+    }
+
+    const paidOrdersTotal = await prisma.order.count({
+        where: { paymentStatus: PaymentStatus.COMPLETED },
     })
 
     const revenueTrendMap = new Map<
@@ -113,16 +152,19 @@ export async function getOverviewMetrics() {
         }
     }
 
-    const totalRevenue = paymentsLast30.reduce(
-        (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
-        0
-    )
+    const totalRevenue = paymentsLast30.reduce((sum, p) => sum + p.amount, 0)
+    const prevRevenue = paymentsPrev30.reduce((sum, p) => sum + p.amount, 0)
+
+    const revenueGrowth = pctChange(totalRevenue, prevRevenue)
+    const orderGrowth = pctChange(currentOrdersWindow, prevOrdersWindow)
+    const userGrowth = pctChange(currentUsersWindow, prevUsersWindow)
+    const productGrowth = pctChange(currentProductsWindow, prevProductsWindow)
 
     return {
         totals: {
             users: userCount._all,
             products: productCount._all,
-            orders: paidOrdersCount,
+            orders: paidOrdersTotal,
             revenue: totalRevenue,
         },
         ordersByStatus: statusGroups.map((g) => ({

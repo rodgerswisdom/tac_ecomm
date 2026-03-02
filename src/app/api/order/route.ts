@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { getEmailConfig } from '@/lib/email'
-import { EmailService } from '@/lib/email'
+import { EmailService, getEmailConfig } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
-import { convertFromUsd } from '@/lib/currency'
-import type { CurrencyCode } from '@/lib/currency'
+import { convertFromUsd, CurrencyCode } from '@/lib/currency'
 
 export async function POST(req: NextRequest) {
   const session = await auth()
@@ -178,8 +176,9 @@ export async function POST(req: NextRequest) {
       shipping,
       total,
       currency: orderCurrency,
-      paymentMethod: normalizedPaymentMethod,
-      status: 'PENDING',
+      paymentMethod: normalizedPaymentMethod ?? undefined,
+      paymentStatus: PaymentStatus.PENDING,
+      status: OrderStatus.PENDING,
       shippingMethod: shippingMethod ?? null,
       items: {
         create: validatedItems.map(({ productId, quantity, price }) => ({

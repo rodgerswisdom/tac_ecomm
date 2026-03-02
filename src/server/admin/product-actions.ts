@@ -18,7 +18,8 @@ import {
   variantSchema,
   imageSchema,
 } from "./products"
-import type { CreateProductFormState } from "@/lib/admin/create-product-form-state"
+import type { CreateProductFormState } from "./products"
+import { logAdminAction } from "./audit"
 
 export async function createProductAction(
   _prevState: CreateProductFormState,

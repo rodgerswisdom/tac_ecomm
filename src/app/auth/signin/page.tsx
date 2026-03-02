@@ -118,7 +118,7 @@ function SignInForm() {
                   </motion.div>
                 </div>
               </motion.div>
-              
+
               <CardTitle className="text-2xl luxury-heading">
                 Welcome <span className="afro-text-gradient">Back</span>
               </CardTitle>
@@ -181,6 +181,14 @@ function SignInForm() {
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
+                  </div>
+                  <div className="flex justify-end mt-1">
+                    <Link
+                      href="/auth/forgot-password"
+                      className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      Forgot password?
+                    </Link>
                   </div>
                 </div>
 
