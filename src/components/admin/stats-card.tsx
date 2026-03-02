@@ -31,21 +31,12 @@ export function StatsCard({
 }: StatsCardProps) {
   const animatedValue = useCountUp(value)
 
-  const changeColor =
-    change === undefined
-      ? "text-muted-foreground"
-      : change >= 0
-      ? "text-emerald-600"
-      : "text-rose-600"
-
   const isPositive = change !== undefined && change > 0
   const isNegative = change !== undefined && change < 0
-  const isNeutral = change !== undefined && change === 0
 
   const changeConfig = {
     color: isPositive ? "text-emerald-600 bg-emerald-500/10" : isNegative ? "text-rose-600 bg-rose-500/10" : "text-slate-500 bg-slate-500/10",
     icon: isPositive ? ArrowUpRight : isNegative ? ArrowDownRight : Minus,
-    label: isPositive ? "increase" : isNegative ? "decrease" : "no change"
   }
 
   return (
@@ -56,40 +47,45 @@ export function StatsCard({
       whileHover={{ y: -4 }}
       className="group"
     >
-      <Card className="relative overflow-hidden border border-brand-teal/10 bg-white shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:border-brand-teal/30">
+      <Card className="relative overflow-hidden border border-brand-teal/10 bg-white shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:border-brand-teal/30 rounded-2xl lg:rounded-3xl">
         <div className="absolute right-0 top-0 h-24 w-24 -translate-y-8 translate-x-8 rounded-full bg-brand-teal/5 transition-transform duration-500 group-hover:scale-150" />
 
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className="space-y-2">
-              <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+        <CardContent className="p-4 lg:p-6">
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1.5 lg:space-y-2 min-w-0">
+              <p className="text-[10px] lg:text-xs font-semibold uppercase tracking-wider text-slate-500">
                 {title}
               </p>
-              <span className="text-3xl font-bold mb-2 tracking-tight">
-                {formattedValue !== undefined ? 
-                formattedValue: `${prefix ?? ''}${animatedValue.toLocaleString()}`}
-              </span>
-              {change !== undefined && (
-                <div className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset",
-                  changeConfig.color,
-                  isPositive ? "ring-emerald-500/20" : isNegative ? "ring-rose-500/20" : "ring-slate-500/20"
-                )}>
-                  <changeConfig.icon className="h-3.5 w-3.5 stroke-[3]" />
-                  <span>{Math.abs(change).toFixed(1)}%</span>
-                </div>
-              )}
+              <div className="flex flex-col items-start gap-1">
+                <span className="text-xl lg:text-3xl font-bold tracking-tight text-foreground truncate w-full">
+                  {formattedValue !== undefined ?
+                    formattedValue : `${prefix ?? ''}${animatedValue.toLocaleString()}`}
+                </span>
+                {change !== undefined && (
+                  <div className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset",
+                    changeConfig.color,
+                    isPositive ? "ring-emerald-500/20" : isNegative ? "ring-rose-500/20" : "ring-slate-500/20"
+                  )}>
+                    <changeConfig.icon className="h-3 w-3 stroke-[3]" />
+                    <span>{Math.abs(change).toFixed(1)}%</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-teal/10 text-brand-teal">
+            <div className="flex h-10 w-10 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-xl lg:rounded-2xl bg-brand-teal/10 text-brand-teal shadow-inner">
               {icon}
             </div>
           </div>
 
           {/* Subtitle */}
           {subtitle && (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
+            <p className="mt-3 lg:mt-4 text-[10px] lg:text-xs text-muted-foreground border-t border-slate-50 pt-2 lg:pt-3">
+              {subtitle}
+            </p>
           )}
         </CardContent>
+
       </Card>
     </motion.div>
   )
