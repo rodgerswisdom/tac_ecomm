@@ -6,9 +6,11 @@ import { AdminRevenueCard } from "@/components/admin/admin-revenue-card"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { getOverviewMetrics } from "@/server/admin/analytics"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
+import { formatPrice } from "@/lib/utils"
 
 export default async function OverviewPage() {
   const metrics = await getOverviewMetrics()
+  console.log('metrics:', metrics);
 
   const statusOrder = ["CONFIRMED", "PENDING", "CANCELLED"]
   const statusColors: Record<string, string> = {
@@ -45,29 +47,22 @@ export default async function OverviewPage() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* <StatsCard
-          title="Total Revenue"
-          value={metrics.totals.revenue.value}
-          prefix="KSh "
-          subtitle={metrics.totals.revenue.value === 0 ? "Waiting for payments" : "Paid orders only"}
-          icon={<DollarSign className="h-8 w-5 text-brand-gold" />}
-        /> */}
-        <AdminRevenueCard revenue={metrics.totals.revenue} />
+        <AdminRevenueCard revenue={metrics.totals.revenue.value} />
         <StatsCard
           title="Paid Orders"
-          value={metrics.totals.orders}
+          value={metrics.totals.orders.value}
           subtitle="Completed payments"
           icon={<ShoppingBag className="h-8 w-5 text-blue-500" />}
         />
         <StatsCard
           title="Customers"
-          value={metrics.totals.users}
+          value={metrics.totals.users.value}
           subtitle="Registered users"
           icon={<Users className="h-8 w-5 text-purple-500" />}
         />
         <StatsCard
           title="Active Products"
-          value={metrics.totals.products}
+          value={metrics.totals.products.value}
           subtitle="Catalog size"
           icon={<Package className="h-8 w-5 text-orange-500" />}
         />

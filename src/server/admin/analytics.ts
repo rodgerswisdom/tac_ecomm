@@ -78,6 +78,7 @@ export async function getOverviewMetrics() {
     const [
         paymentsLast30,
         paymentsPrev30,
+        allCompletedPayments,
         currentOrdersWindow,
         prevOrdersWindow,
         currentUsersWindow,
@@ -97,6 +98,10 @@ export async function getOverviewMetrics() {
                 status: PaymentStatus.COMPLETED,
                 createdAt: { gte: prevStart, lt: prevEnd },
             },
+            select: { amount: true, currency: true },
+        }),
+        prisma.payment.findMany({
+            where: { status: PaymentStatus.COMPLETED },
             select: { amount: true, currency: true },
         }),
         prisma.order.count({
@@ -152,20 +157,21 @@ export async function getOverviewMetrics() {
         }
     }
 
-    const totalRevenue = paymentsLast30.reduce((sum, p) => sum + p.amount, 0)
-    const prevRevenue = paymentsPrev30.reduce((sum, p) => sum + p.amount, 0)
+    const totalRevenueLifetime = allCompletedPayments.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
+    const currentRevenue30 = paymentsLast30.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
+    const prevRevenue30 = paymentsPrev30.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
 
-    const revenueGrowth = pctChange(totalRevenue, prevRevenue)
+    const revenueGrowth = pctChange(currentRevenue30, prevRevenue30)
     const orderGrowth = pctChange(currentOrdersWindow, prevOrdersWindow)
     const userGrowth = pctChange(currentUsersWindow, prevUsersWindow)
     const productGrowth = pctChange(currentProductsWindow, prevProductsWindow)
 
     return {
         totals: {
-            users: userCount._all,
-            products: productCount._all,
-            orders: paidOrdersTotal,
-            revenue: totalRevenue,
+            users: { value: userCount._all, change: userGrowth },
+            products: { value: productCount._all, change: productGrowth },
+            orders: { value: paidOrdersTotal, change: orderGrowth },
+            revenue: { value: totalRevenueLifetime, change: revenueGrowth },
         },
         ordersByStatus: statusGroups.map((g) => ({
             status: g.status,
@@ -183,7 +189,7 @@ export async function getDetailedAnalytics(days = 90) {
     const previousStart = new Date(start)
     previousStart.setDate(previousStart.getDate() - days)
 
-    const [orders, users, orderStatusGroups, paymentGroups, customerStats, previousPayments, previousOrderCount] =
+    const [orders, users, orderStatusGroups, paymentGroups, allPaidOrders, previousPayments, previousOrderCount] =
         await Promise.all([
             prisma.order.findMany({
                 where: {
@@ -217,11 +223,9 @@ export async function getDetailedAnalytics(days = 90) {
                 _count: { _all: true },
                 where: { status: PaymentStatus.COMPLETED },
             }),
-            prisma.order.groupBy({
-                by: ["userId"],
-                _count: { _all: true },
-                _sum: { total: true },
+            prisma.order.findMany({
                 where: { paymentStatus: PaymentStatus.COMPLETED },
+                select: { userId: true, total: true, currency: true }
             }),
             prisma.payment.findMany({
                 where: {
@@ -237,6 +241,25 @@ export async function getDetailedAnalytics(days = 90) {
                 },
             }),
         ])
+
+    // Build customer stats in JS to handle multi-currency totals correctly
+    const customerStatsMap = new Map<string, { userId: string; count: number; totalUsd: number }>()
+    for (const o of allPaidOrders) {
+        let stats = customerStatsMap.get(o.userId)
+        if (!stats) {
+            stats = { userId: o.userId, count: 0, totalUsd: 0 }
+            customerStatsMap.set(o.userId, stats)
+        }
+        stats.count++
+        const code = o.currency ? (PAYMENT_CURRENCY_TO_CODE[o.currency.toUpperCase()] || (STORE_IS_KES ? "KSH" : "USD")) : "USD"
+        stats.totalUsd += code === "USD" ? o.total : convertToUsd(o.total, code as any)
+    }
+
+    const customerStats = Array.from(customerStatsMap.values()).map(c => ({
+        userId: c.userId,
+        _count: { _all: c.count },
+        _sum: { total: c.totalUsd }
+    }))
 
     const revenueTrendMap = new Map<
         string,

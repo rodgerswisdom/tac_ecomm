@@ -65,6 +65,10 @@ export function StatsCard({
               <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                 {title}
               </p>
+              <span className="text-3xl font-bold mb-2 tracking-tight">
+                {formattedValue !== undefined ? 
+                formattedValue: `${prefix ?? ''}${animatedValue.toLocaleString()}`}
+              </span>
               {change !== undefined && (
                 <div className={cn(
                   "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset",

@@ -295,7 +295,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Order confirmation email failed:', err)
   }
-
+  
   return NextResponse.json({
     success: true,
     orderId: order.id,

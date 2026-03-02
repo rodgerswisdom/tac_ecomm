@@ -7,6 +7,8 @@ import { AnalyticsDateFilters } from "@/components/admin/AnalyticsDateFilters"
 import { SmartInsight } from "@/components/admin/smart-insight"
 import { AnalyticsKpiCards } from "./AnalyticsKpiCards"
 import { RevenueTrendChart } from "./RevenueTrendChart"
+import { TopProductsChart } from "./TopProductsChart"
+import { CategoryRevenueChart } from "./CategoryRevenueChart"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
@@ -149,7 +151,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
             <CardTitle className="text-base font-bold">Top Performing Products</CardTitle>
           </CardHeader>
           <CardContent>
-            <SimpleBarChart data={topProductData} color="#2563eb" />
+            <TopProductsChart data={topProductData} />
           </CardContent>
         </Card>
         <Card className="border-brand-teal/10">
@@ -157,7 +159,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
             <CardTitle className="text-base font-bold">Sales by Category</CardTitle>
           </CardHeader>
           <CardContent>
-            <SimplePieChart data={categoryData} />
+            <CategoryRevenueChart data={categoryData} />
           </CardContent>
         </Card>
         <Card className="border-brand-teal/10">
