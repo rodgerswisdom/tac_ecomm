@@ -1,22 +1,44 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { initializeFraudDetection } from '@/lib/fraud'
 
-/**
- * Client component that initializes fraud detection on app load
- * This ensures device fingerprinting starts early for better accuracy
- */
 export function FraudDetectionProvider({ children }: { children: React.ReactNode }) {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    // Initialize fraud detection with user ID if available
-    const userId = session?.user?.id || session?.user?.email || undefined
-    initializeFraudDetection(userId)
-  }, [session])
+    if (status === 'loading') return
+    if (hasInitialized.current) return
+
+    const userId =
+      session?.user?.id ||
+      session?.user?.email ||
+      undefined
+
+    function initFraud() {
+      if (hasInitialized.current) return
+      hasInitialized.current = true
+      try {
+        initializeFraudDetection(userId)
+      } catch (err) {
+        console.error('Fraud SDK crashed during init:', err)
+      }
+    }
+
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      // DOM is already ready
+      initFraud()
+    } else {
+      // Wait for DOMContentLoaded
+      const handler = () => {
+        initFraud()
+        document.removeEventListener('DOMContentLoaded', handler)
+      }
+      document.addEventListener('DOMContentLoaded', handler)
+    }
+  }, [status, session])
 
   return <>{children}</>
 }
-

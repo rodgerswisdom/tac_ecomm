@@ -107,9 +107,10 @@ export interface BarChartDatum { name: string; value: number; color?: string }
 interface BarChartProps {
   data: BarChartDatum[]
   color?: string
+  formatValue?: (n: number) => string
 }
 
-export function SimpleBarChart({ data, color = COLORS.primary }: BarChartProps) {
+export function SimpleBarChart({ data, color = COLORS.primary, formatValue }: BarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={260}>
       <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -127,7 +128,7 @@ export function SimpleBarChart({ data, color = COLORS.primary }: BarChartProps) 
           tickLine={false}
           width={80}
         />
-        <Tooltip cursor={{ fill: "#f1f5f9", radius: 8 }} content={<CustomTooltip />} />
+        <Tooltip cursor={{ fill: "#f1f5f9", radius: 8 }} content={<CustomTooltip formatValue={formatValue} />} />
         <Bar
           dataKey="value"
           fill={color}
@@ -145,7 +146,7 @@ export function SimpleBarChart({ data, color = COLORS.primary }: BarChartProps) 
   )
 }
 
-export function SimplePieChart({ data }: { data: { name: string; value: number }[] }) {
+export function SimplePieChart({ data, formatValue }: { data: { name: string; value: number }[]; formatValue?: (n: number) => string }) {
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
@@ -167,12 +168,12 @@ export function SimplePieChart({ data }: { data: { name: string; value: number }
               <Cell key={index} fill={PIE_COLORS[index % PIE_COLORS.length]} className="hover:opacity-80 transition-opacity outline-none" />
             ))}
           </Pie>
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltip formatValue={formatValue} />} />
         </PieChart>
       </ResponsiveContainer>
       <div className="absolute flex flex-col items-center justify-center pointer-events-none">
         <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Total</span>
-        <span className="text-2xl font-black text-brand-umber">{total.toLocaleString()}</span>
+        <span className="text-2xl font-black text-brand-umber">{formatValue ? formatValue(total) : total.toLocaleString()}</span>
       </div>
     </div>
   )

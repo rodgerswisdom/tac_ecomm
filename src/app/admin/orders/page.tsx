@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
-import { Mail, Search } from "lucide-react"
+import { CheckCircle, Clock, HelpCircle, Mail, Search, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { StatusBadge } from "@/components/admin/status-badge"
 import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
+import { formatPrice } from "@/lib/utils"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -177,12 +178,42 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="px-4 py-4 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} /></td>
-                      <td className="px-4 py-4">
-                        <StatusBadge
-                          label={order.status.replace(/_/g, " ")}
-                          variant={orderStatusVariantMap[order.status] ?? "info"}
-                        />
+                      <td className="px-4 py-3 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} /></td>
+                      <td className="px-4 py-3">
+                        <span
+                          className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"
+                          style={{
+                            backgroundColor:
+                              order.status === "CONFIRMED"
+                                ? "#e7f0fa"
+                                : order.status === "PENDING"
+                                ? "#fef3c7"
+                                : order.status === "CANCELLED"
+                                ? "#fde2e1"
+                                : "#f3f4f6",
+                            color:
+                              order.status === "CONFIRMED"
+                                ? "#2563eb"
+                                : order.status === "PENDING"
+                                ? "#92400e"
+                                : order.status === "CANCELLED"
+                                ? "#b91c1c"
+                                : "#374151",
+                          }}
+                        >
+                          {(() => {
+                            switch (order.status) {
+                              case "CONFIRMED":
+                                return <><CheckCircle className="h-3 w-3 text-blue-500 inline mr-1" />Confirmed</>;
+                              case "PENDING":
+                                return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
+                              case "CANCELLED":
+                                return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Cancelled</>;
+                              default:
+                                return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.status}</>;
+                            }
+                          })()}
+                        </span>
                       </td>
                       <td className="px-4 py-4">
                         <StatusBadge

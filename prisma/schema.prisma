@@ -82,7 +82,7 @@ model Product {
   slug             String           @unique
   description      String
   shortDescription String?
-  price            Float            // Always USD
+  price            Float // Always USD
   comparePrice     Float?
   sku              String           @unique
   stock            Int              @default(0)
@@ -319,10 +319,10 @@ model ProductSet {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String   // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
-  entity    String   // e.g., "Product", "Order"
-  entityId  String   // The ID of the affected entity
-  details   String?  // Summary of changes or specific metadata
+  action    String // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
+  entity    String // e.g., "Product", "Order"
+  entityId  String // The ID of the affected entity
+  details   String? // Summary of changes or specific metadata
   adminId   String
   adminName String?
   createdAt DateTime @default(now())

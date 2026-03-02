@@ -5,6 +5,7 @@ import { useCurrency } from "@/contexts/CurrencyContext"
 import { convertToUsd } from "@/lib/currency"
 import type { CurrencyCode } from "@/lib/currency"
 import { StatsCard } from "@/components/admin/stats-card"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 
 const CURRENCY_ALIAS: Record<string, CurrencyCode> = {
   KES: "KSH",
@@ -28,7 +29,7 @@ export function AdminRevenueCard({ revenue, revenueCurrency, subtitle }: AdminRe
     <StatsCard
       title="Total Revenue"
       value={revenue}
-      formattedValue={formatPrice(amountUsd)}
+      formattedValue={<AdminFormattedPrice amount={amountUsd} />}
       subtitle={subtitle ?? (revenue === 0 ? "Waiting for payments" : "Paid orders only")}
       icon={<DollarSign className="h-8 w-5 text-emerald-500" />}
     />

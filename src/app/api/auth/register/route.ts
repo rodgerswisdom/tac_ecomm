@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: normalizedEmail }
+      where: { email: normalizedEmail },
     })
 
     if (existingUser) {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash password with bcrypt (12 rounds for good security/performance balance)
+    // Hash password with bcrypt (12 rounds — good security/performance balance)
     const hashedPassword = await hash(plainPassword, 12)
 
     // Create user in database
@@ -53,16 +53,16 @@ export async function POST(request: NextRequest) {
         name: trimmedName,
         email: normalizedEmail,
         passwordHash: hashedPassword,
-        role: 'CUSTOMER', // Set as customer by default
-        emailVerified: null
+        role: 'CUSTOMER',
+        emailVerified: null,
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     })
 
     // Fire-and-forget welcome email (signup should still succeed if this fails)
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
           id: user.id,
           name: user.name,
           email: user.email,
-          role: user.role
-        }
+          role: user.role,
+        },
       },
       { status: 201 }
     )
@@ -93,3 +93,4 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
