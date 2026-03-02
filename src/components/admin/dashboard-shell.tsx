@@ -41,7 +41,9 @@ export function AdminDashboardShell({
 }: AdminDashboardShellProps) {
   const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const { currency, setCurrency } = useCurrency()
+
   const pageBackgroundStyle = {
     backgroundColor: "#dfe7d9",
     backgroundImage:
@@ -63,153 +65,186 @@ export function AdminDashboardShell({
   }, [])
 
   return (
-    <div className="min-h-screen" style={pageBackgroundStyle}>
-      <header className="sticky top-0 z-30 border-b border-[#a17c4d] bg-[#d8b780] text-[#3f3324] shadow-sm">
-        <div className="flex w-full flex-wrap items-center gap-4 px-4 py-3 lg:flex-nowrap lg:px-8">
-          <div className="flex items-center gap-4 min-w-0">
-            <Link href="/admin/overview" className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-base font-semibold text-[#2d3b34]">
-                TAC
-              </span>
-              <span className="flex flex-col leading-tight text-[#3f3324]">
-                <span className="text-sm font-semibold">TAC Admin</span>
-                <span className="text-xs text-[#6e5a44]">Operations Console</span>
-              </span>
-            </Link>
+    <div className="min-h-screen flex flex-col" style={pageBackgroundStyle}>
+      <header className="sticky top-0 z-50 border-b border-[#a17c4d] bg-[#d8b780] text-[#3f3324] shadow-sm">
+        <div className="flex w-full items-center h-16">
+          <div className="flex items-center px-4 lg:px-6 h-full border-r border-[#3f3324]/15 shrink-0 lg:w-64">
+            <div className="flex items-center gap-3 min-w-0">
+              <button
+                type="button"
+                aria-label="Toggle navigation"
+                className="rounded-full border border-[#3f3324]/40 bg-transparent p-2 text-[#3f3324] transition hover:bg-[#e6cda3] lg:hidden"
+                onClick={toggleSidebar}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <Link href="/admin/overview" className="flex items-center gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-xs font-bold text-[#2d3b34]">
+                  TAC
+                </span>
+                <span className="hidden flex-col leading-tight text-[#3f3324] lg:flex whitespace-nowrap overflow-hidden">
+                  <span className="text-sm font-semibold">TAC Admin</span>
+                  <span className="text-xs text-[#6e5a44]">Operations Console</span>
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex-1 px-4 lg:px-6 h-full">
+            <div className="mx-auto h-full w-full max-w-7xl flex items-center justify-between gap-4">
+              <div className="flex items-center justify-start min-w-0 flex-1">
+                <form
+                  action="/admin/products"
+                  className="hidden md:flex w-full max-w-md items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner"
+                >
+                  <Search className="h-4 w-4 opacity-50" />
+                  <input
+                    name="q"
+                    type="search"
+                    placeholder="Search resources..."
+                    className="flex-1 bg-transparent text-sm placeholder:text-[#53705f] focus:outline-none"
+                  />
+                </form>
+
+                <button
+                  onClick={() => setIsMobileSearchOpen(true)}
+                  className="p-2.5 rounded-xl border border-[#3f3324]/40 bg-[#b8d3c2] text-[#3f3324] md:hidden"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 lg:gap-3 shrink-0">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 border-[#3f3324]/40 bg-[#b8d3c2] text-[#2d3b34] text-sm font-medium hover:bg-[#a9c2b0]"
+                    >
+                      <span className="lg:hidden">{currency}</span>
+                      <span className="hidden lg:inline">{ADMIN_CURRENCY_OPTIONS.find((o) => o.code === currency)?.label ?? currency}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="min-w-[100px]">
+                    {ADMIN_CURRENCY_OPTIONS.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.code}
+                        onClick={() => setCurrency(opt.code)}
+                        className={cn(currency === opt.code && "bg-primary/10 font-medium")}
+                      >
+                        {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 rounded-full border border-[#3f3324]/40 bg-[#b8d3c2] p-1 text-[#3f3324] transition hover:bg-[#a9c2b0]"
+                    >
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-sm font-semibold uppercase text-[#2d3b34]">
+                        {userInitials}
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold">{userName}</span>
+                        <span className="text-xs text-muted-foreground">{userEmail}</span>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/profile" className="flex items-center gap-2">
+                        <UserRound className="h-4 w-4" />
+                        <span className="text-sm">Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin/settings" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        <span className="text-sm">Settings</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => signOut({ redirectTo: "/auth/signin" })}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      Sign out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {isMobileSearchOpen && (
+          <div className="fixed inset-0 z-50 bg-[#d8b780] flex flex-col p-4">
+            <div className="flex items-center gap-4 mb-8 text-[#3f3324]">
+              <button onClick={() => setIsMobileSearchOpen(false)} className="p-2 rounded-xl bg-black/5">
+                <Menu className="h-5 w-5 rotate-90" />
+              </button>
+              <span className="font-semibold">Search TAC Console</span>
+            </div>
+            <form action="/admin/products" className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#3f3324]/50" />
+              <input
+                name="q"
+                placeholder="Search..."
+                className="w-full h-14 pl-12 pr-4 bg-[#b8d3c2] border border-[#3d5d4a]/30 rounded-full text-lg focus:outline-none shadow-inner"
+              />
+            </form>
+          </div>
+        )}
+      </header>
+
+      <div className="flex flex-1 relative">
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden transition-opacity duration-300",
+            isMobileSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={closeMobileSidebar}
+        />
+
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-[#2d3b34]/10 bg-background/95 transition-all duration-300 ease-in-out lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:bg-background/70 lg:shadow-none",
+            isMobileSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
+            isDesktopCollapsed ? "lg:w-20" : "lg:w-64"
+          )}
+        >
+          <div className="p-4 border-b border-[#2d3b34]/10 hidden lg:block">
             <button
-              type="button"
-              aria-label="Toggle navigation"
-              aria-expanded={isMobileSidebarOpen || isDesktopCollapsed}
-              className="rounded-full border border-[#3f3324]/40 bg-transparent p-2 text-[#3f3324] transition hover:bg-[#e6cda3]"
-              onClick={toggleSidebar}
+              onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
+              className="flex items-center justify-center h-10 w-10 rounded-xl hover:bg-black/5 text-muted-foreground hover:text-foreground transition-all"
+              title={isDesktopCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
-              <Menu className="h-4 w-4" />
+              <Menu className={cn("h-5 w-5 transition-transform", isDesktopCollapsed && "rotate-180")} />
             </button>
           </div>
 
-          <form
-            action="/admin/products"
-            role="search"
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner max-w-full sm:max-w-sm"
-          >
-            <Search className="h-4 w-4" aria-hidden="true" />
-            <label htmlFor="global-search" className="sr-only">
-              Search admin content
-            </label>
-            <input
-              id="global-search"
-              name="q"
-              type="search"
-              placeholder="Search..."
-              className="flex-1 bg-transparent text-sm text-[#2f3c34] placeholder:text-[#53705f] focus:outline-none"
-            />
-            <input type="hidden" name="sort" value="recent" />
-          </form>
-
-          <div className="ml-auto flex items-center gap-3 min-w-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-9 border-[#3f3324]/40 bg-[#b8d3c2] text-[#2d3b34] text-sm font-medium hover:bg-[#a9c2b0]"
-                >
-                  {ADMIN_CURRENCY_OPTIONS.find((o) => o.code === currency)?.label ?? currency}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[100px]">
-                {ADMIN_CURRENCY_OPTIONS.map((opt) => (
-                  <DropdownMenuItem
-                    key={opt.code}
-                    onClick={() => setCurrency(opt.code)}
-                    className={cn(currency === opt.code && "bg-primary/10 font-medium")}
-                  >
-                    {opt.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={`Open profile menu for ${userName}`}
-                  className="flex items-center gap-2 rounded-full border border-[#3f3324]/40 bg-[#b8d3c2] p-1 text-[#3f3324] transition hover:bg-[#a9c2b0]"
-                >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-sm font-semibold uppercase text-[#2d3b34]">
-                    {userInitials}
-                  </div>
-                  <span className="sr-only">
-                    {userName} ({userEmail}) profile menu
-                  </span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold">{userName}</span>
-                    <span className="text-xs text-muted-foreground">{userEmail}</span>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/profile" className="flex items-center gap-2">
-                    <UserRound className="h-4 w-4" />
-                    <span className="text-sm">Profile</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/admin/settings" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    <span>Settings</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => {
-                    void signOut({ redirectTo: "/auth/signin" })
-                  }}
-                  className="cursor-pointer text-red-600 focus:text-red-600"
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex">
-        {isMobileSidebarOpen ? (
-          <div
-            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm lg:hidden"
-            onClick={closeMobileSidebar}
-            aria-hidden
-          />
-        ) : null}
-        <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-40 flex h-full flex-col border-r border-border bg-background/95 px-4 py-6 text-foreground shadow-lg transition-all duration-200 lg:sticky lg:top-[4.25rem] lg:h-[calc(100vh-4.25rem)] lg:bg-background/70 lg:shadow-none",
-            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-            isDesktopCollapsed ? "lg:w-20 lg:px-2" : "lg:w-64"
-          )}
-        >
-          <div className="flex-1 overflow-y-auto" onClick={closeMobileSidebar}>
+          <div className="flex-1 overflow-y-auto px-4 py-6" onClick={closeMobileSidebar}>
             <SidebarNav items={navItems} condensed={isDesktopCollapsed} />
           </div>
-          <Link
-            href="/admin/overview"
-            className="mt-6 flex items-center gap-2 rounded-xl px-3 py-2 text-lg font-semibold text-foreground"
-          >
-            <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">TAC</span>
-            {!isDesktopCollapsed ? <span className="text-muted-foreground">Admin Panel</span> : null}
-          </Link>
         </aside>
 
-        <main className="flex-1 bg-background px-3 py-8 text-foreground sm:px-4 lg:px-6">
-          <div className="mx-auto w-full max-w-7xl space-y-8">{children}</div>
+        <main className="flex-1 min-w-0 flex flex-col bg-background">
+          <div className="flex-1 px-3 py-8 sm:px-4 lg:px-6">
+            <div className="mx-auto w-full max-w-7xl">
+              {children}
+            </div>
+          </div>
         </main>
       </div>
+
     </div>
   )
 }
+

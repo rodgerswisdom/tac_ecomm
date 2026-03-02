@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from "react-dom"
+import { useActionState } from "react"
+import { useFormStatus } from "react-dom"
 import { BespokeRequestStatus } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,7 +22,7 @@ export function BespokeStatusForm({
   defaultStatus,
   defaultAdminNotes,
 }: BespokeStatusFormProps) {
-  const [state, formAction] = useFormState(updateBespokeStatusAction, initialState)
+  const [state, formAction] = useActionState(updateBespokeStatusAction, initialState)
 
   return (
     <form action={formAction} className="space-y-3">

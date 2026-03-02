@@ -9,6 +9,15 @@ export function FraudDetectionProvider({ children }: { children: React.ReactNode
   const hasInitialized = useRef(false)
 
   useEffect(() => {
+    // FIX: Polyfill 'tagName' on document and window to prevent brittle @keverdjs/fraud-sdk from crashing
+    // on focus events that land on non-element targets (e.g., when t.tagName.toLowerCase() is called).
+    if (typeof document !== 'undefined' && !(document as any).tagName) {
+      Object.defineProperty(document, 'tagName', { value: 'DOCUMENT', configurable: true });
+    }
+    if (typeof window !== 'undefined' && !(window as any).tagName) {
+      Object.defineProperty(window, 'tagName', { value: 'WINDOW', configurable: true });
+    }
+
     if (status === 'loading') return
     if (hasInitialized.current) return
 

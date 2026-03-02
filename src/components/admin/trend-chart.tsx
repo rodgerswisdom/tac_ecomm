@@ -62,43 +62,43 @@ export function TrendChart({ data, yKey, label, color, height = 240, formatValue
   const gradientId = `colorValue-${strokeColor.replace('#', '')}`
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <AreaChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={strokeColor} stopOpacity={0.2} />
-            <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-        <XAxis
-          dataKey="date"
-          tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
-          axisLine={false}
-          tickLine={false}
-          dy={15}
-          tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-        />
-        <YAxis
-          tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
-          axisLine={false}
-          tickLine={false}
-          width={80}
-        />
-        <Tooltip content={(props) => <CustomTooltip {...props} formatValue={formatValue} />} />
-        <Area
-          type="monotone"
-          dataKey={yKey as string}
-          stroke={strokeColor}
-          strokeWidth={4}
-          fillOpacity={1}
-          fill={`url(#${gradientId})`}
-          name={label}
-          isAnimationActive={true}
-          animationDuration={1500}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height={height}>
+        <AreaChart data={data} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={strokeColor} stopOpacity={0.2} />
+              <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            dy={15}
+            tickFormatter={(value) => new Date(value).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            width={80}
+          />
+          <Tooltip content={(props) => <CustomTooltip {...props} formatValue={formatValue} />} />
+          <Area
+            type="monotone"
+            dataKey={yKey as string}
+            stroke={strokeColor}
+            strokeWidth={4}
+            fillOpacity={1}
+            fill={`url(#${gradientId})`}
+            name={label}
+            isAnimationActive={true}
+            animationDuration={1500}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
   )
 }
 
@@ -112,37 +112,37 @@ interface BarChartProps {
 
 export function SimpleBarChart({ data, color = COLORS.primary, formatValue }: BarChartProps) {
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
-          axisLine={false}
-          tickLine={false}
-          dy={10}
-        />
-        <YAxis
-          tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
-          axisLine={false}
-          tickLine={false}
-          width={80}
-        />
-        <Tooltip cursor={{ fill: "#f1f5f9", radius: 8 }} content={<CustomTooltip formatValue={formatValue} />} />
-        <Bar
-          dataKey="value"
-          fill={color}
-          radius={[8, 8, 0, 0]}
-          isAnimationActive={true}
-          animationDuration={1500}
-          barSize={32}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color ?? color} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
+      <ResponsiveContainer width="100%" height={260}>
+        <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            dy={10}
+          />
+          <YAxis
+            tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 500 }}
+            axisLine={false}
+            tickLine={false}
+            width={80}
+          />
+          <Tooltip cursor={{ fill: "#f1f5f9", radius: 8 }} content={<CustomTooltip formatValue={formatValue} />} />
+          <Bar
+            dataKey="value"
+            fill={color}
+            radius={[8, 8, 0, 0]}
+            isAnimationActive={true}
+            animationDuration={1500}
+            barSize={32}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color ?? color} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
   )
 }
 
@@ -157,9 +157,9 @@ export function SimplePieChart({ data, formatValue }: { data: { name: string; va
             data={data}
             dataKey="value"
             nameKey="name"
-            outerRadius={100}
-            innerRadius={75}
-            paddingAngle={4}
+            outerRadius="90%"
+            innerRadius="65%"
+            paddingAngle={2}
             stroke="none"
             isAnimationActive={true}
             animationDuration={1500}
@@ -171,10 +171,13 @@ export function SimplePieChart({ data, formatValue }: { data: { name: string; va
           <Tooltip content={<CustomTooltip formatValue={formatValue} />} />
         </PieChart>
       </ResponsiveContainer>
-      <div className="absolute flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Total</span>
-        <span className="text-2xl font-black text-brand-umber">{formatValue ? formatValue(total) : total.toLocaleString()}</span>
+      <div className="absolute flex flex-col items-center justify-center pointer-events-none text-center px-4">
+        <span className="text-[9px] lg:text-xs font-semibold uppercase tracking-wider text-slate-400">Total</span>
+        <span className="text-sm lg:text-xl font-bold text-slate-900 leading-tight">
+          {formatValue ? formatValue(total).split('.')[0] : total.toLocaleString()}
+        </span>
       </div>
     </div>
   )
 }
+

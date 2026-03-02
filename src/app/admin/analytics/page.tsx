@@ -197,90 +197,137 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         </Card>
       </div>
 
-      <Card className="border-brand-teal/15 shadow-xl overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between bg-brand-teal/5 border-b border-brand-teal/10 py-6">
-          <div className="space-y-1">
-            <CardTitle className="text-xl font-black text-brand-umber flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-amber-500" />
-              Top Spenders Leaderboard
+      <Card className="border-brand-teal/10 shadow-sm overflow-hidden rounded-xl">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 py-4 px-6">
+          <div className="space-y-0.5">
+            <CardTitle className="text-lg font-bold flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-amber-500" />
+              Spenders Leaderboard
             </CardTitle>
-            <p className="text-xs text-slate-500 font-medium">Ranked by total contribution to revenue</p>
+            <p className="text-xs text-slate-400">Revenue contribution rank</p>
           </div>
-          <Star className="h-6 w-6 text-amber-400 fill-amber-400" />
+          <Star className="h-5 w-5 text-amber-400 fill-amber-400 hidden sm:block" />
         </CardHeader>
-        <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50/80 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">
-              <tr>
-                <th className="px-6 py-4 font-black">Rank & Customer</th>
-                <th className="px-6 py-4 font-black text-center">Order Count</th>
-                <th className="px-6 py-4 font-black text-right">Contribution Hub</th>
-                <th className="px-6 py-4 font-black text-right pr-8">Lifetime Spend</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {analytics.highValueCustomers.map((customer, index) => (
-                <tr key={customer.userId} className="hover:bg-brand-teal/5 transition-all duration-300 group">
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-8 shrink-0">
-                        {index === 0 && <Trophy className="h-5 w-5 text-amber-500" />}
-                        {index === 1 && <Medal className="h-5 w-5 text-slate-400" />}
-                        {index === 2 && <Medal className="h-5 w-5 text-amber-700" />}
-                        {index > 2 && <span className="text-xs font-black text-slate-300">#{index + 1}</span>}
-                      </div>
-                      <div className="h-10 w-10 rounded-2xl bg-slate-100 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm ring-1 ring-slate-100">
-                        {customer.image ? (
-                          <Image src={customer.image} alt={customer.name} className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-sm font-black text-slate-400 uppercase">{customer.name.charAt(0)}</span>
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <Link
-                          href={`/admin/users/${customer.userId}`}
-                          className="font-bold text-brand-umber group-hover:text-brand-teal transition-colors"
-                        >
-                          {customer.name}
-                        </Link>
-                        <span className="text-[10px] font-medium text-slate-400 tabular-nums">{customer.email}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-center">
-                    <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1 text-xs font-black text-slate-600 ring-1 ring-inset ring-slate-200/50">
-                      {customer.orderCount}
-                    </span>
-                  </td>
-                  <td className="px-6 py-5 text-right w-[200px]">
-                    <div className="flex flex-col items-end gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black tabular-nums text-slate-700">{customer.contribution.toFixed(1)}%</span>
-                      </div>
-                      <div className="h-1.5 w-full max-w-[120px] rounded-full bg-slate-100 overflow-hidden ring-1 ring-slate-200/20">
-                        <div
-                          className="h-full bg-brand-teal rounded-full shadow-[0_0_8px_rgba(45,59,52,0.3)] transition-all duration-1000 ease-out"
-                          style={{ width: `${Math.min(customer.contribution, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-5 text-right pr-8 font-black text-brand-umber text-base tabular-nums">
-                    <AdminFormattedPrice amount={customer.total} />
-                  </td>
-                </tr>
-              ))}
-              {analytics.highValueCustomers.length === 0 && (
+        <CardContent className="p-0">
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50/50 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 <tr>
-                  <td className="py-16 text-center text-sm text-slate-400 font-medium italic" colSpan={4}>
-                    No premium customer data available for this range.
-                  </td>
+                  <th className="px-8 py-4">Rank & Customer</th>
+                  <th className="px-6 py-4 text-center">Orders</th>
+                  <th className="px-6 py-4 text-right">Contribution</th>
+                  <th className="px-8 py-4 text-right pr-8">Lifetime Spend</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {analytics.highValueCustomers.map((customer, index) => (
+                  <tr key={customer.userId} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-8 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-center w-6 shrink-0">
+                          {index === 0 && <Trophy className="h-4 w-4 text-amber-500" />}
+                          {index === 1 && <Medal className="h-4 w-4 text-slate-400" />}
+                          {index === 2 && <Medal className="h-4 w-4 text-amber-700" />}
+                          {index > 2 && <span className="text-[10px] font-medium text-slate-300">#{index + 1}</span>}
+                        </div>
+                        <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden border border-white shadow-sm">
+                          {customer.image ? (
+                            <Image src={customer.image} alt={customer.name} width={40} height={40} className="h-full w-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-semibold text-slate-400 uppercase">{customer.name.charAt(0)}</span>
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <Link
+                            href={`/admin/users/${customer.userId}`}
+                            className="font-semibold text-foreground group-hover:text-brand-teal transition-colors"
+                          >
+                            {customer.name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400 tabular-nums">{customer.email}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                        {customer.orderCount}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right w-[200px]">
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span className="text-[10px] font-medium tabular-nums text-slate-700">{customer.contribution.toFixed(1)}%</span>
+                        <div className="h-1 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full bg-brand-teal rounded-full"
+                            style={{ width: `${Math.min(customer.contribution, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-4 text-right pr-8 font-bold text-base tabular-nums">
+                      <AdminFormattedPrice amount={customer.total} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden divide-y divide-slate-50">
+            {analytics.highValueCustomers.map((customer, index) => (
+              <div key={customer.userId} className="p-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-slate-300 w-4">#{index + 1}</span>
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center overflow-hidden">
+                      {customer.image ? (
+                        <Image src={customer.image} alt={customer.name} width={40} height={40} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-semibold text-slate-400 uppercase">{customer.name.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-foreground">{customer.name}</span>
+                      <span className="text-[10px] text-slate-400">{customer.email}</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-base font-bold text-foreground tabular-nums">
+                      <AdminFormattedPrice amount={customer.total} />
+                    </p>
+                    <p className="text-[9px] font-semibold uppercase text-slate-400 tracking-wider">Lifetime value</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 pt-2">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase">Contribution</span>
+                      <span className="text-[10px] font-bold text-slate-700">{customer.contribution.toFixed(1)}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full bg-brand-teal" style={{ width: `${Math.min(customer.contribution, 100)}%` }} />
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-center">
+                    <p className="text-xs font-bold text-slate-600">{customer.orderCount}</p>
+                    <p className="text-[8px] font-semibold text-slate-400 uppercase">Orders</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {analytics.highValueCustomers.length === 0 && (
+            <div className="py-16 text-center text-sm text-slate-400 font-medium italic">
+              No leadership data available.
+            </div>
+          )}
         </CardContent>
       </Card>
+
     </div>
   )
 }
