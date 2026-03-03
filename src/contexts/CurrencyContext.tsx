@@ -13,6 +13,7 @@ import {
   getStoredCurrency,
   setStoredCurrency,
   formatInCurrency,
+  initializeRates,
 } from "@/lib/currency";
 
 type CurrencyContextType = {
@@ -23,14 +24,24 @@ type CurrencyContextType = {
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
 
-export function CurrencyProvider({ children }: { children: ReactNode }) {
+export function CurrencyProvider({
+  children,
+  initialRates
+}: {
+  children: ReactNode;
+  initialRates?: { kes: number; eur: number };
+}) {
   const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     setCurrencyState(getStoredCurrency());
-  }, []);
+
+    if (initialRates) {
+      initializeRates(initialRates.kes, initialRates.eur);
+    }
+  }, [initialRates]);
 
   const setCurrency = useCallback((code: CurrencyCode) => {
     setCurrencyState(code);

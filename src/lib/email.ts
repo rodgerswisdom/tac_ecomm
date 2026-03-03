@@ -171,9 +171,19 @@ export class EmailService {
     })
   }
 
+  async sendVerificationOTPEmail(customerEmail: string, otp: string): Promise<boolean> {
+    const template = this.getOTPVerificationTemplate(otp)
+    return this.sendEmail({
+      to: customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
   private getOrderConfirmationTemplate(data: OrderEmailData): EmailTemplate {
     const subject = `Order Confirmation - ${data.orderNumber} | TAC Accessories`
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -300,7 +310,7 @@ export class EmailService {
 
   private getOrderShippedTemplate(data: OrderEmailData): EmailTemplate {
     const subject = `Your Order Has Shipped! - ${data.orderNumber} | TAC Accessories`
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -375,7 +385,7 @@ export class EmailService {
 
   private getOrderDeliveredTemplate(data: OrderEmailData): EmailTemplate {
     const subject = `Your Order Has Been Delivered! - ${data.orderNumber} | TAC Accessories`
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -440,7 +450,7 @@ export class EmailService {
 
   private getWelcomeTemplate(customerName: string): EmailTemplate {
     const subject = 'Welcome to TAC Accessories! 🎉'
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -516,7 +526,7 @@ export class EmailService {
 
   private getPasswordResetTemplate(resetLink: string): EmailTemplate {
     const subject = 'Reset Your Password - TAC Accessories'
-    
+
     const html = `
       <!DOCTYPE html>
       <html>
@@ -584,6 +594,72 @@ export class EmailService {
     return { subject, html, text }
   }
 
+  private getOTPVerificationTemplate(otp: string): EmailTemplate {
+    const subject = `${otp} is your TAC Accessories verification code`
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify Your Email</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; text-align: center; }
+          .otp-container { background-color: #f8f9fa; padding: 30px; border-radius: 12px; margin: 30px 0; border: 2px dashed #c89b3c; }
+          .otp-code { font-size: 42px; font-weight: 800; letter-spacing: 12px; color: #1a1a1a; margin: 0; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+          .note { font-size: 14px; color: #666; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verify Your Identity</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">One step closer to the African Gallery experience</p>
+          </div>
+          
+          <div class="content">
+            <h2>Your Verification Code</h2>
+            <p>Please enter the following 6-digit code on the signup page to verify your email address. This code will expire in 10 minutes.</p>
+            
+            <div class="otp-container">
+              <p class="otp-code">${otp}</p>
+            </div>
+            
+            <p class="note">If you didn't request this code, you can safely ignore this email.</p>
+          </div>
+          
+          <div class="footer">
+            <p>Thank you for choosing TAC Accessories!</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">
+              TAC Accessories - Celebrating African Heritage Through Jewelry
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    const text = `
+      Verify Your Email - TAC Accessories
+      
+      Your verification code is: ${otp}
+      
+      Please enter this code on the signup page to verify your email address. This code will expire in 10 minutes.
+      
+      If you didn't request this code, you can safely ignore this email.
+      
+      Thank you for choosing TAC Accessories!
+    `
+
+    return { subject, html, text }
+  }
+
   private htmlToText(html: string): string {
     // Simple HTML to text conversion
     return html
@@ -598,9 +674,9 @@ export class EmailService {
   private async simulateApiCall(endpoint: string, data: any): Promise<any> {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500))
-    
+
     console.log('Email API call:', endpoint, data)
-    
+
     // Mock successful response
     return { success: true, id: 'email-' + Math.random().toString(36).substr(2, 9) }
   }
@@ -640,11 +716,16 @@ export function useEmail() {
     return emailService.sendPasswordResetEmail(customerEmail, resetLink)
   }
 
+  const sendVerificationOTP = async (customerEmail: string, otp: string) => {
+    return emailService.sendVerificationOTPEmail(customerEmail, otp)
+  }
+
   return {
     sendOrderConfirmation,
     sendOrderShipped,
     sendOrderDelivered,
     sendWelcomeEmail,
-    sendPasswordReset
+    sendPasswordReset,
+    sendVerificationOTP
   }
 }

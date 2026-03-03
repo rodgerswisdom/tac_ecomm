@@ -1,84 +1,54 @@
-import Link from "next/link"
+import { requireAdmin } from "@/server/admin/auth"
+import { getAdminSettingsData } from "@/server/admin/settings"
 import { AdminPageHeader } from "@/components/admin/page-header"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { GlobalSettingsForm } from "@/components/admin/settings/GlobalSettingsForm"
+import { Card, CardContent } from "@/components/ui/card"
+import { Settings, Tag, Users } from "lucide-react"
+import Link from "next/link"
 
-const settingSections = [
-  {
-    title: "Store profile",
-    description: "Manage support contacts and who can access the dashboard.",
-    actions: [
-      { label: "Manage admins and users", href: "/admin/users" },
-      { label: "Review team access", href: "/admin/users" },
-    ],
-    note: "Support email and branding live in env/config; adjust there and redeploy to apply.",
-  },
-  {
-    title: "Notifications",
-    description: "Order and account emails are sent via the email service helpers.",
-    actions: [
-      { label: "Send a test (sign-in)", href: "/auth/signin" },
-      { label: "View orders", href: "/admin/orders" },
-    ],
-    note: "Production SMTP/API keys must be set in env for deliveries to succeed.",
-  },
-  {
-    title: "Security & access",
-    description: "Restrict dashboard access to admins and rotate credentials regularly.",
-    actions: [
-      { label: "Review admin accounts", href: "/admin/users" },
-      { label: "Audit recent orders", href: "/admin/orders" },
-    ],
-    note: "Enable MFA at your auth provider and keep NEXTAUTH_SECRET rotated.",
-  },
-  {
-    title: "Appearance",
-    description: "Theme tokens live in globals.css and theme.css for storefront branding.",
-    actions: [
-      { label: "Preview storefront", href: "/" },
-      { label: "View dashboard overview", href: "/admin/overview" },
-    ],
-    note: "Use preview deployments to QA visual changes before publishing.",
-  },
-  {
-    title: "Discount codes",
-    description: "Create, edit, or expire coupons from the dedicated dashboard module.",
-    actions: [
-      { label: "Open discount codes", href: "/admin/coupons" },
-    ],
-    note: "Audit coupon usage and validity in the discount codes dashboard.",
-  },
-]
+export default async function SettingsPage() {
+  await requireAdmin()
+  const { globalSettings } = await getAdminSettingsData()
 
-export default function SettingsPage() {
   return (
-    <section className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <AdminPageHeader
         title="Settings"
-        description="Central place for operational controls and pointers to where changes live."
+        description="Global configuration for store identity, operations, and communications."
         breadcrumb={[{ label: "Settings", href: "/admin/settings" }]}
       />
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {settingSections.map((section) => (
-          <Card key={section.title}>
-            <CardHeader>
-              <CardTitle>{section.title}</CardTitle>
-              <p className="text-sm text-muted-foreground">{section.description}</p>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex flex-wrap gap-2">
-                {section.actions.map((action) => (
-                  <Button key={action.label} asChild size="sm" variant="secondary">
-                    <Link href={action.href}>{action.label}</Link>
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">{section.note}</p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <aside className="lg:w-1/5">
+          <nav className="flex space-x-2 lg:flex-col lg:space-x-0 lg:space-y-1">
+            <Link
+              href="/admin/settings"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-bold bg-[#b8d3c2]/50 text-[#2d3b34] rounded-xl transition-all"
+            >
+              <Settings className="h-4 w-4" />
+              Global Store
+            </Link>
+            <Link
+              href="/admin/users"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-[#b8d3c2]/10 hover:text-[#2d3b34] rounded-xl transition-all"
+            >
+              <Users className="h-4 w-4" />
+              Users & Team
+            </Link>
+            <Link
+              href="/admin/coupons"
+              className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-[#b8d3c2]/10 hover:text-[#2d3b34] rounded-xl transition-all"
+            >
+              <Tag className="h-4 w-4" />
+              Coupons
+            </Link>
+          </nav>
+        </aside>
+
+        <main className="flex-1">
+          <GlobalSettingsForm initialData={globalSettings} />
+        </main>
       </div>
-    </section>
+    </div>
   )
 }

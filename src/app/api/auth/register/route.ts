@@ -37,45 +37,70 @@ export async function POST(request: NextRequest) {
       where: { email: normalizedEmail },
     })
 
-    if (existingUser) {
+    if (existingUser && existingUser.emailVerified) {
       return NextResponse.json(
         { message: 'User with this email already exists' },
         { status: 400 }
       )
     }
 
-    // Hash password with bcrypt (12 rounds — good security/performance balance)
-    const hashedPassword = await hash(plainPassword, 12)
+    let user;
+    if (existingUser) {
+      // User exists but not verified, we'll just resend the OTP
+      user = existingUser;
+    } else {
+      // Hash password with bcrypt (12 rounds — good security/performance balance)
+      const hashedPassword = await hash(plainPassword, 12)
 
-    // Create user in database
-    const user = await prisma.user.create({
-      data: {
-        name: trimmedName,
-        email: normalizedEmail,
-        passwordHash: hashedPassword,
-        role: 'CUSTOMER',
-        emailVerified: null,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true,
-      },
-    })
+      // Create user in database
+      user = await prisma.user.create({
+        data: {
+          name: trimmedName,
+          email: normalizedEmail,
+          passwordHash: hashedPassword,
+          role: 'CUSTOMER',
+          emailVerified: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          createdAt: true,
+        },
+      })
+    }
 
-    // Fire-and-forget welcome email (signup should still succeed if this fails)
+    // Generate 6-digit OTP for email verification
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+    // Store OTP in VerificationToken table (expires in 10 minutes)
     try {
+      // Clear any existing tokens for this email first
+      await prisma.verificationToken.deleteMany({
+        where: { identifier: normalizedEmail }
+      })
+
+      await prisma.verificationToken.create({
+        data: {
+          identifier: normalizedEmail,
+          token: otp,
+          expires: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        }
+      })
+
+      // Send OTP verification email
       const emailService = new EmailService(getEmailConfig())
-      await emailService.sendWelcomeEmail(trimmedName, normalizedEmail)
+      await emailService.sendVerificationOTPEmail(normalizedEmail, otp)
     } catch (err) {
-      console.error('Welcome email failed:', err)
+      console.error('OTP generation or email failed:', err)
+      // We don't fail the request here, but the user won't be able to verify immediately
+      // The frontend should handle the transition to the verification step
     }
 
     return NextResponse.json(
       {
-        message: 'User created successfully',
+        message: 'Acccount created. Please verify your email with the code sent to you.',
         user: {
           id: user.id,
           name: user.name,
