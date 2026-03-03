@@ -12,7 +12,7 @@ interface StatsCardProps {
   value: number
   prefix?: string
   /** When set, shown instead of prefix+value (e.g. currency-formatted amount) */
-  formattedValue?: string
+  formattedValue?: ReactNode
   subtitle?: string
   change?: number
   icon?: ReactNode
