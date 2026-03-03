@@ -10,7 +10,7 @@ import { getOrderDetail } from "@/server/admin/orders"
 import { StatusUpdateForm } from "./StatusUpdateForm"
 
 interface OrderDetailPageProps {
-  params: { orderId: string }
+  params: Promise<{ orderId: string }>
 }
 
 const orderStatusVariantMap: Record<OrderStatus, "success" | "warning" | "danger" | "info"> = {
@@ -47,7 +47,7 @@ function formatOrderDate(date: Date | string) {
 }
 
 export default async function OrderDetailPage({ params }: OrderDetailPageProps) {
-  const { orderId } = params
+  const { orderId } = await params
   const order = await getOrderDetail(orderId)
 
   if (!order) {

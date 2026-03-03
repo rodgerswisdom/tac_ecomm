@@ -135,11 +135,11 @@ export async function POST(req: NextRequest) {
   // Optionally: validate coupon here (not implemented)
 
 
-  // Generate unique order number
+  // Generate short unique order number: TAC-<base36 time>-<4 random>
   function generateOrderNumber() {
-    const now = Date.now()
-    const rand = Math.floor(1000 + Math.random() * 9000)
-    return `TAC${now}${rand}`
+    const timePart = Date.now().toString(36).toUpperCase().slice(-8)
+    const randPart = Math.random().toString(36).slice(2, 6).toUpperCase()
+    return `TAC-${timePart}-${randPart}`
   }
   const orderNumber = generateOrderNumber()
 

@@ -1,6 +1,6 @@
 "use server"
 
-import { OrderStatus, PaymentStatus } from "@prisma/client"
+import { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
@@ -85,7 +85,21 @@ export async function deleteOrderAction(formData: FormData) {
     throw new Error(parsed.error.issues[0]?.message ?? "Invalid order delete request")
   }
 
-  await prisma.order.delete({ where: { id: parsed.data.orderId } })
+  try {
+    await prisma.order.delete({ where: { id: parsed.data.orderId } })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2025") {
+        throw new Error("Order not found or already deleted")
+      }
+
+      if (error.code === "P2003") {
+        throw new Error("Cannot delete this order because it is linked to other records.")
+      }
+    }
+
+    throw error
+  }
 
   revalidatePath("/admin/orders")
 }

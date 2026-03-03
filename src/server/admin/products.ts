@@ -4,25 +4,30 @@ import { prisma } from "@/lib/prisma"
 import { generateSlug } from "@/lib/utils"
 import { getCloudinaryConfig } from "@/lib/cloudinary"
 
-export const productInputSchema = z.object({
-    id: z.string().cuid().optional(),
-    name: z.string().min(2, "Name is required"),
-    description: z.string().min(10, "Description is required"),
-    shortDescription: z.string().max(240).optional().nullable(),
-    price: z.coerce.number().positive(), // Product prices are always stored in USD
-    comparePrice: z.coerce.number().positive().optional().nullable(),
-    stock: z.coerce.number().int().nonnegative(),
-    sku: z.string().min(1, "SKU is required"),
-    categoryId: z.string().min(1, "Category is required"),
-    productType: z.nativeEnum(ProductType).default(ProductType.READY_TO_WEAR),
-    isActive: z.boolean().default(true),
-    isFeatured: z.boolean().default(false),
-    isBespoke: z.boolean().default(false),
-    isCorporateGift: z.boolean().default(false),
-    artisanId: z.string().optional().nullable(),
-    weight: z.coerce.number().nonnegative().optional().nullable(),
-    dimensions: z.string().max(120).optional().nullable(),
-})
+export const productInputSchema = z
+    .object({
+        id: z.string().cuid().optional(),
+        name: z.string().min(2, "Name is required"),
+        description: z.string().min(10, "Description is required"),
+        shortDescription: z.string().max(240).optional().nullable(),
+        price: z.coerce.number().positive(), // Product prices are always stored in USD
+        comparePrice: z.coerce.number().positive().optional().nullable(),
+        stock: z.coerce.number().int().nonnegative(),
+        sku: z.string().min(1, "SKU is required"),
+        categoryId: z.string().min(1, "Category is required"),
+        productType: z.nativeEnum(ProductType).default(ProductType.READY_TO_WEAR),
+        isActive: z.boolean().default(true),
+        isFeatured: z.boolean().default(false),
+        isBespoke: z.boolean().default(false),
+        isCorporateGift: z.boolean().default(false),
+        artisanId: z.string().optional().nullable(),
+        weight: z.coerce.number().nonnegative().optional().nullable(),
+        dimensions: z.string().max(120).optional().nullable(),
+    })
+    .refine(
+        (data) => data.comparePrice == null || data.comparePrice > data.price,
+        { message: "Market price must be greater than selling price when set.", path: ["comparePrice"] },
+    )
 
 export const variantSchema = z.object({
     productId: z.string().cuid(),

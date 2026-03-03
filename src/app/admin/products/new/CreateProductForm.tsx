@@ -399,7 +399,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <label htmlFor="price" className="text-sm font-semibold text-foreground">
                     <span className="flex items-center gap-1">
-                      Price (USD)
+                      Selling price (USD)
                       <RequiredMark />
                     </span>
                   </label>
@@ -419,7 +419,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <label htmlFor="comparePrice" className="text-xs font-medium text-muted-foreground">
-                      Compare at
+                      Market price (USD)
                     </label>
                     {comparePriceSuggestion && !formValues.comparePrice ? (
                       <button
@@ -431,6 +431,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                       </button>
                     ) : null}
                   </div>
+                  <p className="text-[11px] text-muted-foreground">Original price before discount. Leave blank if not on sale.</p>
                   <Input
                     id="comparePrice"
                     name="comparePrice"
