@@ -9,7 +9,6 @@ import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 
 export default async function OverviewPage() {
   const metrics = await getOverviewMetrics()
-  console.log('metrics:', metrics);
 
   const statusOrder = ["CONFIRMED", "PENDING", "CANCELLED"]
   const statusColors: Record<string, string> = {

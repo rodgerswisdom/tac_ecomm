@@ -5,7 +5,7 @@
 
 export type CurrencyCode = "KSH" | "USD" | "EUR";
 
-export const CURRENCIES: Record<
+export let CURRENCIES: Record<
   CurrencyCode,
   { code: CurrencyCode; symbol: string; rateFromUsd: number; decimals: number }
 > = {
@@ -13,6 +13,12 @@ export const CURRENCIES: Record<
   KSH: { code: "KSH", symbol: "KES", rateFromUsd: 130, decimals: 0 },
   EUR: { code: "EUR", symbol: "€", rateFromUsd: 0.92, decimals: 2 },
 };
+
+/** Initialize the global CURRENCIES rates from database settings. */
+export function initializeRates(kesRate: number, eurRate: number) {
+  CURRENCIES.KSH.rateFromUsd = kesRate;
+  CURRENCIES.EUR.rateFromUsd = eurRate;
+}
 
 const STORAGE_KEY = "tac-currency";
 

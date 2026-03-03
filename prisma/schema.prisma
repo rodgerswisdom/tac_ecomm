@@ -405,3 +405,26 @@ model BespokeRequest {
   @@index([status])
   @@index([createdAt])
 }
+
+model Settings {
+  id                String   @id @default("singleton")
+  storeName         String   @default("Tac Accessories")
+  storeTagline      String   @default("The African Gallery Experience")
+  supportEmail      String   @default("support@tacaccessories.com")
+  salesEmail        String   @default("sales@tacaccessories.com")
+  whatsappNumber    String   @default("254700000000")
+  address           String   @default("Nairobi, Kenya")
+  instagramUrl      String?
+  facebookUrl       String?
+  maintenanceMode   Boolean  @default(false)
+  autoSyncRates     Boolean  @default(true)
+  lastRatesSyncAt   DateTime?
+  defaultCurrency   String   @default("KES")
+  usdToKesRate      Float    @default(129.0)
+  usdToEurRate      Float    @default(0.92)
+  taxRate           Float    @default(16.0)
+  baseShippingFee   Float    @default(300.0)
+  smsSenderId       String   @default("TAC Accessories")
+  emailFromName     String   @default("TAC Accessories")
+  updatedAt         DateTime @updatedAt
+}

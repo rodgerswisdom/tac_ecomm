@@ -2,11 +2,11 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity, LayoutDashboard, MessageSquare, Package, Receipt, Settings, Tags, Users } from "lucide-react"
+import { Activity, LayoutDashboard, Mail, MessageSquare, Package, Receipt, Settings, Tags, Users } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-export type AdminNavIcon = "overview" | "products" | "categories" | "orders" | "users" | "analytics" | "settings" | "bespoke"
+export type AdminNavIcon = "overview" | "products" | "categories" | "orders" | "users" | "analytics" | "settings" | "bespoke" | "communication"
 
 const iconMap: Record<AdminNavIcon, LucideIcon> = {
   overview: LayoutDashboard,
@@ -17,6 +17,7 @@ const iconMap: Record<AdminNavIcon, LucideIcon> = {
   analytics: Activity,
   settings: Settings,
   bespoke: MessageSquare,
+  communication: Mail,
 }
 
 export type AdminNavItem = {

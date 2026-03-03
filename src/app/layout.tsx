@@ -60,11 +60,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+import { prisma } from "@/lib/prisma";
+import { initializeRates } from "@/lib/currency";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch global settings for currency rates
+  const settings = await (prisma as any).settings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton" },
+  });
+
+  // Initialize server-side rates
+  initializeRates(settings.usdToKesRate, settings.usdToEurRate);
+
   return (
     <html lang="en">
       <body
@@ -72,12 +85,12 @@ export default function RootLayout({
       >
         <SessionProviderWrapper>
           <CartProvider>
-            <CurrencyProvider>
-            <FraudDetectionProvider>
-              {children}
-              <Toaster position="bottom-center" richColors />
-              <WhatsAppWidget />
-            </FraudDetectionProvider>
+            <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
+              <FraudDetectionProvider>
+                {children}
+                <Toaster position="bottom-center" richColors />
+                <WhatsAppWidget />
+              </FraudDetectionProvider>
             </CurrencyProvider>
           </CartProvider>
         </SessionProviderWrapper>

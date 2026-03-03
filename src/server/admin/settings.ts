@@ -6,14 +6,76 @@ import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
 
 export async function getAdminSettingsData() {
-    const [featuredProducts, bespokeProducts, corporateGiftProducts, coupons] = await Promise.all([
+    const [featuredProducts, bespokeProducts, corporateGiftProducts, coupons, globalSettings] = await Promise.all([
         prisma.product.findMany({ where: { isFeatured: true }, orderBy: { updatedAt: "desc" }, take: 10 }),
         prisma.product.findMany({ where: { isBespoke: true }, orderBy: { updatedAt: "desc" }, take: 10 }),
         prisma.product.findMany({ where: { isCorporateGift: true }, orderBy: { updatedAt: "desc" }, take: 10 }),
         prisma.coupon.findMany({ orderBy: { createdAt: "desc" } }),
+        (prisma as any).settings.upsert({
+            where: { id: "singleton" },
+            update: {},
+            create: { id: "singleton" },
+        }),
     ])
 
-    return { featuredProducts, bespokeProducts, corporateGiftProducts, coupons }
+    return { featuredProducts, bespokeProducts, corporateGiftProducts, coupons, globalSettings }
+}
+
+const settingsSchema = z.object({
+    storeName: z.string().min(2),
+    storeTagline: z.string().optional(),
+    supportEmail: z.string().email(),
+    salesEmail: z.string().email(),
+    whatsappNumber: z.string(),
+    address: z.string(),
+    instagramUrl: z.string().url().optional().or(z.literal("")),
+    facebookUrl: z.string().url().optional().or(z.literal("")),
+    maintenanceMode: z.coerce.boolean(),
+    autoSyncRates: z.coerce.boolean(),
+    defaultCurrency: z.string().length(3),
+    usdToKesRate: z.coerce.number().positive(),
+    usdToEurRate: z.coerce.number().positive(),
+    taxRate: z.coerce.number().min(0),
+    baseShippingFee: z.coerce.number().min(0),
+    smsSenderId: z.string().max(11),
+    emailFromName: z.string().min(2),
+})
+
+export type SettingsFormState = {
+    status: "idle" | "loading" | "success" | "error"
+    message?: string
+    errors?: Record<string, string[]>
+}
+
+export async function updateGlobalSettingsAction(
+    prevState: SettingsFormState,
+    formData: FormData
+): Promise<SettingsFormState> {
+    await assertAdmin()
+
+    const parsed = settingsSchema.safeParse(Object.fromEntries(formData.entries()))
+
+    if (!parsed.success) {
+        return {
+            status: "error",
+            message: "Validation failed",
+            errors: parsed.error.flatten().fieldErrors
+        }
+    }
+
+    try {
+        await (prisma as any).settings.update({
+            where: { id: "singleton" },
+            data: parsed.data,
+        })
+
+        revalidatePath("/admin/settings")
+        revalidatePath("/")
+        return { status: "success", message: "Settings updated successfully" }
+    } catch (error) {
+        console.error("Settings update error:", error)
+        return { status: "error", message: "Failed to update settings" }
+    }
 }
 
 const productFlagSchema = z.object({
