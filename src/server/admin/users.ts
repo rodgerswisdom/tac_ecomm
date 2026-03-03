@@ -289,9 +289,18 @@ export async function deleteUserAction(formData: FormData) {
         }
     }
 
-    await prisma.user.delete({
-        where: { id: userId },
-    })
+    try {
+        await prisma.user.delete({
+            where: { id: userId },
+        })
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+            // Prevent deleting users that still have related records (e.g. orders)
+            throw new Error("Cannot delete a user who has existing orders. Please keep the account or deactivate it instead.")
+        }
+
+        throw error
+    }
 
     revalidatePath("/admin/users")
 }

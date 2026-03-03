@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
-import { getPaymentCurrencyForCheckout, formatInCurrency } from "@/lib/currency";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -18,8 +18,7 @@ export function OrderSummarySidebar({
   onAppliedCouponChange,
 }: OrderSummarySidebarProps) {
   const { cart, getCartTotal, getCartItemCount } = useCart();
-  const paymentCurrency = getPaymentCurrencyForCheckout();
-  const formatPrice = (amountUsd: number) => formatInCurrency(amountUsd, paymentCurrency);
+  const { formatPrice } = useCurrency();
 
   const subtotal = getCartTotal();
   const discount = appliedCoupon?.discount ?? 0;

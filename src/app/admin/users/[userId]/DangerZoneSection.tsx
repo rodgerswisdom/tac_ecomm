@@ -34,7 +34,7 @@ export function DangerZoneSection({ userId, action }: Props) {
       {expanded ? (
         <div className="rounded-lg border border-destructive/25 bg-destructive/5 p-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Deleting a user also removes their sessions. Orders stay linked but the account cannot sign in.
+            Deleting a user also removes their sessions. If they have existing orders, deletion is blocked to preserve order history.
           </p>
           {confirming ? (
             <form action={action} className="flex flex-wrap items-center gap-3">
