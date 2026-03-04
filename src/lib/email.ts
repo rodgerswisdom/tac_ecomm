@@ -171,6 +171,26 @@ export class EmailService {
     })
   }
 
+  async sendMfaOtpEmail(to: string, code: string): Promise<boolean> {
+    const template = this.getMfaOtpTemplate(code)
+    return this.sendEmail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
+  async sendSignupOtpEmail(to: string, code: string): Promise<boolean> {
+    const template = this.getSignupOtpTemplate(code)
+    return this.sendEmail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
   private getOrderConfirmationTemplate(data: OrderEmailData): EmailTemplate {
     const subject = `Order Confirmation - ${data.orderNumber} | TAC Accessories`
     
@@ -581,6 +601,88 @@ export class EmailService {
       Thank you for choosing TAC Accessories!
     `
 
+    return { subject, html, text }
+  }
+
+  private getMfaOtpTemplate(code: string): EmailTemplate {
+    const subject = 'Your sign-in code - TAC Accessories'
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sign-in code</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .code { font-size: 28px; font-weight: 700; letter-spacing: 0.25em; color: #1a1a1a; background: #f8f9fa; padding: 16px 24px; border-radius: 8px; display: inline-block; margin: 16px 0; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Your sign-in code</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">TAC Accessories</p>
+          </div>
+          <div class="content">
+            <p>Use this code to complete sign-in:</p>
+            <p class="code">${code}</p>
+            <p>This code expires in 15 minutes. If you didn't request it, you can ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p style="font-size: 12px; color: #888;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `Your sign-in code - TAC Accessories\n\nUse this code to complete sign-in: ${code}\n\nThis code expires in 15 minutes. If you didn't request it, you can ignore this email.`
+    return { subject, html, text }
+  }
+
+  private getSignupOtpTemplate(code: string): EmailTemplate {
+    const subject = 'Verify your email - TAC Accessories'
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Verify your email</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .code { font-size: 28px; font-weight: 700; letter-spacing: 0.25em; color: #1a1a1a; background: #f8f9fa; padding: 16px 24px; border-radius: 8px; display: inline-block; margin: 16px 0; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Verify your email</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">TAC Accessories</p>
+          </div>
+          <div class="content">
+            <p>Thanks for signing up! Use this code to verify your email and complete your registration:</p>
+            <p class="code">${code}</p>
+            <p>This code expires in 15 minutes. If you didn't create an account, you can ignore this email.</p>
+          </div>
+          <div class="footer">
+            <p style="font-size: 12px; color: #888;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `Verify your email - TAC Accessories\n\nThanks for signing up! Use this code to verify your email: ${code}\n\nThis code expires in 15 minutes. If you didn't create an account, you can ignore this email.`
     return { subject, html, text }
   }
 

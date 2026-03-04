@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { getUserDetail, updateUserRoleAction, deleteUserAction } from "@/server/admin/users"
+import { getUserDetail, updateUserRoleAction } from "@/server/admin/users"
 import { RoleSettings } from "./RoleSettings"
 import { DangerZoneSection } from "./DangerZoneSection"
 
@@ -95,7 +95,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ use
             <CardTitle className="text-base font-semibold">Destructive actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <DangerZoneSection userId={user.id} action={deleteUserAction} />
+            <DangerZoneSection userId={user.id} />
           </CardContent>
         </Card>
       </div>

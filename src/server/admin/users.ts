@@ -260,13 +260,20 @@ export async function updateUserRoleAction(formData: FormData) {
 }
 
 // Delete user
-export async function deleteUserAction(formData: FormData) {
-    await assertAdmin()
+export async function deleteUserAction(
+    _prev: ActionResult | undefined,
+    formData: FormData,
+): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch (error) {
+        return { error: error instanceof Error ? error.message : "Unauthorized" }
+    }
 
     const userId = formData.get("id")?.toString()
 
     if (!userId) {
-        throw new Error("User ID is required")
+        return { error: "User ID is required" }
     }
 
     const user = await prisma.user.findUnique({
@@ -275,7 +282,7 @@ export async function deleteUserAction(formData: FormData) {
     })
 
     if (!user) {
-        throw new Error("User not found")
+        return { error: "User not found" }
     }
 
     // Prevent deleting the last admin
@@ -285,7 +292,7 @@ export async function deleteUserAction(formData: FormData) {
         })
 
         if (adminCount <= 1) {
-            throw new Error("At least one admin must remain")
+            return { error: "At least one admin must remain" }
         }
     }
 
@@ -295,14 +302,17 @@ export async function deleteUserAction(formData: FormData) {
         })
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-            // Prevent deleting users that still have related records (e.g. orders)
-            throw new Error("Cannot delete a user who has existing orders. Please keep the account or deactivate it instead.")
+            return {
+                error: "Cannot delete a user who has existing orders. Please keep the account or deactivate it instead.",
+            }
         }
-
-        throw error
+        return {
+            error: error instanceof Error ? error.message : "Failed to delete user",
+        }
     }
 
     revalidatePath("/admin/users")
+    return { success: true }
 }
 
 export async function bulkDeleteUsersAction(ids: string[]) {
