@@ -164,7 +164,10 @@ export function UserTable({ users }: UserTableProps) {
                                                 viewHref={`/admin/users/${user.id}`}
                                                 editHref={`/admin/users/${user.id}`}
                                                 deleteConfig={{
-                                                    action: deleteUserAction,
+                                                    action: async (formData) => {
+                                                        const result = await deleteUserAction(undefined, formData)
+                                                        if (result?.error) throw new Error(result.error)
+                                                    },
                                                     fields: { id: user.id },
                                                     resourceLabel: user.name ?? user.email ?? "User",
                                                     confirmTitle: `Delete ${user.name ?? "this user"}?`,

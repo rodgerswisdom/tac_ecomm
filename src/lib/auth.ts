@@ -1,9 +1,9 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { compare } from "bcryptjs"
 import { prisma } from "./prisma"
 import type { NextAuthConfig } from "next-auth"
 import { authConfig } from "./auth.config"
+import { verifyMfaToken } from "./mfa-token"
 
 export const authOptions: NextAuthConfig = {
   ...authConfig,
@@ -15,39 +15,26 @@ export const authOptions: NextAuthConfig = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        mfaToken: { label: "MFA Token", type: "text" },
       },
       async authorize(credentials) {
         try {
-          if (!credentials?.email || !credentials?.password) {
-            return null
+          const mfaToken = credentials?.mfaToken as string | undefined
+          if (mfaToken) {
+            const payload = verifyMfaToken(mfaToken)
+            if (!payload?.sub) return null
+            const user = await prisma.user.findUnique({
+              where: { id: payload.sub },
+            })
+            if (!user) return null
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              role: user.role,
+            }
           }
-
-          const email = (credentials.email as string).trim().toLowerCase()
-
-          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return null
-          }
-
-          const user = await prisma.user.findUnique({
-            where: { email },
-          })
-
-          if (!user || !user.passwordHash) {
-            return null
-          }
-
-          const isValid = await compare(credentials.password as string, user.passwordHash)
-
-          if (!isValid) {
-            return null
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          }
+          return null
         } catch (error) {
           console.error('Auth error:', error)
           return null

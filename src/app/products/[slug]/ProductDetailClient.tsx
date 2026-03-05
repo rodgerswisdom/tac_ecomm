@@ -22,6 +22,11 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
 
+  const discountPercent =
+    product.originalPrice && product.originalPrice > product.price
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : 0;
+
   const handleAddToCart = () => {
     addToCart({
       id: product.id,
@@ -79,6 +84,11 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 {product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
                     {formatPrice(product.originalPrice)}
+                  </span>
+                )}
+                {discountPercent > 0 && (
+                  <span className="rounded-full bg-brand-coral/20 px-3 py-1 text-sm font-semibold text-brand-coral">
+                    {discountPercent}% off
                   </span>
                 )}
                 <div className="flex items-center gap-2 rounded-full bg-brand-jade/30 px-3 py-1 text-sm text-brand-umber/70">

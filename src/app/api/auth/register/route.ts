@@ -3,6 +3,14 @@ import { hash } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { EmailService, getEmailConfig } from '@/lib/email'
 
+const OTP_EXPIRY_MS = 15 * 60 * 1000 // 15 minutes
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+const MAX_SIGNUP_OTP_PER_EMAIL = 5
+
+function generateOtp(): string {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { name, email, password } = await request.json()
@@ -32,7 +40,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
     })
@@ -44,69 +51,62 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    let user;
-    if (existingUser) {
-      // User exists but not verified, we'll just resend the OTP
-      user = existingUser;
-    } else {
-      // Hash password with bcrypt (12 rounds — good security/performance balance)
-      const hashedPassword = await hash(plainPassword, 12)
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS)
+    const recentCount = await prisma.pendingSignup.count({
+      where: {
+        email: normalizedEmail,
+        createdAt: { gte: windowStart },
+      },
+    })
 
-      // Create user in database
-      user = await prisma.user.create({
-        data: {
-          name: trimmedName,
-          email: normalizedEmail,
-          passwordHash: hashedPassword,
-          role: 'CUSTOMER',
-          emailVerified: null,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
-      })
+    if (recentCount >= MAX_SIGNUP_OTP_PER_EMAIL) {
+      return NextResponse.json(
+        { message: 'Too many verification requests. Please try again in 15 minutes.' },
+        { status: 429 }
+      )
     }
 
-    // Generate 6-digit OTP for email verification
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    await prisma.pendingSignup.deleteMany({
+      where: { email: normalizedEmail },
+    })
 
-    // Store OTP in VerificationToken table (expires in 10 minutes)
+    const hashedPassword = await hash(plainPassword, 12)
+    const otp = generateOtp()
+    const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS)
+
+    const pending = await prisma.pendingSignup.create({
+      data: {
+        email: normalizedEmail,
+        name: trimmedName,
+        passwordHash: hashedPassword,
+        otp,
+        expiresAt,
+      },
+    })
+
     try {
-      // Clear any existing tokens for this email first
-      await prisma.verificationToken.deleteMany({
-        where: { identifier: normalizedEmail }
-      })
-
-      await prisma.verificationToken.create({
-        data: {
-          identifier: normalizedEmail,
-          token: otp,
-          expires: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-        }
-      })
-
-      // Send OTP verification email
       const emailService = new EmailService(getEmailConfig())
-      await emailService.sendVerificationOTPEmail(normalizedEmail, otp)
+      const sent = await emailService.sendSignupOtpEmail(normalizedEmail, otp)
+      if (!sent) {
+        await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {})
+        return NextResponse.json(
+          { message: 'Failed to send verification code. Please try again.' },
+          { status: 500 }
+        )
+      }
     } catch (err) {
-      console.error('OTP generation or email failed:', err)
-      // We don't fail the request here, but the user won't be able to verify immediately
-      // The frontend should handle the transition to the verification step
+      console.error('Signup OTP email failed:', err)
+      await prisma.pendingSignup.delete({ where: { id: pending.id } }).catch(() => {})
+      return NextResponse.json(
+        { message: 'Failed to send verification code. Please try again.' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json(
       {
-        message: 'Acccount created. Please verify your email with the code sent to you.',
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
+        message: 'Verification code sent to your email',
+        verificationId: pending.id,
       },
       { status: 201 }
     )
@@ -118,4 +118,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

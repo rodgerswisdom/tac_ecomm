@@ -51,6 +51,7 @@ model User {
   orders        Order[]
   reviews       Review[]
   sessions      Session[]
+  mfaChallenges MfaChallenge[]
   status        String?    @default("ACTIVE") // Physical status
 }
 
@@ -60,6 +61,31 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model MfaChallenge {
+  id        String   @id @default(cuid())
+  userId    String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PendingSignup {
+  id           String   @id @default(cuid())
+  email        String
+  name         String
+  passwordHash String
+  otp          String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
 }
 
 model Category {

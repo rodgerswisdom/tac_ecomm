@@ -32,9 +32,9 @@ export function generateSlug(text: string): string {
 }
 
 export function generateOrderNumber(): string {
-  const timestamp = Date.now().toString(36)
-  const random = Math.random().toString(36).substr(2, 5)
-  return `TAC-${timestamp}-${random}`.toUpperCase()
+  const timePart = Date.now().toString(36).toUpperCase().slice(-8)
+  const randPart = Math.random().toString(36).slice(2, 6).toUpperCase()
+  return `TAC-${timePart}-${randPart}`
 }
 
 export function calculateTax(amount: number, taxRate: number = 0.08): number {

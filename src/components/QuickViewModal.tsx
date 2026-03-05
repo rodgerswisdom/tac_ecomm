@@ -29,6 +29,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   if (!product) return null;
 
+  const discountPercent =
+    product.originalPrice && product.originalPrice > product.price
+      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+      : 0;
+
   const images = product.gallery.length > 0 ? product.gallery : [product.image];
   const hasMultipleImages = images.length > 1;
 
@@ -162,13 +167,18 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             </DialogDescription>
 
             {/* Price */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-3xl font-heading font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice && (
                 <span className="text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
+                </span>
+              )}
+              {discountPercent > 0 && (
+                <span className="rounded-full bg-brand-coral/20 px-3 py-1 text-sm font-semibold text-brand-coral">
+                  {discountPercent}% off
                 </span>
               )}
             </div>

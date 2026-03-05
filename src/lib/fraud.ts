@@ -49,7 +49,6 @@ export function initializeFraudDetection(userId?: string): void {
   try {
     Keverd.init({
       apiKey,
-      endpoint: process.env.NEXT_PUBLIC_KEVERD_ENDPOINT || 'https://app.keverd.com',
       userId,
       debug: process.env.NODE_ENV === 'development',
     })
