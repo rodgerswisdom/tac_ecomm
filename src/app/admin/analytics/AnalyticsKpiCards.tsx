@@ -40,6 +40,7 @@ export function AnalyticsKpiCards({
         subtitle={days === 1000 ? "Lifetime Earnings" : `Past ${days} days`}
         change={revenueGrowth}
         icon={<DollarSign className="h-6 w-6" />}
+        href="/admin/orders?status=CONFIRMED"
       />
       <StatsCard
         title="Avg Order Value"
@@ -48,6 +49,7 @@ export function AnalyticsKpiCards({
         subtitle="Revenue per transaction"
         change={aovGrowth}
         icon={<BarChart3 className="h-6 w-6" />}
+        href="/admin/orders?status=CONFIRMED"
       />
       <StatsCard
         title="Repeat Buyers"
@@ -55,6 +57,7 @@ export function AnalyticsKpiCards({
         subtitle={`${firstTimeBuyers} first-time buyers`}
         change={repeatRate}
         icon={<Users className="h-6 w-6" />}
+        href="/admin/users?repeatBuyers=true"
       />
       <StatsCard
         title="Order Volume"
@@ -62,6 +65,7 @@ export function AnalyticsKpiCards({
         subtitle="Total successful orders"
         change={orderGrowth}
         icon={<ShoppingBag className="h-6 w-6" />}
+        href="/admin/orders?status=CONFIRMED"
       />
     </div>
   )

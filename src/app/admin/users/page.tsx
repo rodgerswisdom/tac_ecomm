@@ -27,6 +27,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
   const search = parseParam(params?.q) ?? ""
   const page = Math.max(Number(parseParam(params?.page) ?? "1") || 1, 1)
   const pageSize = Math.min(Math.max(Number(parseParam(params?.pageSize) ?? "10") || 10, 5), 50)
+  const repeatBuyers = parseParam(params?.repeatBuyers) === "true"
 
   const {
     users,
@@ -38,10 +39,12 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     search: search.trim() ? search.trim() : undefined,
     page,
     pageSize,
+    repeatBuyers,
   })
 
   const baseQuery = new URLSearchParams()
   if (search) baseQuery.set("q", search)
+  if (repeatBuyers) baseQuery.set("repeatBuyers", "true")
   baseQuery.set("pageSize", String(currentPageSize))
 
   const buildPageHref = (pageNumber: number) => {
@@ -80,16 +83,25 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Users ({total})</CardTitle>
-              {/* <span className="text-sm text-muted-foreground">Showing {total} of {total} </span> */}
-
+          <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base">
+                {repeatBuyers ? `Repeat buyers (${total})` : `Users (${total})`}
+              </CardTitle>
+              {repeatBuyers && (
+                <Link
+                  href={`/admin/users?${new URLSearchParams({ pageSize: String(currentPageSize), ...(search && { q: search }) }).toString()}`}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Show all users
+                </Link>
+              )}
             </div>
 
             <form action="/admin/users" className="relative min-w-[220px] max-w-sm">
               <input type="hidden" name="page" value="1" />
               <input type="hidden" name="pageSize" value={currentPageSize} />
+              {repeatBuyers && <input type="hidden" name="repeatBuyers" value="true" />}
               <label htmlFor="user-search" className="sr-only">
                 Search users
               </label>
@@ -120,6 +132,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
               hiddenFields={{
                 q: search || undefined,
                 page: "1",
+                repeatBuyers: repeatBuyers ? "true" : undefined,
               }}
             />
           </div>

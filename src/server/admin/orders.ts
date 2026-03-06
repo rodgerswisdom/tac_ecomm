@@ -35,20 +35,23 @@ export async function getOrders(filters: OrderFilters = {}) {
 
     const where: Prisma.OrderWhereInput | undefined = whereFilters.length ? { AND: whereFilters } : undefined
 
-    const [orders, total] = await prisma.$transaction([
-        prisma.order.findMany({
-            where,
-            orderBy: { createdAt: "desc" },
-            skip: (page - 1) * pageSize,
-            take: pageSize,
-            include: {
-                user: { select: { name: true, email: true } },
-                shippingAddress: true,
-                _count: { select: { items: true } },
-            },
-        }),
-        prisma.order.count({ where }),
-    ])
+    const [orders, total] = await prisma.$transaction(
+        [
+            prisma.order.findMany({
+                where,
+                orderBy: { createdAt: "desc" },
+                skip: (page - 1) * pageSize,
+                take: pageSize,
+                include: {
+                    user: { select: { name: true, email: true } },
+                    shippingAddress: true,
+                    _count: { select: { items: true } },
+                },
+            }),
+            prisma.order.count({ where }),
+        ],
+        { timeout: 15000, maxWait: 8000 }
+    )
 
     return {
         orders,

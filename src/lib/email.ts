@@ -151,6 +151,46 @@ export class EmailService {
     })
   }
 
+  async sendOrderConfirmed(data: OrderEmailData): Promise<boolean> {
+    const template = this.getOrderConfirmedTemplate(data)
+    return this.sendEmail({
+      to: data.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
+  async sendOrderProcessing(data: OrderEmailData): Promise<boolean> {
+    const template = this.getOrderProcessingTemplate(data)
+    return this.sendEmail({
+      to: data.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
+  async sendOrderCancelled(data: OrderEmailData & { note?: string }): Promise<boolean> {
+    const template = this.getOrderCancelledTemplate(data)
+    return this.sendEmail({
+      to: data.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
+  async sendOrderRefunded(data: OrderEmailData & { note?: string }): Promise<boolean> {
+    const template = this.getOrderRefundedTemplate(data)
+    return this.sendEmail({
+      to: data.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  }
+
   async sendWelcomeEmail(customerName: string, customerEmail: string): Promise<boolean> {
     const template = this.getWelcomeTemplate(customerName)
     return this.sendEmail({
@@ -455,6 +495,192 @@ export class EmailService {
       Thank you for supporting African craftsmanship!
     `
 
+    return { subject, html, text }
+  }
+
+  private getOrderConfirmedTemplate(data: OrderEmailData): EmailTemplate {
+    const subject = `Order Confirmed - ${data.orderNumber} | TAC Accessories`
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Confirmed</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .order-details { background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e9ecef; }
+          .item:last-child { border-bottom: none; }
+          .total { font-weight: bold; font-size: 18px; color: #c89b3c; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Order Confirmed</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">Payment received – your order is locked in</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${data.customerName},</h2>
+            <p>Great news! Your order ${data.orderNumber} has been confirmed. Payment has been received and we are preparing your items.</p>
+            <div class="order-details">
+              <h3>Order Summary</h3>
+              <p><strong>Order #:</strong> ${data.orderNumber}</p>
+              <p><strong>Date:</strong> ${data.orderDate}</p>
+              <h4>Items:</h4>
+              ${data.items.map((item) => `<div class="item"><span>${item.name} (x${item.quantity})</span><span>$${(item.price * item.quantity).toFixed(2)}</span></div>`).join('')}
+              <div class="item"><span>Subtotal:</span><span>$${data.subtotal.toFixed(2)}</span></div>
+              <div class="item total"><span>Total:</span><span>$${data.total.toFixed(2)}</span></div>
+            </div>
+            <p>We will notify you when your order ships.</p>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing TAC Accessories!</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `Order Confirmed - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour order ${data.orderNumber} has been confirmed. Payment received. We will notify you when your order ships.\n\nThank you for choosing TAC Accessories!`
+    return { subject, html, text }
+  }
+
+  private getOrderProcessingTemplate(data: OrderEmailData): EmailTemplate {
+    const subject = `We're Preparing Your Order - ${data.orderNumber} | TAC Accessories`
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Processing</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Order In Progress</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">We're carefully preparing your jewelry</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${data.customerName},</h2>
+            <p>Your order ${data.orderNumber} is now being processed. Our team is preparing your items with care.</p>
+            <p>You will receive another email with tracking information once your order has shipped.</p>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing TAC Accessories!</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `We're Preparing Your Order - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour order ${data.orderNumber} is now being processed. You will receive tracking information once it ships.\n\nThank you for choosing TAC Accessories!`
+    return { subject, html, text }
+  }
+
+  private getOrderCancelledTemplate(data: OrderEmailData & { note?: string }): EmailTemplate {
+    const subject = `Order Cancelled - ${data.orderNumber} | TAC Accessories`
+    const noteHtml = data.note ? `<p><strong>Note from our team:</strong> ${data.note}</p>` : ''
+    const noteText = data.note ? `\n\nNote from our team: ${data.note}` : ''
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Cancelled</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Order Cancelled</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">Order ${data.orderNumber}</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${data.customerName},</h2>
+            <p>Your order ${data.orderNumber} has been cancelled.</p>
+            ${noteHtml}
+            <p>If you have any questions, please contact our support team.</p>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing TAC Accessories!</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `Order Cancelled - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour order ${data.orderNumber} has been cancelled.${noteText}\n\nIf you have any questions, please contact our support team.\n\nThank you for choosing TAC Accessories!`
+    return { subject, html, text }
+  }
+
+  private getOrderRefundedTemplate(data: OrderEmailData & { note?: string }): EmailTemplate {
+    const subject = `Order Refunded - ${data.orderNumber} | TAC Accessories`
+    const noteHtml = data.note ? `<p><strong>Note from our team:</strong> ${data.note}</p>` : ''
+    const noteText = data.note ? `\n\nNote from our team: ${data.note}` : ''
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Order Refunded</title>
+        <style>
+          body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #1a1a1a; margin: 0; padding: 0; background-color: #f4e4ba; }
+          .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+          .header { background: linear-gradient(135deg, #c89b3c 0%, #cd7f32 100%); padding: 40px 20px; text-align: center; }
+          .header h1 { color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; }
+          .content { padding: 40px 20px; }
+          .refund-amount { font-size: 24px; font-weight: bold; color: #c89b3c; margin: 16px 0; }
+          .footer { background-color: #1a1a1a; color: #ffffff; padding: 30px 20px; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Refund Processed</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0;">Order ${data.orderNumber}</p>
+          </div>
+          <div class="content">
+            <h2>Hello ${data.customerName},</h2>
+            <p>Your refund for order ${data.orderNumber} has been processed.</p>
+            <p class="refund-amount">Refund amount: $${data.total.toFixed(2)}</p>
+            <p>The funds will appear in your original payment method within 5–10 business days, depending on your bank.</p>
+            ${noteHtml}
+            <p>If you have any questions, please contact our support team.</p>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing TAC Accessories!</p>
+            <p style="font-size: 12px; color: #888; margin-top: 20px;">TAC Accessories - Celebrating African Heritage Through Jewelry</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+    const text = `Order Refunded - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour refund for order ${data.orderNumber} has been processed. Refund amount: $${data.total.toFixed(2)}. The funds will appear in your original payment method within 5–10 business days.${noteText}\n\nIf you have any questions, please contact our support team.\n\nThank you for choosing TAC Accessories!`
     return { subject, html, text }
   }
 

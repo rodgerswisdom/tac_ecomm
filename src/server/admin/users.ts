@@ -18,6 +18,8 @@ type UsersSummaryFilters = {
     search?: string
     page?: number
     pageSize?: number
+    /** When true, only return users with more than 1 order (repeat buyers) */
+    repeatBuyers?: boolean
 }
 
 const DEFAULT_PAGE_SIZE = 10
@@ -54,19 +56,29 @@ export async function getUsersSummary({
     search,
     page = 1,
     pageSize = DEFAULT_PAGE_SIZE,
+    repeatBuyers = false,
 }: UsersSummaryFilters = {}) {
     const sanitizedPage = Math.max(page, 1)
     const sanitizedPageSize = Math.min(Math.max(pageSize, 5), 50)
 
-    // Search filter
-    const where = search
-        ? {
+    // Build where clause
+    const whereConditions: Prisma.UserWhereInput[] = []
+    if (search) {
+        whereConditions.push({
             OR: [
                 { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
                 { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
             ],
-        }
-        : undefined
+        })
+    }
+    if (repeatBuyers) {
+        whereConditions.push({
+            _count: {
+                orders: { gt: 1 },
+            },
+        })
+    }
+    const where = whereConditions.length > 0 ? { AND: whereConditions } : undefined
 
     try {
         const [usersData, total] = await prisma.$transaction([

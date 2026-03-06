@@ -115,53 +115,61 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
 
       {/* Trends Section */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-brand-teal/10 shadow-sm overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/30 pb-4">
-            <div className="space-y-0.5">
-              <CardTitle className="text-lg font-bold">Revenue Performance</CardTitle>
-              <p className="text-xs text-slate-400">Daily revenue trends and spikes</p>
-            </div>
-            <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold text-blue-600 border border-blue-100 uppercase tracking-tighter">
-              <TrendingUp className="h-3 w-3" />
-              Live Feed
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <RevenueTrendChart data={analytics.revenueTrend} />
-          </CardContent>
-        </Card>
-        <Card className="border-brand-teal/10 shadow-sm overflow-hidden">
-          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/30 pb-4">
-            <div className="space-y-0.5">
-              <CardTitle className="text-lg font-bold">Customer Acquisition</CardTitle>
-              <p className="text-xs text-slate-400">New user registrations over time</p>
-            </div>
-            <Users className="h-5 w-5 text-slate-300" />
-          </CardHeader>
-          <CardContent className="pt-6">
-            <TrendChart data={analytics.newCustomersTrend} yKey="count" label="New Customers" />
-          </CardContent>
-        </Card>
+        <Link href="/admin/orders?status=DELIVERED" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/30 pb-4">
+              <div className="space-y-0.5">
+                <CardTitle className="text-lg font-bold">Revenue Performance</CardTitle>
+                <p className="text-xs text-slate-400">Daily revenue trends and spikes</p>
+              </div>
+              <div className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-[10px] font-bold text-blue-600 border border-blue-100 uppercase tracking-tighter">
+                <TrendingUp className="h-3 w-3" />
+                Live Feed
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <RevenueTrendChart data={analytics.revenueTrend} />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/users" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between border-b border-slate-50 bg-slate-50/30 pb-4">
+              <div className="space-y-0.5">
+                <CardTitle className="text-lg font-bold">Customer Acquisition</CardTitle>
+                <p className="text-xs text-slate-400">New user registrations over time</p>
+              </div>
+              <Users className="h-5 w-5 text-slate-300" />
+            </CardHeader>
+            <CardContent className="pt-6">
+              <TrendChart data={analytics.newCustomersTrend} yKey="count" label="New Customers" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Distribution Section */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="border-brand-teal/10">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Top Performing Products</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <TopProductsChart data={topProductData} />
-          </CardContent>
-        </Card>
-        <Card className="border-brand-teal/10">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Sales by Category</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CategoryRevenueChart data={categoryData} />
-          </CardContent>
-        </Card>
+        <Link href="/admin/products" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 cursor-pointer transition-all hover:shadow-md hover:border-brand-teal/30">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Top Performing Products</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TopProductsChart data={topProductData} />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/categories" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 cursor-pointer transition-all hover:shadow-md hover:border-brand-teal/30">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Sales by Category</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CategoryRevenueChart data={categoryData} />
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="border-brand-teal/10">
           <CardHeader>
             <CardTitle className="text-base font-bold">Payment Preference</CardTitle>
@@ -174,27 +182,31 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
 
       {/* Specific Distribution and Detailed Insights */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-brand-teal/10">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Order Fulfillment Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SimpleBarChart data={statusData} color="#f59e0b" />
-          </CardContent>
-        </Card>
-        <Card className="border-brand-teal/10 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Customer Retention Mix</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <SimplePieChart
-              data={[
-                { name: 'Repeat', value: analytics.repeatVsFirst.repeat },
-                { name: 'First-time', value: analytics.repeatVsFirst.firstTime },
-              ]}
-            />
-          </CardContent>
-        </Card>
+        <Link href="/admin/orders" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 cursor-pointer transition-all hover:shadow-md hover:border-brand-teal/30">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Order Fulfillment Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SimpleBarChart data={statusData} color="#f59e0b" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/admin/users?repeatBuyers=true" className="block transition-colors rounded-xl hover:border-brand-teal/30" prefetch={false}>
+          <Card className="border-brand-teal/10 shadow-lg cursor-pointer transition-all hover:shadow-md hover:border-brand-teal/30">
+            <CardHeader>
+              <CardTitle className="text-base font-bold">Customer Retention Mix</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SimplePieChart
+                data={[
+                  { name: 'Repeat', value: analytics.repeatVsFirst.repeat },
+                  { name: 'First-time', value: analytics.repeatVsFirst.firstTime },
+                ]}
+              />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <Card className="border-brand-teal/10 shadow-sm overflow-hidden rounded-xl">

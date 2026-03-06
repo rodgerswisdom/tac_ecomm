@@ -93,11 +93,17 @@ export async function updateOrderStatusAction(
     // ── Trigger email notifications on status transitions ──────────────────────
 
     const statusChanged = previousOrder.status !== status
+    const nowConfirmed = statusChanged && status === OrderStatus.CONFIRMED
+    const nowProcessing = statusChanged && status === OrderStatus.PROCESSING
     const nowShipped = statusChanged && status === OrderStatus.SHIPPED
     const nowDelivered = statusChanged && status === OrderStatus.DELIVERED
+    const nowCancelled = statusChanged && status === OrderStatus.CANCELLED
+    const nowRefunded = statusChanged && status === OrderStatus.REFUNDED
 
-    if (nowShipped || nowDelivered) {
-        // Fetch full order details needed for email templates
+    const needsEmail =
+        nowConfirmed || nowProcessing || nowShipped || nowDelivered || nowCancelled || nowRefunded
+
+    if (needsEmail) {
         const order = await prisma.order.findUnique({
             where: { id: orderId },
             include: {
@@ -119,7 +125,7 @@ export async function updateOrderStatusAction(
                 order.user?.name ||
                 "Valued Customer"
 
-            const emailData = {
+            const baseEmailData = {
                 customerName,
                 customerEmail: order.user.email,
                 orderNumber: order.orderNumber,
@@ -146,39 +152,64 @@ export async function updateOrderStatusAction(
                     zipCode: order.shippingAddress?.postalCode ?? "",
                     country: order.shippingAddress?.country ?? "",
                 },
+            }
+
+            const emailData = {
+                ...baseEmailData,
                 trackingNumber: order.trackingNumber ?? undefined,
                 estimatedDelivery: estimatedDelivery ?? undefined,
             }
 
             const emailService = new EmailService(getEmailConfig())
 
-            // Helper to send email and log errors
-            async function sendEmail(type: "shipped" | "delivered", data: typeof emailData) {
+            const sendAndLog = async (
+                type: string,
+                fn: () => Promise<boolean>
+            ) => {
                 try {
-                    if (type === "shipped") {
-                        await emailService.sendOrderShipped(data)
-                    } else if (type === "delivered") {
-                        await emailService.sendOrderDelivered(data)
-                    }
+                    await fn()
                 } catch (err) {
                     console.error(`[email] order ${type} failed:`, err)
                 }
             }
 
-            if (nowShipped) {
-                await sendEmail("shipped", emailData)
+            if (nowConfirmed) {
+                await sendAndLog("confirmed", () => emailService.sendOrderConfirmed(emailData))
             }
-
+            if (nowProcessing) {
+                await sendAndLog("processing", () => emailService.sendOrderProcessing(emailData))
+            }
+            if (nowShipped) {
+                await sendAndLog("shipped", () => emailService.sendOrderShipped(emailData))
+            }
             if (nowDelivered) {
-                await sendEmail("delivered", emailData)
+                await sendAndLog("delivered", () => emailService.sendOrderDelivered(emailData))
+            }
+            if (nowCancelled) {
+                await sendAndLog("cancelled", () =>
+                    emailService.sendOrderCancelled({ ...emailData, note: note ?? undefined })
+                )
+            }
+            if (nowRefunded) {
+                await sendAndLog("refunded", () =>
+                    emailService.sendOrderRefunded({ ...emailData, note: note ?? undefined })
+                )
             }
         }
     }
 
     const statusLabel = status.replace(/_/g, " ").toLowerCase()
+    const emailSent =
+        nowConfirmed ? "confirmation email sent" :
+        nowProcessing ? "processing email sent" :
+        nowShipped ? "shipment email sent" :
+        nowDelivered ? "delivery email sent" :
+        nowCancelled ? "cancellation email sent" :
+        nowRefunded ? "refund email sent" : null
+
     return {
         status: "success",
-        message: `Order updated to ${statusLabel}${nowShipped ? " — shipment email sent" : nowDelivered ? " — delivery email sent" : ""}`,
+        message: `Order updated to ${statusLabel}${emailSent ? ` — ${emailSent}` : ""}`,
     }
 }
 
