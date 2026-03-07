@@ -125,6 +125,12 @@ export async function getCollectionSlugs() {
     .filter((slug): slug is string => Boolean(slug))
 }
 
+/** Lightweight list of collection slug+name for navbar Shop submenu. Includes DB categories + virtual collections with products. */
+export async function getNavShopCategories(): Promise<{ slug: string; name: string }[]> {
+  const summaries = await getCollectionSummaries({ includeVirtual: true })
+  return summaries.map((s) => ({ slug: s.slug, name: s.name }))
+}
+
 function mapCategoryToSummary(category: CategoryWithActiveProducts): CollectionSummary {
   const sortedProducts = category.products
   const heroImage = category.image ?? sortedProducts[0]?.images[0]?.url ?? FALLBACK_COLLECTION_IMAGE

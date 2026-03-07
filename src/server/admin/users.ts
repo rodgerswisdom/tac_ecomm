@@ -72,11 +72,22 @@ export async function getUsersSummary({
         })
     }
     if (repeatBuyers) {
-        whereConditions.push({
-            _count: {
-                orders: { gt: 1 },
-            },
+        const repeatBuyerGroups = await prisma.order.groupBy({
+            by: ["userId"],
+            _count: { id: true },
+            having: { id: { _count: { gt: 1 } } },
         })
+        const repeatBuyerIds = repeatBuyerGroups.map((g) => g.userId)
+        if (repeatBuyerIds.length === 0) {
+            return {
+                users: [],
+                total: 0,
+                page: sanitizedPage,
+                pageSize: sanitizedPageSize,
+                pageCount: 0,
+            }
+        }
+        whereConditions.push({ id: { in: repeatBuyerIds } })
     }
     const where = whereConditions.length > 0 ? { AND: whereConditions } : undefined
 
