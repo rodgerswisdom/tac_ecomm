@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,6 +19,7 @@ import Link from "next/link";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import type { ProductCardData } from "@/types/product";
+import { Footer } from "@/components/Footer";
 
 const benefits = [
   {
@@ -65,7 +65,7 @@ export function MatchingSetsClient({ sets }: MatchingSetsClientProps) {
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
 
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing">
         <div className="gallery-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -76,7 +76,7 @@ export function MatchingSetsClient({ sets }: MatchingSetsClientProps) {
             <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
               Matching Sets
             </span>
-            <h1 className="font-heading text-5xl text-brand-umber md:text-6xl mb-6">
+            <h1 className="font-heading text-3xl sm:text-5xl text-brand-umber md:text-6xl mb-6">
               Complete <span className="bg-gradient-to-r from-brand-gold to-brand-teal bg-clip-text text-transparent">Cultural Stories</span>
             </h1>
             <p className="text-xl text-brand-umber/80 mb-8 max-w-3xl mx-auto">
@@ -147,7 +147,7 @@ export function MatchingSetsClient({ sets }: MatchingSetsClientProps) {
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto px-4 sm:px-0">
             {sets.map((set, index) => (
               <motion.div
                 key={set.id}
@@ -220,12 +220,12 @@ export function MatchingSetsClient({ sets }: MatchingSetsClientProps) {
                       </div>
                     )}
 
-                    <div className="flex gap-3">
-                      <Button className="flex-1" onClick={() => handleAddSet(set)}>
-                        <ShoppingBag className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+                      <Button size="lg" className="flex-1 px-8 py-6 shadow-[0_18px_36px_rgba(74,43,40,0.12)]" onClick={() => handleAddSet(set)}>
+                        <ShoppingBag className="mr-2 h-5 w-5" />
                         Add Set to Cart
                       </Button>
-                      <Button variant="outline" className="flex-1" asChild>
+                      <Button size="lg" variant="outline" className="flex-1 px-8 py-6 text-lg" asChild>
                         <Link href={`/products/${set.slug}`}>View Details</Link>
                       </Button>
                     </div>
@@ -266,8 +266,6 @@ export function MatchingSetsClient({ sets }: MatchingSetsClientProps) {
           </motion.div>
         </div>
       </section>
-
-      <Footer />
     </main>
   );
 }

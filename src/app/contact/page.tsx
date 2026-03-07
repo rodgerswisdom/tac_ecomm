@@ -40,13 +40,13 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     // Simulate form submission
     await new Promise(resolve => setTimeout(resolve, 2000))
-    
+
     setIsSubmitting(false)
     setIsSubmitted(true)
-    
+
     // Reset form after 3 seconds
     setTimeout(() => {
       setIsSubmitted(false)
@@ -107,9 +107,9 @@ export default function ContactPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
+      <section className="nav-clearance pb-16 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
         <div className="absolute inset-0 afro-pattern-stars opacity-5"></div>
-        <div className="container mx-auto px-4 relative z-10">
+        <div className="gallery-container relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,15 +125,15 @@ export default function ContactPage() {
               <MessageSquare className="h-8 w-8 text-emerald-500" />
               <span className="text-emerald-600 font-semibold tracking-wide uppercase text-sm">Get in Touch</span>
             </motion.div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold luxury-heading mb-6">
               <span className="afro-text-gradient">Contact</span>
               <br />
               <span className="text-foreground">Us</span>
             </h1>
             <p className="text-xl text-muted-foreground luxury-text leading-relaxed">
-              We&apos;d love to hear from you! Whether you have questions about our jewellery, 
-              need help with an order, or want to learn more about our cultural significance, 
+              We&apos;d love to hear from you! Whether you have questions about our jewellery,
+              need help with an order, or want to learn more about our cultural significance,
               we&apos;re here to help.
             </p>
           </motion.div>
@@ -393,7 +393,7 @@ export default function ContactPage() {
               Ready to <span className="afro-text-gradient">Explore</span>?
             </h2>
             <p className="text-xl text-muted-foreground luxury-text mb-8">
-              Browse our collection of authentic African jewellery and discover 
+              Browse our collection of authentic African jewellery and discover
               pieces that speak to your soul.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

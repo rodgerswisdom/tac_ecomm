@@ -7,7 +7,6 @@ import { Hero } from "@/components/Hero";
 import { CategoryCard } from "@/components/CategoryCard";
 import { ProductCard } from "@/components/ProductCard";
 import { TestimonialsMarquee } from "@/components/TestimonialsMarquee";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import type { CollectionSummary } from "@/types/collection";
 import { ProductCardData } from "@/types/product";
@@ -37,13 +36,13 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
             <span className="caps-spacing text-xs text-brand-teal">
               Curated Collections
             </span>
-            <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber md:text-5xl">
+            <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber sm:text-4xl md:text-5xl">
               Discover our carefully curated categories of Craftsmanship.
             </h2>
           </motion.div>
 
           <motion.div
-            className="mt-14 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-8 place-items-center"
+            className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 place-items-center sm:mt-14"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-120px" }}
@@ -82,13 +81,13 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
             <span className="caps-spacing text-xs text-brand-teal">
               Featured Pieces
             </span>
-            <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber md:text-5xl">
+            <h2 className="max-w-3xl font-heading text-3xl leading-tight text-brand-umber sm:text-4xl md:text-5xl">
               Curated highlights from this month&apos;s gallery drop.
             </h2>
           </motion.div>
 
           <motion.div
-            className="grid gap-8 md:grid-cols-2 lg:grid-cols-4"
+            className="grid gap-4 grid-cols-2 sm:gap-6 md:grid-cols-2 lg:grid-cols-4"
             initial={{ opacity: 0, y: 24 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-120px" }}
@@ -120,8 +119,6 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
       </section>
 
       <TestimonialsMarquee />
-
-      <Footer />
     </main>
   );
 }

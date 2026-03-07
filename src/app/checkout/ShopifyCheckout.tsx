@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Lock } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckoutStepper } from "./CheckoutStepper";
@@ -105,7 +104,7 @@ export default function ShopifyCheckout() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <Navbar />
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col gap-10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-3">
@@ -139,45 +138,45 @@ export default function ShopifyCheckout() {
                   </div>
                 ) : (
                   <>
-              {currentStep === 1 && (
-                <div className="space-y-8">
-                  <ShippingStep
-                    onNext={data => setShipping(data)}
-                    initialData={shipping}
-                    loading={shippingLoading}
-                    canSaveAddress={!!session?.user}
-                    onSaveAddress={async (data) => {
-                      const res = await fetch("/api/user/shipping", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(data),
-                      });
-                      if (!res.ok) {
-                        const err = await res.json().catch(() => ({}));
-                        throw new Error(err.error || "Failed to save address");
-                      }
-                    }}
-                  />
-                  {shipping && (
-                    <DeliveryStep
-                      onNext={method => {
-                        setDelivery(method);
-                        handleNextStep();
-                      }}
-                    />
-                  )}
-                </div>
-              )}
-              {currentStep === 2 && shipping && delivery && (
-                <ReviewStep
-                  shipping={shipping}
-                  delivery={delivery}
-                  payment={defaultPayment}
-                  appliedCoupon={appliedCoupon}
-                  onPlaceOrder={handlePlaceOrder}
-                  isSubmitting={placingOrder}
-                />
-              )}
+                    {currentStep === 1 && (
+                      <div className="space-y-8">
+                        <ShippingStep
+                          onNext={data => setShipping(data)}
+                          initialData={shipping}
+                          loading={shippingLoading}
+                          canSaveAddress={!!session?.user}
+                          onSaveAddress={async (data) => {
+                            const res = await fetch("/api/user/shipping", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify(data),
+                            });
+                            if (!res.ok) {
+                              const err = await res.json().catch(() => ({}));
+                              throw new Error(err.error || "Failed to save address");
+                            }
+                          }}
+                        />
+                        {shipping && (
+                          <DeliveryStep
+                            onNext={method => {
+                              setDelivery(method);
+                              handleNextStep();
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+                    {currentStep === 2 && shipping && delivery && (
+                      <ReviewStep
+                        shipping={shipping}
+                        delivery={delivery}
+                        payment={defaultPayment}
+                        appliedCoupon={appliedCoupon}
+                        onPlaceOrder={handlePlaceOrder}
+                        isSubmitting={placingOrder}
+                      />
+                    )}
                     {error && <div className="text-red-500 mt-4">{error}</div>}
                     <div className="flex justify-between mt-8">
                       <Button
@@ -200,7 +199,6 @@ export default function ShopifyCheckout() {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   );
 }

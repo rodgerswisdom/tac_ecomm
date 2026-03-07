@@ -30,8 +30,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { 
-    href: "/collections", 
+  {
+    href: "/collections",
     label: "Shop",
     submenu: [
       { href: "/collections/earrings", label: "Earrings" },
@@ -63,6 +63,7 @@ export const Navbar = () => {
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSignOut = async () => {
@@ -165,16 +166,30 @@ export const Navbar = () => {
 
   return (
     <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
+      {/* Mobile Search Overlay */}
+      {mobileSearchOpen && (
+        <div className="pointer-events-auto absolute inset-x-0 top-0 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-xl px-3 py-3 shadow-lg sm:hidden">
+          <SearchBar />
+          <button
+            onClick={() => setMobileSearchOpen(false)}
+            className="flex-shrink-0 rounded-full p-2 text-brand-umber/60 hover:text-brand-umber hover:bg-brand-beige/60 transition-colors"
+            aria-label="Close search"
+          >
+            <span className="sr-only">Close</span>
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-4 py-4 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 lg:px-8"
+        className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8"
       >
-        <div className="flex w-full flex-wrap items-center gap-3 sm:gap-4">
+        <div className="flex w-full items-center gap-2 sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing inline-flex items-center gap-2 text-[10px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
+            className="caps-spacing flex-shrink-0 inline-flex items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
           >
             Tac Accessories
           </Link>
@@ -185,8 +200,8 @@ export const Navbar = () => {
               const isActive = isAnchor
                 ? pathname === "/"
                 : link.href === "/"
-                ? pathname === "/"
-                : pathname === link.href || pathname.startsWith(link.href);
+                  ? pathname === "/"
+                  : pathname === link.href || pathname.startsWith(link.href);
 
               if (link.submenu) {
                 return (
@@ -206,7 +221,7 @@ export const Navbar = () => {
                       {link.label}
                       <ChevronDown className="h-3 w-3" />
                     </Link>
-                    
+
                     {activeDropdown === link.href && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -253,16 +268,15 @@ export const Navbar = () => {
             <SearchBar />
           </div>
 
-          <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-            {renderCurrencyControl()}
+          <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
+            <div className="hidden xs:block sm:block">
+              {renderCurrencyControl()}
+            </div>
             <div className="lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  // For mobile, we could open a search modal or navigate to search page
-                  // For now, just show search icon
-                }}
+                onClick={() => setMobileSearchOpen(true)}
                 aria-label="Search"
               >
                 <Search className="h-5 w-5" />

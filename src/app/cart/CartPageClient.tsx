@@ -6,7 +6,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 
-import { Footer } from "@/components/Footer";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { patternAssets } from "@/lib/patterns";
@@ -49,7 +48,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <Navbar />
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col gap-10">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
@@ -62,7 +61,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 <span className="caps-spacing text-xs text-brand-teal">
                   Your Gallery Tray
                 </span>
-                <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">
+                <h1 className="font-heading text-3xl sm:text-4xl text-brand-umber md:text-5xl lg:text-6xl">
                   Cart — curated with intention
                 </h1>
                 <p className="max-w-2xl text-sm text-brand-umber/70">
@@ -85,8 +84,8 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
               </div>
             </div>
 
-            <div className="relative flex items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-6 py-4 text-xs text-brand-umber/60">
-              <div className="flex items-center gap-6">
+            <div className="relative flex items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:px-6 sm:py-4">
+              <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
                 <ProgressPill step={1} label="Cart" active />
                 <ProgressPill step={2} label="Details" active={false} />
                 <ProgressPill step={3} label="Confirmation" active={false} />
@@ -102,7 +101,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
           </motion.div>
 
           {hasItems ? (
-            <div className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-10 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm">
+            <div className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-4 sm:p-7 lg:p-10 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm">
               <motion.div
                 initial={{ opacity: 0, y: 32 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -208,7 +207,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                   </p>
                 </div>
 
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {recommendations.map((product) => (
                     <div key={product.id} className="group">
                       <div className="aspect-square overflow-hidden rounded-2xl mb-4">
@@ -250,7 +249,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.33, 1, 0.68, 1] }}
-              className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-16 text-center shadow-[0_35px_80px_rgba(74,43,40,0.12)] backdrop-blur-sm"
+              className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-8 sm:p-16 text-center shadow-[0_35px_80px_rgba(74,43,40,0.12)] backdrop-blur-sm"
             >
               <ShoppingBag className="mx-auto h-20 w-20 text-brand-gold" />
               <h2 className="mt-6 font-heading text-4xl text-brand-umber">
@@ -266,8 +265,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
           )}
         </div>
       </section>
-      <Footer />
-    </main>
+    </main >
   );
 }
 
@@ -288,18 +286,16 @@ const ProgressPill = ({
   active: boolean;
 }) => (
   <div
-    className={`flex items-center gap-3 rounded-full border px-4 py-2 transition ${
-      active
-        ? "border-brand-teal bg-white text-brand-umber"
-        : "border-brand-umber/15 text-brand-umber/50"
-    }`}
+    className={`flex items-center gap-3 rounded-full border px-4 py-2 transition ${active
+      ? "border-brand-teal bg-white text-brand-umber"
+      : "border-brand-umber/15 text-brand-umber/50"
+      }`}
   >
     <span
-      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${
-        active
-          ? "bg-gradient-to-r from-brand-teal to-brand-coral text-white"
-          : "bg-brand-jade/40 text-brand-umber/60"
-      }`}
+      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${active
+        ? "bg-gradient-to-r from-brand-teal to-brand-coral text-white"
+        : "bg-brand-jade/40 text-brand-umber/60"
+        }`}
     >
       {step}
     </span>

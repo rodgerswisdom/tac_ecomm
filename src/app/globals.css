@@ -129,6 +129,13 @@
     padding-right: 1rem;
   }
 
+  @media (min-width: 480px) {
+    .gallery-container {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+  }
+
   @media (min-width: 768px) {
     .gallery-container {
       padding-left: 2rem;
@@ -137,8 +144,15 @@
   }
 
   .section-spacing {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .section-spacing {
+      padding-top: 3.5rem;
+      padding-bottom: 3.5rem;
+    }
   }
 
   @media (min-width: 1024px) {
@@ -167,12 +181,10 @@
     content: "";
     flex: 1 1 auto;
     height: 1px;
-    background: linear-gradient(
-      to right,
-      transparent,
-      rgba(223, 160, 83, 0.65),
-      transparent
-    );
+    background: linear-gradient(to right,
+        transparent,
+        rgba(223, 160, 83, 0.65),
+        transparent);
   }
 
   .pattern-divider svg {
@@ -181,11 +193,9 @@
   }
 
   .golden-glow {
-    background-image: linear-gradient(
-        145deg,
+    background-image: linear-gradient(145deg,
         rgba(223, 160, 83, 0.18),
-        rgba(171, 205, 193, 0.18)
-      ),
+        rgba(171, 205, 193, 0.18)),
       url("/textures/linen.png");
     background-size: cover, 240px;
     box-shadow:
@@ -242,5 +252,21 @@
   .ring-gold {
     box-shadow: 0 0 0 1px rgba(223, 160, 83, 0.5),
       0 0 0 4px rgba(171, 205, 193, 0.3);
+  }
+
+  .nav-clearance {
+    padding-top: 6.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .nav-clearance {
+      padding-top: 8rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nav-clearance {
+      padding-top: 9.5rem;
+    }
   }
 }
