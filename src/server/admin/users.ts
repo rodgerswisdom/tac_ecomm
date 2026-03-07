@@ -76,7 +76,7 @@ export async function getUsersSummary({
             _count: {
                 orders: { gt: 1 },
             },
-        })
+        } as any)
     }
     const where = whereConditions.length > 0 ? { AND: whereConditions } : undefined
 
@@ -209,11 +209,11 @@ export async function createUserAction(_prev: ActionResult | undefined, formData
 
     // Fire welcome email asynchronously
     try {
-    const emailService = new EmailService(getEmailConfig())
-    await emailService.sendWelcomeEmail(
-        newUser.name ?? parsed.data.name, 
-        newUser.email
-    )
+        const emailService = new EmailService(getEmailConfig())
+        await emailService.sendWelcomeEmail(
+            newUser.name ?? parsed.data.name,
+            newUser.email
+        )
     } catch (err) {
         console.error('[email] admin create user welcome failed:', err)
     }
