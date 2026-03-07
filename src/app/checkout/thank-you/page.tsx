@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
-import { Footer } from "@/components/Footer"
 import { Button } from "@/components/ui/button"
 import { ClearCartClient } from "./ClearCartClient"
 
@@ -49,7 +48,7 @@ export default function ThankYouPage({ searchParams }: ThankYouPageProps) {
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <ClearCartClient active={copy.tone === "success"} />
       <Navbar />
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col items-center gap-10 text-center">
           <p className="caps-spacing text-xs text-brand-teal">Order status</p>
           <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">{copy.title}</h1>
@@ -88,7 +87,6 @@ export default function ThankYouPage({ searchParams }: ThankYouPageProps) {
           </div>
         </div>
       </section>
-      <Footer />
     </main>
   )
 }

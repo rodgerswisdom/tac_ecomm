@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/ProductFilters";
 import { ActiveFilterChips } from "@/components/ActiveFilterChips";
@@ -34,6 +33,7 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(PRODUCTS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const availableMaterials = useMemo(() => {
     const materials = new Set<string>();
@@ -202,9 +202,9 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
 
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing">
         <div className="gallery-container text-center">
-          <h1 className="font-heading text-4xl text-brand-umber md:text-5xl">
+          <h1 className="font-heading text-3xl sm:text-4xl text-brand-umber md:text-5xl">
             Shop Collections
           </h1>
         </div>
@@ -212,8 +212,19 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
 
       <section className="section-spacing bg-white pt-0">
         <div className="gallery-container">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-            <aside className="w-full lg:w-64 lg:flex-shrink-0">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+            {/* Mobile filters toggle */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <button
+                onClick={() => setFiltersOpen((v) => !v)}
+                className="flex items-center gap-2 rounded-full border border-brand-teal/30 bg-white px-4 py-2 text-sm font-medium text-brand-umber shadow-sm transition hover:border-brand-teal/60"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
+                {filtersOpen ? "Hide Filters" : "Show Filters"}
+              </button>
+              <span className="text-xs text-brand-umber/60">{filteredAndSortedProducts.length} products</span>
+            </div>
+            <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
               <ProductFilters
                 filters={filters}
                 onFiltersChange={setFilters}
@@ -326,8 +337,6 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
       />
 
       {selectedProducts.length > 0 && <div className="h-24" />}
-
-      <Footer />
     </main>
   );
 }

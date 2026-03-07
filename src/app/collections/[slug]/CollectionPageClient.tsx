@@ -7,7 +7,6 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Filter } from "lucide-react";
 
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { SortDropdown } from "@/components/ui/custom-dropdown";
@@ -339,8 +338,6 @@ export const CollectionPageClient = ({
           </div>
         </section>
       )}
-
-      <Footer />
     </main>
   );
 };
