@@ -102,7 +102,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
 
   return (
     <section
-      className="relative overflow-hidden pt-16 pb-12 text-brand-umber md:pt-20 md:pb-16"
+      className="nav-clearance relative overflow-hidden pb-10 text-brand-umber md:pb-16"
       style={{
         backgroundImage: `linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(218, 191, 143, 0.55))`,
         backgroundSize: "cover",
@@ -138,8 +138,8 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
       ))}
 
       <div className="relative z-10 gallery-container">
-        <div className="grid items-start gap-16 pt-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="space-y-8 text-center lg:text-left">
+        <div className="grid items-center gap-10 lg:gap-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="space-y-6 text-center lg:text-left sm:space-y-8">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeSlide.id}
@@ -163,7 +163,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, ease: [0.33, 1, 0.68, 1] }}
-                  className="font-heading text-4xl leading-tight text-brand-umber md:text-6xl"
+                  className="font-heading text-3xl leading-tight text-brand-umber sm:text-4xl md:text-5xl lg:text-6xl"
                 >
                   {activeSlide.subtitle ? (
                     <>
@@ -230,11 +230,11 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   initial={{ opacity: 0, scale: 0.96 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
+                  className="flex flex-col xs:flex-row gap-3 justify-center lg:justify-start"
                 >
                   <Button
                     size="lg"
-                    className="px-10 py-6 shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
+                    className="px-6 py-4 sm:px-10 sm:py-6 shadow-[0_18px_36px_rgba(74,43,40,0.18)] transition"
                     asChild
                   >
                     <Link href={activeSlide.cta.href}>
@@ -246,7 +246,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="px-10 py-6"
+                      className="px-6 py-4 sm:px-10 sm:py-6"
                       asChild
                     >
                       <Link href={`/products/${activeSlide.product?.slug}`}>
@@ -282,10 +282,10 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, x: 40 }}
+            initial={{ opacity: 0, x: 0 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.9, ease: [0.33, 1, 0.68, 1], delay: 0.2 }}
-            className="relative mx-auto w-full max-w-[520px]"
+            className="relative mx-auto w-full max-w-[400px] sm:max-w-[520px]"
           >
             <div className="group relative overflow-hidden rounded-[3rem] border border-brand-teal/20 bg-brand-beige/60 shadow-[0_30px_70px_rgba(74,43,40,0.18)]">
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-umber/30 via-transparent to-transparent mix-blend-multiply z-10" />
@@ -296,7 +296,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.8, ease: [0.25, 0.8, 0.25, 1] }}
-                  className="relative aspect-[5/6] w-full overflow-hidden"
+                  className="relative aspect-[4/4.5] w-full overflow-hidden"
                 >
                   <div
                     className="absolute inset-0"
@@ -307,7 +307,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                     }}
                   />
                   <span className="sr-only">{activeSlide.title}</span>
-                  
+
                   {activeSlide.badge && (
                     <div className="absolute top-6 left-6 z-20">
                       <span className="inline-flex items-center gap-2 rounded-full bg-brand-coral px-4 py-2 text-xs font-semibold text-white shadow-lg">
@@ -316,7 +316,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                       </span>
                     </div>
                   )}
-                  
+
                   {activeSlide.type === "product" && (
                     <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   )}
@@ -333,7 +333,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
               </div>
             </div>
 
-            <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-3 sm:right-6 lg:right-[-3.5rem] z-20">
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col gap-2 sm:right-4 sm:gap-3 lg:right-[-3.5rem] z-20">
               {allSlides.map((slide, index) => {
                 const isActive = index === activeIndex;
                 return (
@@ -341,11 +341,10 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                     key={slide.id}
                     type="button"
                     onClick={() => setActiveIndex(index)}
-                    className={`relative flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border transition-all ${
-                      isActive
-                        ? "border-brand-teal shadow-[0_18px_45px_rgba(74,43,40,0.18)]"
-                        : "border-brand-umber/20 hover:border-brand-umber/40"
-                    }`}
+                    className={`relative flex h-9 w-9 sm:h-12 sm:w-12 items-center justify-center overflow-hidden rounded-full border transition-all ${isActive
+                      ? "border-brand-teal shadow-[0_18px_45px_rgba(74,43,40,0.18)]"
+                      : "border-brand-umber/20 hover:border-brand-umber/40"
+                      }`}
                     aria-label={`Show slide ${index + 1}`}
                     style={{
                       backgroundImage: `url(${slide.image})`,
@@ -356,9 +355,8 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                     whileTap={{ scale: 0.95 }}
                   >
                     <span
-                      className={`absolute inset-0 bg-brand-umber/60 transition-opacity ${
-                        isActive ? "opacity-30" : "opacity-60"
-                      }`}
+                      className={`absolute inset-0 bg-brand-umber/60 transition-opacity ${isActive ? "opacity-30" : "opacity-60"
+                        }`}
                       aria-hidden
                     />
                     <span className="relative text-xs font-semibold text-white">
@@ -378,7 +376,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-24 flex flex-col items-center gap-4 text-center text-sm text-brand-umber/70 sm:flex-row sm:justify-between"
+          className="mt-12 sm:mt-24 flex flex-col items-center gap-4 text-center text-sm text-brand-umber/70 sm:flex-row sm:justify-between"
         >
           <span className="caps-spacing text-xs">
             Scroll to enter the gallery

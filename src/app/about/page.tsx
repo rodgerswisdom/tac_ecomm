@@ -97,8 +97,8 @@ export default function AboutPage() {
     { id: 'tours', name: 'Tours' }
   ]
 
-  const filteredFAQs = selectedCategory === 'all' 
-    ? faqs 
+  const filteredFAQs = selectedCategory === 'all'
+    ? faqs
     : faqs.filter(faq => faq.category === selectedCategory)
 
   const toggleFAQ = (id: number) => {
@@ -110,7 +110,7 @@ export default function AboutPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
+      <section className="nav-clearance py-20 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
         <div className="absolute inset-0 afro-pattern-stars opacity-5"></div>
         <div className="container mx-auto px-4 relative z-10">
           <motion.div
@@ -128,16 +128,16 @@ export default function AboutPage() {
               <Heart className="h-8 w-8 text-emerald-500" />
               <span className="text-emerald-600 font-semibold tracking-wide uppercase text-sm">Our Story</span>
             </motion.div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold luxury-heading mb-6">
               <span className="afro-text-gradient">Celebrating</span>
               <br />
               <span className="text-foreground">African Heritage</span>
             </h1>
             <p className="text-xl text-muted-foreground luxury-text leading-relaxed">
-              Tac Accessories was born from a deep passion for African culture and a desire to share 
-              the beauty of traditional craftsmanship with the world. We believe that every piece 
-              of jewellery tells a story, and our mission is to preserve and celebrate these stories 
+              Tac Accessories was born from a deep passion for African culture and a desire to share
+              the beauty of traditional craftsmanship with the world. We believe that every piece
+              of jewellery tells a story, and our mission is to preserve and celebrate these stories
               while supporting the communities that create them.
             </p>
           </motion.div>
@@ -147,60 +147,58 @@ export default function AboutPage() {
       {/* Our Mission */}
       <section className="py-20">
         <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="text-3xl md:text-4xl font-bold luxury-heading mb-6">
-                Our <span className="afro-text-gradient">Mission</span>
-              </h2>
-              <p className="text-lg text-muted-foreground luxury-text leading-relaxed mb-6">
-                We are dedicated to preserving African cultural heritage through authentic, 
-                handcrafted jewellery while supporting artisan communities across the continent. 
-                Every piece in our collection represents not just beauty, but the rich history 
-                and traditions of African craftsmanship.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-full bg-emerald-100">
-                    <Award className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <span className="font-semibold">Authentic Craftsmanship</span>
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-4xl mx-auto mb-16"
+          >
+            <h2 className="text-3xl md:text-4xl font-bold luxury-heading mb-6">
+              Our <span className="afro-text-gradient">Mission</span>
+            </h2>
+            <p className="text-xl text-muted-foreground luxury-text leading-relaxed mb-12">
+              We are dedicated to preserving African cultural heritage through authentic,
+              handcrafted jewellery while supporting artisan communities across the continent.
+              Every piece in our collection represents not just beauty, but the rich history
+              and traditions of African craftsmanship.
+            </p>
+
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-white shadow-soft">
+                <div className="p-4 rounded-full bg-emerald-100 mb-4">
+                  <Award className="h-8 w-8 text-emerald-600" />
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-full bg-gold/20">
-                    <Users className="h-5 w-5 text-gold" />
-                  </div>
-                  <span className="font-semibold">Community Support</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-full bg-blue-100">
-                    <Globe className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <span className="font-semibold">Cultural Preservation</span>
-                </div>
+                <span className="font-semibold text-lg">Authentic Craftsmanship</span>
               </div>
-            </motion.div>
-            
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="aspect-square relative overflow-hidden rounded-2xl">
-                <Image
-                  src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=600&h=600&fit=crop&crop=center"
-                  alt="African Artisan at Work"
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-white shadow-soft">
+                <div className="p-4 rounded-full bg-gold/20 mb-4">
+                  <Users className="h-8 w-8 text-gold" />
+                </div>
+                <span className="font-semibold text-lg">Community Support</span>
               </div>
+              <div className="flex flex-col items-center p-6 rounded-2xl bg-white shadow-soft">
+                <div className="p-4 rounded-full bg-blue-100 mb-4">
+                  <Globe className="h-8 w-8 text-blue-600" />
+                </div>
+                <span className="font-semibold text-lg">Cultural Preservation</span>
+              </div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl aspect-[16/9]"
+            >
+              <Image
+                src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&h=675&fit=crop&crop=center"
+                alt="African Artisan at Work"
+                fill
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </motion.div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -217,7 +215,7 @@ export default function AboutPage() {
               Our <span className="afro-text-gradient">Values</span>
             </h2>
             <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              These core values guide everything we do, from selecting our artisans to 
+              These core values guide everything we do, from selecting our artisans to
               creating each piece of jewellery.
             </p>
           </motion.div>
@@ -280,7 +278,7 @@ export default function AboutPage() {
               Meet Our <span className="afro-text-gradient">Artisans</span>
             </h2>
             <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              Behind every piece of Tac Accessories are skilled artisans who have dedicated 
+              Behind every piece of Tac Accessories are skilled artisans who have dedicated
               their lives to preserving traditional African craftsmanship.
             </p>
           </motion.div>
@@ -357,7 +355,7 @@ export default function AboutPage() {
               Frequently Asked <span className="afro-text-gradient">Questions</span>
             </h2>
             <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              Find answers to common questions about our jewellery, shipping, 
+              Find answers to common questions about our jewellery, shipping,
               and cultural significance.
             </p>
           </motion.div>
@@ -438,7 +436,7 @@ export default function AboutPage() {
               Have More <span className="afro-text-gradient">Questions</span>?
             </h2>
             <p className="text-xl text-muted-foreground luxury-text mb-8">
-              We&apos;re here to help! Contact us for any questions about our jewellery, 
+              We&apos;re here to help! Contact us for any questions about our jewellery,
               cultural significance, or custom orders.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

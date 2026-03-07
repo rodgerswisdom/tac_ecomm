@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProductCard } from "@/components/ProductCard";
@@ -134,7 +133,7 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
 
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing">
         <div className="gallery-container text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -145,7 +144,7 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
             <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
               Corporate Gifts
             </span>
-            <h1 className="font-heading text-5xl text-brand-umber md:text-6xl mb-6">
+            <h1 className="font-heading text-3xl sm:text-5xl text-brand-umber md:text-6xl mb-6">
               Gift with <span className="bg-gradient-to-r from-brand-gold to-brand-teal bg-clip-text text-transparent">Purpose</span>
             </h1>
             <p className="text-xl text-brand-umber/80 mb-8 max-w-3xl mx-auto">
@@ -219,7 +218,7 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
             </p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2">
+          <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto px-4 sm:px-0">
             {corporateCollections.map((collection, index) => (
               <motion.div
                 key={collection.id}
@@ -262,9 +261,13 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
                       <p className="text-sm text-brand-umber/70">{collection.idealFor}</p>
                     </div>
 
-                    <div className="flex gap-3">
-                      <Button className="flex-1">Request Quote</Button>
-                      <Button variant="outline" className="flex-1">View Details</Button>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+                      <Button size="lg" className="flex-1 py-7.5 text-lg shadow-[0_18px_36px_rgba(74,43,40,0.12)]">
+                        Request Quote
+                      </Button>
+                      <Button size="lg" variant="outline" className="flex-1 py-7.5 text-lg">
+                        View Details
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -591,8 +594,6 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
           </motion.div>
         </motion.div>
       )}
-
-      <Footer />
     </main>
   );
 }
