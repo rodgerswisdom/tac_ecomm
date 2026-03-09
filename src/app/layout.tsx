@@ -64,6 +64,8 @@ import { prisma } from "@/lib/prisma";
 import { initializeRates } from "@/lib/currency";
 
 import { Footer } from "@/components/Footer";
+import { getNavShopCategories } from "@/server/storefront/collections";
+import { NavbarCategoriesProvider } from "@/contexts/NavbarCategoriesContext";
 
 export default async function RootLayout({
   children,
@@ -80,6 +82,8 @@ export default async function RootLayout({
   // Initialize server-side rates
   initializeRates(settings.usdToKesRate, settings.usdToEurRate);
 
+  const shopCategories = await getNavShopCategories();
+
   return (
     <html lang="en">
       <body
@@ -88,16 +92,18 @@ export default async function RootLayout({
         <SessionProviderWrapper>
           <CartProvider>
             <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
-              <FraudDetectionProvider>
+              <NavbarCategoriesProvider categories={shopCategories}>
+                <FraudDetectionProvider>
                 <div className="flex flex-col min-h-screen">
                   <main className="flex-grow">
-                    {children}
+                      {children}
                   </main>
                   <Footer />
                 </div>
-                <Toaster position="bottom-center" richColors />
-                <WhatsAppWidget />
-              </FraudDetectionProvider>
+                  <Toaster position="bottom-center" richColors />
+                  <WhatsAppWidget />
+                </FraudDetectionProvider>
+              </NavbarCategoriesProvider>
             </CurrencyProvider>
           </CartProvider>
         </SessionProviderWrapper>

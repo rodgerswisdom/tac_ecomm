@@ -27,26 +27,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  {
-    href: "/collections",
-    label: "Shop",
-    submenu: [
-      { href: "/collections/earrings", label: "Earrings" },
-      { href: "/collections/bracelets", label: "Bracelets & Bangles" },
-      { href: "/collections/necklaces", label: "Necklaces & Chains" },
-      { href: "/collections/hair-accessories", label: "Hair Accessories" },
-      { href: "/collections/rings", label: "Rings" },
-      { href: "/collections/matching-sets", label: "Matching Sets" },
-      { href: "/collections/corporate-gifts", label: "Corporate Gifts" },
-    ]
-  },
-  { href: "/bespoke", label: "Bespoke Studio" },
-  { href: "/artisans", label: "Artisans" },
-  { href: "/contact", label: "Contact" },
-];
+function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
+  const shopSubmenu = shopCategories.map((c) => ({
+    href: `/collections/${c.slug}`,
+    label: c.name,
+  }));
+  return [
+    { href: "/", label: "Home" },
+    {
+      href: "/collections",
+      label: "Shop",
+      submenu: shopSubmenu.length > 0 ? shopSubmenu : undefined,
+    },
+    { href: "/bespoke", label: "Bespoke Studio" },
+    { href: "/artisans", label: "Artisans" },
+    { href: "/contact", label: "Contact" },
+  ];
+}
 
 const CURRENCY_OPTIONS: { code: CurrencyCode; label: string }[] = [
   { code: "KSH", label: "KES" },
@@ -59,6 +58,8 @@ export const Navbar = () => {
   const router = useRouter();
   const { data: session } = useSession();
   const { getCartItemCount } = useCart();
+  const shopCategories = useNavbarCategories();
+  const navLinks = buildNavLinks(shopCategories);
   const { currency, setCurrency } = useCurrency();
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
