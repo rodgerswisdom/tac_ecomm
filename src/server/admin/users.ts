@@ -220,11 +220,11 @@ export async function createUserAction(_prev: ActionResult | undefined, formData
 
     // Fire welcome email asynchronously
     try {
-    const emailService = new EmailService(getEmailConfig())
-    await emailService.sendWelcomeEmail(
-        newUser.name ?? parsed.data.name, 
-        newUser.email
-    )
+        const emailService = new EmailService(getEmailConfig())
+        await emailService.sendWelcomeEmail(
+            newUser.name ?? parsed.data.name,
+            newUser.email
+        )
     } catch (err) {
         console.error('[email] admin create user welcome failed:', err)
     }

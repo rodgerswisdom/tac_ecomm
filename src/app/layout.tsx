@@ -62,6 +62,8 @@ export const metadata: Metadata = {
 
 import { prisma } from "@/lib/prisma";
 import { initializeRates } from "@/lib/currency";
+
+import { Footer } from "@/components/Footer";
 import { getNavShopCategories } from "@/server/storefront/collections";
 import { NavbarCategoriesProvider } from "@/contexts/NavbarCategoriesContext";
 
@@ -92,7 +94,12 @@ export default async function RootLayout({
             <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
               <NavbarCategoriesProvider categories={shopCategories}>
                 <FraudDetectionProvider>
-                  {children}
+                  <div className="flex flex-col min-h-screen">
+                      <main className="flex-grow">
+                          {children}
+                      </main>
+                      <Footer />
+                  </div>
                   <Toaster position="bottom-center" richColors />
                   <WhatsAppWidget />
                 </FraudDetectionProvider>

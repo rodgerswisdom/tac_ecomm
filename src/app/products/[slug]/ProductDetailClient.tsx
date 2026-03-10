@@ -7,7 +7,6 @@ import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
@@ -39,9 +38,9 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
-      <section className="section-spacing pb-0">
+      <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container">
-          <div className="mb-10 flex items-center justify-between text-xs text-brand-umber/60">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-xs text-brand-umber/60">
             <Link
               href="/collections"
               className="caps-spacing inline-flex items-center gap-2 text-brand-teal transition-colors hover:text-brand-coral"
@@ -51,7 +50,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
             <span className="caps-spacing">Crafted in {product.origin}</span>
           </div>
 
-          <div className="grid gap-16 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-8 lg:gap-16 lg:grid-cols-[1.1fr_0.9fr]">
             <motion.div
               initial={{ opacity: 0, y: 32 }}
               animate={{ opacity: 1, y: 0 }}
@@ -65,14 +64,14 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
             </motion.div>
 
             <motion.div
-              className="space-y-10 rounded-[2.5rem] border border-brand-teal/20 bg-brand-beige/85 p-10 backdrop-blur-sm shadow-[0_28px_70px_rgba(74,43,40,0.16)]"
+              className="space-y-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-brand-teal/20 bg-brand-beige/85 p-5 sm:p-8 lg:p-10 backdrop-blur-sm shadow-[0_28px_70px_rgba(74,43,40,0.16)]"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.33, 1, 0.68, 1], delay: 0.1 }}
             >
               <div className="space-y-4">
                 <span className="caps-spacing text-xs text-brand-coral">Limited Release</span>
-                <h1 className="font-heading text-5xl text-brand-umber">{product.name}</h1>
+                <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl text-brand-umber">{product.name}</h1>
                 <p className="text-base text-brand-umber/75">{product.description}</p>
               </div>
 
@@ -138,7 +137,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                   Handpicked selections that complement this piece, curated by our styling team.
                 </p>
               </div>
-              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {related.map((item) => (
                   <ProductSummary key={`related-${item.id}`} product={item} />
                 ))}
@@ -147,7 +146,6 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
           )}
         </div>
       </section>
-      <Footer />
     </main>
   );
 }

@@ -822,6 +822,7 @@ async function createAccount(userData: UserData) {
 **Problem**: SDK doesn't initialize
 
 **Solutions**:
+
 - Check API key is correct
 - Ensure API key is in environment variables
 - Check browser console for errors
@@ -832,6 +833,7 @@ async function createAccount(userData: UserData) {
 **Problem**: Risk scores don't seem accurate
 
 **Solutions**:
+
 - Ensure SDK initializes early (on page load)
 - Pass user IDs when available
 - Allow time for device fingerprinting to collect data
@@ -842,6 +844,7 @@ async function createAccount(userData: UserData) {
 **Problem**: `getVisitorData()` fails with network errors
 
 **Solutions**:
+
 - Implement retry logic
 - Use fail-open strategy (allow on error)
 - Check network connectivity
@@ -852,6 +855,7 @@ async function createAccount(userData: UserData) {
 **Problem**: Legitimate users being blocked
 
 **Solutions**:
+
 - Review risk thresholds
 - Use soft challenges instead of blocking
 - Implement appeal process
@@ -885,4 +889,3 @@ You'll maximize Keverd's effectiveness while maintaining a good user experience.
 **Author**: Integration Guide  
 **Last Updated**: 2024  
 **Version**: 1.0.0
-

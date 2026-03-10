@@ -31,13 +31,13 @@ export const TestimonialsMarquee = memo(function TestimonialsMarquee() {
           transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
         >
           <span className="caps-spacing text-xs text-brand-teal">Collector Testimonials</span>
-          <h3 className="font-heading text-3xl md:text-4xl text-brand-umber">Voices from the Atelier Trail</h3>
+          <h3 className="font-heading text-2xl sm:text-3xl md:text-4xl text-brand-umber">Voices from the Atelier Trail</h3>
           <p className="text-sm text-brand-umber/70 max-w-2xl">
             Slow, continuous murmurs from the collectors who live with our pieces every day.
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:gap-6 md:grid-cols-3">
           {testimonials.map((review, index) => (
             <motion.div
               key={review.name}

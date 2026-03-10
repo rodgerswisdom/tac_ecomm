@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings } from "lucide-react";
+import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings, X } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
@@ -14,6 +14,7 @@ import { CurrencyCode } from "@/lib/currency";
 import { useSession, signOut } from "next-auth/react";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetTrigger,
   SheetTitle,
@@ -30,10 +31,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 
 function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
-  const shopSubmenu = shopCategories.map((c) => ({
-    href: `/collections/${c.slug}`,
-    label: c.name,
-  }));
+  const seenCategorySlugs = new Set<string>();
+  const shopSubmenu = shopCategories
+    .filter((category) => {
+      if (seenCategorySlugs.has(category.slug)) {
+        return false;
+      }
+      seenCategorySlugs.add(category.slug);
+      return true;
+    })
+    .map((category) => ({
+      href: `/collections/${category.slug}`,
+      label: category.name,
+    }));
   return [
     { href: "/", label: "Home" },
     {
@@ -170,15 +180,19 @@ export const Navbar = () => {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-4 py-4 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 lg:px-8"
+        className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8"
       >
-        <div className="flex w-full flex-wrap items-center gap-3 sm:gap-4">
+        <div className="flex w-full items-center gap-2 sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing inline-flex items-center gap-2 text-[10px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
+            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:inline-flex sm:gap-3 sm:text-xs"
           >
             Tac Accessories
           </Link>
+
+          <div className="flex-1 sm:hidden">
+            <SearchBar />
+          </div>
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
             {navLinks.map((link) => {
@@ -186,8 +200,8 @@ export const Navbar = () => {
               const isActive = isAnchor
                 ? pathname === "/"
                 : link.href === "/"
-                ? pathname === "/"
-                : pathname === link.href || pathname.startsWith(link.href);
+                  ? pathname === "/"
+                  : pathname === link.href || pathname.startsWith(link.href);
 
               if (link.submenu) {
                 return (
@@ -207,7 +221,7 @@ export const Navbar = () => {
                       {link.label}
                       <ChevronDown className="h-3 w-3" />
                     </Link>
-                    
+
                     {activeDropdown === link.href && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -218,9 +232,9 @@ export const Navbar = () => {
                         onMouseLeave={handleDropdownMouseLeave}
                       >
                         <div className="space-y-2">
-                          {link.submenu.map((subLink) => (
+                          {link.submenu.map((subLink, index) => (
                             <Link
-                              key={subLink.href}
+                              key={`${link.href}-${subLink.href}-${index}`}
                               href={subLink.href}
                               className="block rounded-md px-3 py-2 text-sm text-brand-umber/80 transition-colors hover:bg-brand-jade/10 hover:text-brand-umber whitespace-nowrap"
                               onClick={() => setActiveDropdown(null)}
@@ -254,16 +268,14 @@ export const Navbar = () => {
             <SearchBar />
           </div>
 
-          <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-            {renderCurrencyControl()}
-            <div className="lg:hidden">
+          <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
+            <div className="hidden sm:block">
+              {renderCurrencyControl()}
+            </div>
+            <div className="hidden sm:inline-flex lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => {
-                  // For mobile, we could open a search modal or navigate to search page
-                  // For now, just show search icon
-                }}
                 aria-label="Search"
               >
                 <Search className="h-5 w-5" />
@@ -282,6 +294,18 @@ export const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <div className="flex justify-end">
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-brand-umber/70 hover:text-brand-umber"
+                      aria-label="Close navigation menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </SheetClose>
+                </div>
                 <div className="mt-8 flex flex-col gap-4 text-brand-umber">
                   {sessionUser && (
                     <div className="mb-4 pb-4 border-b border-brand-umber/10">
@@ -327,9 +351,9 @@ export const Navbar = () => {
                         </Link>
                         {link.submenu && (
                           <div className="ml-4 mt-2 space-y-2">
-                            {link.submenu.map((subLink) => (
+                            {link.submenu.map((subLink, index) => (
                               <Link
-                                key={`mobile-${subLink.href}`}
+                                key={`mobile-${link.href}-${subLink.href}-${index}`}
                                 href={subLink.href}
                                 className="block rounded-md px-3 py-2 text-xs text-brand-umber/60 hover:text-brand-umber"
                               >
@@ -380,7 +404,7 @@ export const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="relative hidden sm:inline-flex"
               asChild
             >
               <Link href="/cart" aria-label="View cart">
@@ -399,7 +423,7 @@ export const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative h-9 w-9 rounded-full"
+                    className="relative hidden h-9 w-9 rounded-full sm:inline-flex"
                   >
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={sessionUser?.image || undefined} alt={userName || ''} />
@@ -444,7 +468,7 @@ export const Navbar = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="hidden lg:inline-flex text-[12px] px-4"
+                className="hidden lg:inline-flex px-4 text-[12px]"
                 asChild
               >
                 <Link href="/auth/signin">Sign In</Link>

@@ -72,7 +72,7 @@ const ProductCardComponent = ({
       if (Array.isArray(stored)) {
         return stored.map((value) => value.toString());
       }
-    } catch {}
+    } catch { }
     return [] as string[];
   };
 
@@ -87,7 +87,7 @@ const ProductCardComponent = ({
           if (!ignore && data.wishlist) {
             setIsWishlisted(data.wishlist.some((w: any) => w.productId === product.id));
           }
-        } catch {}
+        } catch { }
       } else {
         const guestWishlist = getGuestWishlist();
         setIsWishlisted(guestWishlist.includes(product.id));
@@ -120,7 +120,7 @@ const ProductCardComponent = ({
           });
           setIsWishlisted(false);
         }
-      } catch {}
+      } catch { }
     } else {
       // Guest: use localStorage
       const guestWishlist = getGuestWishlist();
@@ -146,11 +146,10 @@ const ProductCardComponent = ({
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-3.5 w-3.5 ${
-              i < rating
-                ? "fill-brand-gold text-brand-gold"
-                : "fill-none text-brand-umber/20"
-            }`}
+            className={`h-3.5 w-3.5 ${i < rating
+              ? "fill-brand-gold text-brand-gold"
+              : "fill-none text-brand-umber/20"
+              }`}
           />
         ))}
         {product.reviewCount && (
@@ -245,16 +244,15 @@ const ProductCardComponent = ({
           {/* Wishlist Heart - Top Right */}
           <button
             onClick={handleWishlistToggle}
-            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110 disabled:opacity-60"
+            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110 disabled:opacity-60 opacity-100"
             aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
             disabled={wishlistLoading}
           >
             <Heart
-              className={`h-4 w-4 transition-colors ${
-                isWishlisted
-                  ? "fill-brand-coral text-brand-coral"
-                  : "text-brand-umber/60 hover:text-brand-coral"
-              }`}
+              className={`h-4 w-4 transition-colors ${isWishlisted
+                ? "fill-brand-coral text-brand-coral"
+                : "text-brand-umber/60 hover:text-brand-coral"
+                }`}
             />
           </button>
 
@@ -280,7 +278,7 @@ const ProductCardComponent = ({
             </AnimatePresence>
           )}
 
-          {/* Quick Add Button - Appears on Hover */}
+          {/* Quick Add Button — Hover on desktop only, hidden on mobile (moved below) */}
           <AnimatePresence>
             {showQuickAdd && (
               <motion.div
@@ -288,7 +286,7 @@ const ProductCardComponent = ({
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.2 }}
-                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2"
+                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 hidden sm:block"
               >
                 <Button
                   onClick={handleQuickAdd}
@@ -313,11 +311,10 @@ const ProductCardComponent = ({
                     e.stopPropagation();
                     handleImageClick(index);
                   }}
-                  className={`h-1.5 rounded-full transition-all ${
-                    activeImageIndex === index
-                      ? "w-6 bg-white"
-                      : "w-1.5 bg-white/50 hover:bg-white/75"
-                  }`}
+                  className={`h-1.5 rounded-full transition-all ${activeImageIndex === index
+                    ? "w-6 bg-white"
+                    : "w-1.5 bg-white/50 hover:bg-white/75"
+                    }`}
                   aria-label={`View angle ${index + 1}`}
                 />
               ))}
@@ -327,8 +324,8 @@ const ProductCardComponent = ({
         </div>
 
         {/* Product Information */}
-        <CardContent className="p-4">
-          <div className="space-y-2">
+        <CardContent className="p-2.5 sm:p-4">
+          <div className="space-y-1 sm:space-y-2">
             {/* Brand Name - Subtle */}
             {product.brand && (
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-umber/50">
@@ -337,7 +334,7 @@ const ProductCardComponent = ({
             )}
 
             {/* Product Name - Prominent */}
-            <CardTitle className="line-clamp-2 text-left text-base font-semibold leading-tight">
+            <CardTitle className="line-clamp-2 text-left text-sm sm:text-base font-semibold leading-tight">
               <Link
                 href={`/products/${product.slug}`}
                 className="transition-colors hover:text-brand-teal"
@@ -350,15 +347,26 @@ const ProductCardComponent = ({
             {renderStars()}
 
             {/* Price */}
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-brand-coral">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="text-sm sm:text-lg font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
               {product.originalPrice && (
-                <span className="text-sm text-brand-umber/40 line-through">
+                <span className="text-xs sm:text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </span>
               )}
+            </div>
+
+            {/* Mobile Quick Add Button - in card body, below price */}
+            <div className="sm:hidden pt-1">
+              <button
+                onClick={handleQuickAdd}
+                className="flex w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/30 bg-white py-1.5 text-xs font-semibold text-brand-umber transition hover:border-brand-teal hover:bg-brand-teal/10"
+              >
+                <Plus className="h-3 w-3" />
+                Add to Bag
+              </button>
             </div>
 
             {/* Color Swatches */}

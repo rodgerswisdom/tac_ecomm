@@ -28,7 +28,7 @@ const ArtisanGalleryComponent = ({ artisans }: ArtisanGalleryProps) => {
   return (
     <section
       id="artisans"
-      className="section-spacing bg-gradient-to-br from-brand-umber via-brand-umber/95 to-brand-umber/80 text-brand-beige"
+      className="nav-clearance section-spacing bg-gradient-to-br from-brand-umber via-brand-umber/95 to-brand-umber/80 text-brand-beige"
     >
       <div className="gallery-container">
         <div className="flex flex-col items-center gap-6 text-center">

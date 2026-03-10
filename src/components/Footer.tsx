@@ -44,24 +44,24 @@ export const Footer = () => {
       />
       <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(26,17,15,0.95),rgba(26,17,15,0.9)_40%,transparent)]" />
 
-      <div className="relative gallery-container py-16">
-        <div className="grid gap-12 lg:grid-cols-[2fr_1fr_1fr_1fr]">
+      <div className="relative gallery-container py-10 sm:py-16">
+        <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="space-y-6"
-        >
-          <span className="caps-spacing text-xs text-brand-gold">
-            Tac Accessories
-          </span>
-          <h3 className="font-heading text-3xl leading-tight text-brand-gold">
-            Where heritage breathes, and luxury lives.
-          </h3>
-          <p className="max-w-sm text-sm text-white/70">
-            Inspired by sun-drenched ateliers across Nairobi, Accra, and Bamako,
-            we curate Africa&apos;s finest craftsmanship for contemporary collectors.
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="space-y-6"
+          >
+            <span className="caps-spacing text-xs text-brand-gold">
+              Tac Accessories
+            </span>
+            <h3 className="font-heading text-3xl leading-tight text-brand-gold">
+              Where heritage breathes, and luxury lives.
+            </h3>
+            <p className="max-w-sm text-sm text-white/70">
+              Inspired by sun-drenched ateliers across Nairobi, Accra, and Bamako,
+              we curate Africa&apos;s finest craftsmanship for contemporary collectors.
             </p>
           </motion.div>
 
@@ -71,23 +71,23 @@ export const Footer = () => {
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          className="space-y-4"
-        >
-          <h4 className="font-heading text-xl text-brand-gold">
-            {group.title}
-          </h4>
-          <ul className="space-y-2 text-sm text-white/70">
-            {group.items.map((item) => (
-              <li key={item.label}>
-                <Link
-                  href={item.href}
-                  className="group relative inline-flex items-center gap-2 transition-colors hover:text-brand-teal"
-                >
-                  <span className="absolute -left-4 h-1 w-1 rounded-full bg-brand-gold opacity-0 transition group-hover:opacity-100" />
-                  {item.label}
-                </Link>
-              </li>
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="space-y-4"
+            >
+              <h4 className="font-heading text-xl text-brand-gold">
+                {group.title}
+              </h4>
+              <ul className="space-y-2 text-sm text-white/70">
+                {group.items.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="group relative inline-flex items-center gap-2 transition-colors hover:text-brand-teal"
+                    >
+                      <span className="absolute -left-4 h-1 w-1 rounded-full bg-brand-gold opacity-0 transition group-hover:opacity-100" />
+                      {item.label}
+                    </Link>
+                  </li>
                 ))}
               </ul>
             </motion.div>

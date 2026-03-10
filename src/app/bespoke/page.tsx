@@ -3,14 +3,13 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ImageUploader } from "@/components/ImageUploader";
-import { 
-  Palette, 
-  Users, 
+import {
+  Palette,
+  Users,
   Sparkles,
   HandHeart,
 } from "lucide-react";
@@ -169,9 +168,9 @@ export default function BespokeStudioPage() {
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
-      
+
       {/* Hero Section with How It Works */}
-      <section className="section-spacing bg-brand-beige">
+      <section className="nav-clearance section-spacing bg-brand-beige">
         <div className="gallery-container">
           <div className="text-center mb-12">
             <h1 className="font-heading text-4xl text-brand-umber md:text-5xl mb-4">
@@ -180,7 +179,7 @@ export default function BespokeStudioPage() {
             <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto mb-12">
               Create custom pieces tailored to your vision with Tac Accessories.
             </p>
-            
+
             {/* <div className="mb-12">
               <h2 className="font-heading text-3xl text-brand-umber mb-4">
                 How It Works
@@ -200,12 +199,14 @@ export default function BespokeStudioPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="relative mb-6">
-                  <div className="w-16 h-16 mx-auto bg-gradient-to-br from-brand-gold to-brand-teal rounded-full flex items-center justify-center mb-4">
-                    <step.icon className="h-8 w-8 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-brand-umber text-white rounded-full flex items-center justify-center text-sm font-bold">
-                    {step.step}
+                <div className="flex justify-center mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 bg-gradient-to-br from-brand-gold to-brand-teal rounded-full flex items-center justify-center">
+                      <step.icon className="h-8 w-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-7 h-7 bg-brand-umber text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
+                      {step.step}
+                    </div>
                   </div>
                 </div>
                 <h3 className="font-heading text-xl text-brand-umber mb-3">
@@ -233,13 +234,13 @@ export default function BespokeStudioPage() {
               </p>
             </div>
 
-            <Card className="border-brand-umber/10 bg-white/80 backdrop-blur-sm">
-              <CardHeader>
+            <Card className="border-brand-umber/10 bg-white/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader className="p-5 sm:p-6 pb-2 text-center">
                 <CardTitle className="text-center text-brand-umber">
                   Bespoke Request Form
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-2">
                 {submitSuccess ? (
                   <div className="rounded-lg border border-brand-teal/30 bg-brand-jade/10 p-8 text-center">
                     <h3 className="font-heading text-xl text-brand-umber mb-2">Thank you</h3>
@@ -268,194 +269,191 @@ export default function BespokeStudioPage() {
                     </Button>
                   </div>
                 ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {submitError && (
-                    <div className="rounded-lg border border-brand-coral/50 bg-brand-coral/10 px-4 py-3 text-sm text-brand-coral">
-                      {submitError}
-                    </div>
-                  )}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="block text-sm font-medium text-brand-umber mb-2">
-                        Full Name
-                      </label>
-                      <Input
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Your name"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-brand-umber mb-2">
-                        Email
-                      </label>
-                      <Input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        placeholder="your@email.com"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-brand-umber mb-2">
-                      Phone Number
-                    </label>
-                    <Input
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+1 (555) 123-4567"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-brand-umber mb-2">
-                      Your Vision
-                    </label>
-                    <textarea
-                      value={formData.vision}
-                      onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
-                      placeholder="Describe your vision, inspiration, or any specific requirements..."
-                      className="w-full h-32 px-3 py-2 border border-brand-umber/20 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                      required
-                    />
-                  </div>
-
-                  <ImageUploader
-                    mode="multiple"
-                    onChange={handlePhotosChange}
-                    maxFiles={5}
-                    folder="bespoke-uploads"
-                    tags={["bespoke", "reference"]}
-                  />
-
-                  <div>
-                    <label className="block text-sm font-medium text-brand-umber mb-2">
-                      Product Category <span className="text-brand-coral">*</span>
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => handleCategoryChange(e.target.value)}
-                      className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                      required
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </option>
-                      ))}
-                    </select>
-                    {formData.category && selectedCategoryTimeline && (
-                      <p className="text-xs text-brand-umber/60 mt-1">
-                        Standard timeline for {categories.find((c) => c.value === formData.category)?.label}: {selectedCategoryTimeline.standard}
-                      </p>
-                    )}
-                  </div>
-
-                  {formData.category && selectedCategoryTimeline && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-4 rounded-lg border border-brand-umber/20 bg-brand-beige/50">
-                        <input
-                          type="checkbox"
-                          id="express"
-                          checked={formData.isExpress}
-                          onChange={(e) => handleExpressChange(e.target.checked)}
-                          className="w-4 h-4 text-brand-teal border-brand-umber/30 rounded focus:ring-brand-teal"
-                        />
-                        <div className="flex-1">
-                          <label htmlFor="express" className="text-sm font-medium text-brand-umber cursor-pointer">
-                            Express Delivery
-                          </label>
-                          <p className="text-xs text-brand-umber/70 mt-1">
-                            {selectedCategoryTimeline.express} delivery (shorter timeframe, additional cost applies)
-                          </p>
-                        </div>
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitError && (
+                      <div className="rounded-lg border border-brand-coral/50 bg-brand-coral/10 px-4 py-3 text-sm text-brand-coral">
+                        {submitError}
                       </div>
+                    )}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="block text-sm font-medium text-brand-umber mb-2">
+                          Full Name
+                        </label>
+                        <Input
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="Your name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-brand-umber mb-2">
+                          Email
+                        </label>
+                        <Input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="your@email.com"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                      <div className="p-4 rounded-lg border border-brand-teal/30 bg-brand-jade/10">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium text-brand-umber">
-                              Estimated Timeline
-                            </p>
+                    <div>
+                      <label className="block text-sm font-medium text-brand-umber mb-2">
+                        Phone Number
+                      </label>
+                      <Input
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="+1 (555) 123-4567"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-brand-umber mb-2">
+                        Your Vision
+                      </label>
+                      <textarea
+                        value={formData.vision}
+                        onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
+                        placeholder="Describe your vision, inspiration, or any specific requirements..."
+                        className="w-full h-32 px-3 py-2 border border-brand-umber/20 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                        required
+                      />
+                    </div>
+
+                    <ImageUploader
+                      mode="multiple"
+                      onChange={handlePhotosChange}
+                      maxFiles={5}
+                      folder="bespoke-uploads"
+                      tags={["bespoke", "reference"]}
+                    />
+
+                    <div>
+                      <label className="block text-sm font-medium text-brand-umber mb-2">
+                        Product Category <span className="text-brand-coral">*</span>
+                      </label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                        className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                        required
+                      >
+                        <option value="">Select a category</option>
+                        {categories.map((cat) => (
+                          <option key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </option>
+                        ))}
+                      </select>
+                      {formData.category && selectedCategoryTimeline && (
+                        <p className="text-xs text-brand-umber/60 mt-1">
+                          Standard timeline for {categories.find((c) => c.value === formData.category)?.label}: {selectedCategoryTimeline.standard}
+                        </p>
+                      )}
+                    </div>
+
+                    {formData.category && selectedCategoryTimeline && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-4 rounded-lg border border-brand-umber/20 bg-brand-beige/50">
+                          <input
+                            type="checkbox"
+                            id="express"
+                            checked={formData.isExpress}
+                            onChange={(e) => handleExpressChange(e.target.checked)}
+                            className="w-4 h-4 text-brand-teal border-brand-umber/30 rounded focus:ring-brand-teal"
+                          />
+                          <div className="flex-1">
+                            <label htmlFor="express" className="text-sm font-medium text-brand-umber cursor-pointer">
+                              Express Delivery
+                            </label>
                             <p className="text-xs text-brand-umber/70 mt-1">
-                              {formData.isExpress ? "Express" : "Standard"} delivery
+                              {selectedCategoryTimeline.express} delivery (shorter timeframe, additional cost applies)
                             </p>
                           </div>
-                          <p className="text-lg font-heading text-brand-teal">
-                            {formData.isExpress
-                              ? selectedCategoryTimeline.express
-                              : selectedCategoryTimeline.standard}
-                          </p>
                         </div>
-                        {formData.isExpress && (
-                          <p className="text-xs text-brand-coral mt-2 flex items-center gap-1">
-                            <span className="font-semibold">*</span>
-                            <span>Express delivery incurs an additional 20% premium on the final price</span>
-                          </p>
-                        )}
+
+                        <div className="p-4 rounded-lg border border-brand-teal/30 bg-brand-jade/10">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium text-brand-umber">
+                                Estimated Timeline
+                              </p>
+                              <p className="text-xs text-brand-umber/70 mt-1">
+                                {formData.isExpress ? "Express" : "Standard"} delivery
+                              </p>
+                            </div>
+                            <p className="text-lg font-heading text-brand-teal">
+                              {formData.isExpress
+                                ? selectedCategoryTimeline.express
+                                : selectedCategoryTimeline.standard}
+                            </p>
+                          </div>
+                          {formData.isExpress && (
+                            <p className="text-xs text-brand-coral mt-2 flex items-center gap-1">
+                              <span className="font-semibold">*</span>
+                              <span>Express delivery incurs an additional 20% premium on the final price</span>
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Hidden input to store timeline value for form submission */}
+                        <input
+                          type="hidden"
+                          name="timeline"
+                          value={formData.timeline}
+                        />
                       </div>
+                    )}
 
-                      {/* Hidden input to store timeline value for form submission */}
-                      <input
-                        type="hidden"
-                        name="timeline"
-                        value={formData.timeline}
-                      />
+                    <div>
+                      <label className="block text-sm font-medium text-brand-umber mb-2">
+                        Budget Range
+                      </label>
+                      <select
+                        value={formData.budget}
+                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
+                        className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
+                        required
+                      >
+                        <option value="">Select budget range</option>
+                        <option value="500-1000">$500 - $1,000</option>
+                        <option value="1000-2500">$1,000 - $2,500</option>
+                        <option value="2500-5000">$2,500 - $5,000</option>
+                        <option value="5000+">$5,000+</option>
+                      </select>
+                      {formData.isExpress && (
+                        <p className="text-xs text-brand-umber/60 mt-1">
+                          Note: Express delivery adds 20% to your selected budget range
+                        </p>
+                      )}
                     </div>
-                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-brand-umber mb-2">
-                      Budget Range
-                    </label>
-                    <select
-                      value={formData.budget}
-                      onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                      className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                      required
+                    <Button
+                      type="submit"
+                      className="w-full h-12 text-lg"
+                      disabled={submitting}
                     >
-                      <option value="">Select budget range</option>
-                      <option value="500-1000">$500 - $1,000</option>
-                      <option value="1000-2500">$1,000 - $2,500</option>
-                      <option value="2500-5000">$2,500 - $5,000</option>
-                      <option value="5000+">$5,000+</option>
-                    </select>
-                    {formData.isExpress && (
-                      <p className="text-xs text-brand-umber/60 mt-1">
-                        Note: Express delivery adds 20% to your selected budget range
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-lg"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>Sending...</>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        Request Consultation
-                      </>
-                    )}
-                  </Button>
-                </form>
+                      {submitting ? (
+                        <>Sending...</>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-5 w-5" />
+                          Request Consultation
+                        </>
+                      )}
+                    </Button>
+                  </form>
                 )}
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
-
-
-      <Footer />
     </main>
   );
 }
