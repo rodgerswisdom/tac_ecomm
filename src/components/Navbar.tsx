@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings } from "lucide-react";
+import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings, X } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
@@ -14,6 +14,7 @@ import { CurrencyCode } from "@/lib/currency";
 import { useSession, signOut } from "next-auth/react";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetTrigger,
   SheetTitle,
@@ -30,10 +31,19 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 
 function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
-  const shopSubmenu = shopCategories.map((c) => ({
-    href: `/collections/${c.slug}`,
-    label: c.name,
-  }));
+  const seenCategorySlugs = new Set<string>();
+  const shopSubmenu = shopCategories
+    .filter((category) => {
+      if (seenCategorySlugs.has(category.slug)) {
+        return false;
+      }
+      seenCategorySlugs.add(category.slug);
+      return true;
+    })
+    .map((category) => ({
+      href: `/collections/${category.slug}`,
+      label: category.name,
+    }));
   return [
     { href: "/", label: "Home" },
     {
@@ -64,7 +74,6 @@ export const Navbar = () => {
   const cartCount = getCartItemCount();
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSignOut = async () => {
@@ -167,20 +176,6 @@ export const Navbar = () => {
 
   return (
     <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
-      {/* Mobile Search Overlay */}
-      {mobileSearchOpen && (
-        <div className="pointer-events-auto absolute inset-x-0 top-0 z-[60] flex items-center gap-2 bg-white/95 backdrop-blur-xl px-3 py-3 shadow-lg sm:hidden">
-          <SearchBar />
-          <button
-            onClick={() => setMobileSearchOpen(false)}
-            className="flex-shrink-0 rounded-full p-2 text-brand-umber/60 hover:text-brand-umber hover:bg-brand-beige/60 transition-colors"
-            aria-label="Close search"
-          >
-            <span className="sr-only">Close</span>
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-      )}
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -190,10 +185,14 @@ export const Navbar = () => {
         <div className="flex w-full items-center gap-2 sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing flex-shrink-0 inline-flex items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
+            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:inline-flex sm:gap-3 sm:text-xs"
           >
             Tac Accessories
           </Link>
+
+          <div className="flex-1 sm:hidden">
+            <SearchBar />
+          </div>
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
             {navLinks.map((link) => {
@@ -233,9 +232,9 @@ export const Navbar = () => {
                         onMouseLeave={handleDropdownMouseLeave}
                       >
                         <div className="space-y-2">
-                          {link.submenu.map((subLink) => (
+                          {link.submenu.map((subLink, index) => (
                             <Link
-                              key={subLink.href}
+                              key={`${link.href}-${subLink.href}-${index}`}
                               href={subLink.href}
                               className="block rounded-md px-3 py-2 text-sm text-brand-umber/80 transition-colors hover:bg-brand-jade/10 hover:text-brand-umber whitespace-nowrap"
                               onClick={() => setActiveDropdown(null)}
@@ -270,14 +269,13 @@ export const Navbar = () => {
           </div>
 
           <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
-            <div className="hidden xs:block sm:block">
+            <div className="hidden sm:block">
               {renderCurrencyControl()}
             </div>
-            <div className="lg:hidden">
+            <div className="hidden sm:inline-flex lg:hidden">
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setMobileSearchOpen(true)}
                 aria-label="Search"
               >
                 <Search className="h-5 w-5" />
@@ -296,6 +294,18 @@ export const Navbar = () => {
               </SheetTrigger>
               <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <div className="flex justify-end">
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-brand-umber/70 hover:text-brand-umber"
+                      aria-label="Close navigation menu"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </SheetClose>
+                </div>
                 <div className="mt-8 flex flex-col gap-4 text-brand-umber">
                   {sessionUser && (
                     <div className="mb-4 pb-4 border-b border-brand-umber/10">
@@ -341,9 +351,9 @@ export const Navbar = () => {
                         </Link>
                         {link.submenu && (
                           <div className="ml-4 mt-2 space-y-2">
-                            {link.submenu.map((subLink) => (
+                            {link.submenu.map((subLink, index) => (
                               <Link
-                                key={`mobile-${subLink.href}`}
+                                key={`mobile-${link.href}-${subLink.href}-${index}`}
                                 href={subLink.href}
                                 className="block rounded-md px-3 py-2 text-xs text-brand-umber/60 hover:text-brand-umber"
                               >
@@ -394,7 +404,7 @@ export const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative"
+              className="relative hidden sm:inline-flex"
               asChild
             >
               <Link href="/cart" aria-label="View cart">
@@ -413,7 +423,7 @@ export const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative h-9 w-9 rounded-full"
+                    className="relative hidden h-9 w-9 rounded-full sm:inline-flex"
                   >
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={sessionUser?.image || undefined} alt={userName || ''} />
@@ -458,7 +468,7 @@ export const Navbar = () => {
               <Button
                 size="sm"
                 variant="outline"
-                className="hidden lg:inline-flex text-[12px] px-4"
+                className="hidden lg:inline-flex px-4 text-[12px]"
                 asChild
               >
                 <Link href="/auth/signin">Sign In</Link>

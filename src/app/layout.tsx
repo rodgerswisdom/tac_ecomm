@@ -94,12 +94,12 @@ export default async function RootLayout({
             <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
               <NavbarCategoriesProvider categories={shopCategories}>
                 <FraudDetectionProvider>
-                <div className="flex flex-col min-h-screen">
-                  <main className="flex-grow">
-                      {children}
-                  </main>
-                  <Footer />
-                </div>
+                  <div className="flex flex-col min-h-screen">
+                      <main className="flex-grow">
+                          {children}
+                      </main>
+                      <Footer />
+                  </div>
                   <Toaster position="bottom-center" richColors />
                   <WhatsAppWidget />
                 </FraudDetectionProvider>
