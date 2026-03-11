@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { RotateCcw, RotateCw } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Product360ViewerProps {
@@ -22,8 +22,6 @@ export function Product360Viewer({
   const [startX, setStartX] = useState(0);
   const [rotation, setRotation] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAutoRotating, setIsAutoRotating] = useState(false);
-  const autoRotateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use gallery images if available, otherwise fallback
   const displayImages = images.length > 0 ? images : fallbackImage ? [fallbackImage] : [];
@@ -36,11 +34,6 @@ export function Product360Viewer({
   const handleStart = (clientX: number) => {
     setIsDragging(true);
     setStartX(clientX);
-    setIsAutoRotating(false);
-    if (autoRotateIntervalRef.current) {
-      clearInterval(autoRotateIntervalRef.current);
-      autoRotateIntervalRef.current = null;
-    }
   };
 
   const handleMove = (clientX: number) => {
@@ -94,32 +87,6 @@ export function Product360Viewer({
   const handleTouchEnd = () => {
     handleEnd();
   };
-
-  // Auto-rotate functionality
-  const toggleAutoRotate = () => {
-    if (isAutoRotating) {
-      setIsAutoRotating(false);
-      if (autoRotateIntervalRef.current) {
-        clearInterval(autoRotateIntervalRef.current);
-        autoRotateIntervalRef.current = null;
-      }
-    } else {
-      setIsAutoRotating(true);
-      autoRotateIntervalRef.current = setInterval(() => {
-        setCurrentIndex((prev) => (prev + 1) % totalImages);
-        setRotation((prev) => (prev + anglePerImage) % 360);
-      }, 100); // Rotate every 100ms
-    }
-  };
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (autoRotateIntervalRef.current) {
-        clearInterval(autoRotateIntervalRef.current);
-      }
-    };
-  }, []);
 
   // If we don't have enough images for 360 view, show static image
   if (totalImages <= 1) {
@@ -184,18 +151,9 @@ export function Product360Viewer({
             }}
             className="h-8 w-8 p-0"
             aria-label="Rotate left"
+            // aria-label="Previous image"
           >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={toggleAutoRotate}
-            className={`h-8 px-3 ${isAutoRotating ? "bg-brand-teal/20" : ""}`}
-            aria-label={isAutoRotating ? "Stop auto-rotate" : "Start auto-rotate"}
-          >
-            {isAutoRotating ? "Stop" : "Auto"}
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <Button
             type="button"
@@ -207,8 +165,9 @@ export function Product360Viewer({
             }}
             className="h-8 w-8 p-0"
             aria-label="Rotate right"
+            // aria-label="Next image"
           >
-            <RotateCw className="h-4 w-4" />
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
 
