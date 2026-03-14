@@ -92,7 +92,7 @@ export async function getUsersSummary({
     const where = whereConditions.length > 0 ? { AND: whereConditions } : undefined
 
     try {
-        const [usersData, total] = await prisma.$transaction([
+        const [usersData, total] = await Promise.all([
             (prisma.user as any).findMany({
                 where,
                 orderBy: { createdAt: "desc" },

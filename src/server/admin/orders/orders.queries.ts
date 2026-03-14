@@ -29,7 +29,7 @@ export async function getOrders(filters: OrderFilters = {}) {
 
     const where = whereFilters.length ? { AND: whereFilters } : undefined
 
-    const [orders, total] = await prisma.$transaction([
+    const [orders, total] = await Promise.all([
         prisma.order.findMany({
             where,
             orderBy: { createdAt: "desc" },

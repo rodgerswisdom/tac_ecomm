@@ -109,7 +109,7 @@ export async function getProductList(filters: ProductListFilters = {}) {
 
     const where = whereFilters.length ? { AND: whereFilters } : undefined
 
-    const [items, total] = await prisma.$transaction([
+    const [items, total] = await Promise.all([
         prisma.product.findMany({
             where,
             orderBy,

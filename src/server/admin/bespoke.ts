@@ -26,7 +26,7 @@ export async function getBespokeRequests(filters: BespokeFilters = {}) {
     ]
   }
 
-  const [requests, total] = await prisma.$transaction([
+  const [requests, total] = await Promise.all([
     prisma.bespokeRequest.findMany({
       where,
       orderBy: { createdAt: 'desc' },

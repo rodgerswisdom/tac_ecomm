@@ -102,11 +102,11 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
               />
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground">Selling price (USD)</span>
+                  <span className="text-xs font-medium text-muted-foreground">Selling price</span>
                   <Input name="price" type="number" step="0.01" defaultValue={product.price} required className="mt-1 block w-full" />
                 </label>
                 <label className="space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground">Market price (USD)</span>
+                  <span className="text-xs font-medium text-muted-foreground">Market price</span>
                   <p className="text-[11px] text-muted-foreground">Original price before discount. Leave blank if not on sale.</p>
                   <Input
                     name="comparePrice"

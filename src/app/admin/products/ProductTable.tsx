@@ -4,12 +4,13 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Checkbox } from "@/components/ui/checkbox"
-import { cn, formatPrice } from "@/lib/utils"
+import { cn } from "@/lib/utils"
 import { Trash2, Archive } from "lucide-react"
 import { bulkArchiveProducts, bulkDeleteProducts } from "@/server/admin/product-actions"
 import { RowActions } from "@/components/admin/row-actions"
 import { deleteProductAction } from "@/server/admin/product-actions"
 import { BulkActions } from "./BulkActions"
+import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 
 interface Product {
     id: string
@@ -148,7 +149,7 @@ export function ProductTable({ products }: ProductTableProps) {
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 overflow-hidden rounded-md border bg-muted shrink-0">
                                                     {image ? (
-                                                        <Image src={image.url} alt={product.name} width={40} height={40} className="object-cover h-full w-full" />
+                                                        <Image src={image.url} alt={product.name} width={40} height={40} className="object-cover h-full w-full" sizes="40px" />
                                                     ) : (
                                                         <div className="flex h-full w-full items-center justify-center text-[10px] uppercase font-bold text-muted-foreground">
                                                             {product.name.slice(0, 2)}
@@ -177,7 +178,7 @@ export function ProductTable({ products }: ProductTableProps) {
 
                                         <td className="px-4 py-4">
                                             <div className="font-medium">
-                                                {formatPrice(product.price, product.currency ?? "USD")}
+                                                <AdminFormattedPrice amount={product.price} amountCurrency={product.currency} />
                                             </div>
                                             {discount && (
                                                 <div className="text-[10px] font-bold text-emerald-600">

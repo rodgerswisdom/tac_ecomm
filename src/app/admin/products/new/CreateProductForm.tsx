@@ -399,7 +399,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <label htmlFor="price" className="text-sm font-semibold text-foreground">
                     <span className="flex items-center gap-1">
-                      Selling price (USD)
+                      Selling price
                       <RequiredMark />
                     </span>
                   </label>
@@ -419,7 +419,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <label htmlFor="comparePrice" className="text-xs font-medium text-muted-foreground">
-                      Market price (USD)
+                      Market price
                     </label>
                     {comparePriceSuggestion && !formValues.comparePrice ? (
                       <button
