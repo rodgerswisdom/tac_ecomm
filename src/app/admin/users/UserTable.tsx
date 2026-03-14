@@ -163,6 +163,54 @@ export function UserTable({ users }: UserTableProps) {
                                             <RowActions
                                                 viewHref={`/admin/users/${user.id}`}
                                                 editHref={`/admin/users/${user.id}`}
+                                                modalTitle="User Profile Summary"
+                                                viewContent={
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border border-brand-teal/20 bg-brand-teal/5 text-xl font-black text-brand-teal shrink-0">
+                                                                {getInitials(user.name, user.email)}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <h4 className="text-xl font-black text-brand-umber leading-tight">{user.name ?? "Customer"}</h4>
+                                                                <p className="text-sm font-bold text-slate-400">{user.email}</p>
+                                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-300 mt-1">{formatUserCode(user.id)}</p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                                                            <div>
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Account Role</p>
+                                                                <p className="text-sm font-black text-slate-900 capitalize italic">{user.role.toLowerCase()}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Member Since</p>
+                                                                <p className="text-sm font-bold text-slate-700">
+                                                                    {new Date(user.createdAt).toLocaleDateString(undefined, {
+                                                                        month: "long",
+                                                                        day: "numeric",
+                                                                        year: "numeric"
+                                                                    })}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 shadow-sm">
+                                                             <div className="flex flex-col gap-1">
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400">Order Activity</p>
+                                                                <p className="text-2xl font-black text-brand-teal">{user._count?.orders ?? 0} Orders</p>
+                                                             </div>
+                                                             <div className="flex flex-col items-end gap-1">
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400">Account Status</p>
+                                                                <span className={cn(
+                                                                    "inline-flex items-center rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest",
+                                                                    user.status === "Active" ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600 border border-slate-200"
+                                                                )}>
+                                                                    {user.status}
+                                                                </span>
+                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                }
                                                 deleteConfig={{
                                                     action: async (formData) => {
                                                         const result = await deleteUserAction(undefined, formData)

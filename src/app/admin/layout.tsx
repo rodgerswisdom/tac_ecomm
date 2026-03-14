@@ -23,14 +23,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
   const navItems: AdminNavItem[] = [
     { label: "Overview", href: "/admin/overview", icon: "overview" },
-    { label: "Products", href: "/admin/products", icon: "products" },
-    { label: "Categories", href: "/admin/categories", icon: "categories" },
+    { label: "Analytics", href: "/admin/analytics", icon: "analytics" },
     { label: "Orders", href: "/admin/orders", icon: "orders" },
     { label: "Bespoke requests", href: "/admin/bespoke", icon: "bespoke" },
+    { label: "Products", href: "/admin/products", icon: "products" },
+    { label: "Categories", href: "/admin/categories", icon: "categories" },
     { label: "Users", href: "/admin/users", icon: "users" },
     { label: "Discount Codes", href: "/admin/coupons", icon: "categories" },
     { label: "Communication", href: "/admin/communication", icon: "communication" },
-    { label: "Analytics", href: "/admin/analytics", icon: "analytics" },
     { label: "Settings", href: "/admin/settings", icon: "settings" },
   ]
 

@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Menu, Search, Settings, UserRound } from "lucide-react"
+import { Menu, PanelLeft, Search, Settings, UserRound } from "lucide-react"
 import { useCurrency } from "@/contexts/CurrencyContext"
 import { CurrencyCode } from "@/lib/currency"
 import { Button } from "@/components/ui/button"
@@ -68,31 +68,51 @@ export function AdminDashboardShell({
     <div className="min-h-screen flex flex-col" style={pageBackgroundStyle}>
       <header className="sticky top-0 z-50 border-b border-[#a17c4d] bg-[#d8b780] text-[#3f3324] shadow-sm">
         <div className="flex w-full items-center h-16">
-          <div className="flex items-center px-4 lg:px-6 h-full border-r border-[#3f3324]/15 shrink-0 lg:w-64">
-            <div className="flex items-center gap-3 min-w-0">
-              <button
-                type="button"
-                aria-label="Toggle navigation"
-                className="rounded-full border border-[#3f3324]/40 bg-transparent p-2 text-[#3f3324] transition hover:bg-[#e6cda3] lg:hidden"
-                onClick={toggleSidebar}
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <Link href="/admin/overview" className="flex items-center gap-3">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-xs font-bold text-[#2d3b34]">
-                  TAC
-                </span>
-                <span className="hidden flex-col leading-tight text-[#3f3324] lg:flex whitespace-nowrap overflow-hidden">
-                  <span className="text-sm font-semibold">TAC Admin</span>
-                  <span className="text-xs text-[#6e5a44]">Operations Console</span>
-                </span>
+          <div className={cn(
+            "flex items-center px-4 h-full border-r border-[#3f3324]/15 shrink-0 transition-all duration-300 relative",
+            isDesktopCollapsed ? "lg:w-20 lg:px-5 justify-center" : "lg:w-64 lg:px-6"
+          )}>
+            {/* Desktop Border Toggle - Header */}
+            <button
+              onClick={toggleSidebar}
+              className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-[60] h-7 w-7 items-center justify-center text-[#2d3b34]/40 hover:text-brand-teal transition-colors"
+              title={isDesktopCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            >
+              <PanelLeft className={cn("h-4 w-4 transition-transform", isDesktopCollapsed && "rotate-180")} />
+            </button>
+            <Link href="/admin/overview" className={cn(
+              "flex items-center gap-3 transition-opacity duration-300",
+              isDesktopCollapsed ? "lg:hidden" : "opacity-100"
+            )}>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-xs font-bold text-[#2d3b34]">
+                TAC
+              </span>
+              <span className="hidden flex-col leading-tight text-[#3f3324] lg:flex whitespace-nowrap">
+                <span className="text-sm font-semibold">TAC Admin</span>
+                <span className="text-xs text-[#6e5a44]">Operations Console</span>
+              </span>
+            </Link>
+
+            {isDesktopCollapsed && (
+              <Link href="/admin/overview" className="lg:flex hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#2d3b34]/15 bg-[#b8d3c2] text-xs font-bold text-[#2d3b34]">
+                TAC
               </Link>
-            </div>
+            )}
           </div>
 
           <div className="flex-1 px-4 lg:px-6 h-full">
             <div className="mx-auto h-full w-full max-w-7xl flex items-center justify-between gap-4">
-              <div className="flex items-center justify-start min-w-0 flex-1">
+              <div className="flex items-center justify-start min-w-0 flex-1 gap-4">
+                {/* Mobile Toggle Only */}
+                <button
+                  type="button"
+                  aria-label="Toggle navigation"
+                  className="lg:hidden rounded-xl border border-[#3f3324]/40 bg-transparent p-2 text-[#3f3324] transition hover:bg-[#e6cda3]"
+                  onClick={toggleSidebar}
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
+
                 <form
                   action="/admin/products"
                   className="hidden md:flex w-full max-w-md items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner"
@@ -215,20 +235,13 @@ export function AdminDashboardShell({
 
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-50 flex h-full flex-col border-r border-[#2d3b34]/10 bg-background/95 transition-all duration-300 ease-in-out lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:bg-background/70 lg:shadow-none",
+            "fixed inset-y-0 left-0 z-50 flex h-full flex-col bg-background/95 transition-all duration-300 ease-in-out lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] lg:bg-background/70 lg:shadow-none",
             isMobileSidebarOpen ? "translate-x-0 w-64" : "-translate-x-full lg:translate-x-0",
             isDesktopCollapsed ? "lg:w-20" : "lg:w-64"
           )}
         >
-          <div className="p-4 border-b border-[#2d3b34]/10 hidden lg:block">
-            <button
-              onClick={() => setIsDesktopCollapsed(!isDesktopCollapsed)}
-              className="flex items-center justify-center h-10 w-10 rounded-xl hover:bg-black/5 text-muted-foreground hover:text-foreground transition-all"
-              title={isDesktopCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-            >
-              <Menu className={cn("h-5 w-5 transition-transform", isDesktopCollapsed && "rotate-180")} />
-            </button>
-          </div>
+
+
 
           <div className="flex-1 overflow-y-auto px-4 py-6" onClick={closeMobileSidebar}>
             <SidebarNav items={navItems} condensed={isDesktopCollapsed} />

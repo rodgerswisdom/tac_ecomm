@@ -1,7 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from "react-dom"
-import { useState } from "react"
+import { useActionState, useState } from "react"
+import { useFormStatus } from "react-dom"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -29,7 +29,7 @@ export function StatusUpdateForm({
   statusOptions,
   paymentStatusOptions,
 }: StatusUpdateFormProps) {
-  const [state, formAction] = useFormState(updateOrderStatusAction, initialState)
+  const [state, formAction] = useActionState(updateOrderStatusAction, initialState)
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(defaultStatus)
 
   const showShippingFields =

@@ -17,13 +17,19 @@ interface Product {
     name: string
     sku: string
     price: number
-    comparePrice: number | null
     stock: number
     isActive: boolean
     isDraft: boolean
     currency: string | null
     category: { name: string | null } | null
     images: { url: string; alt?: string | null; order?: number | null }[]
+    productType: string
+    shortDescription: string | null
+    weight: number | null
+    dimensions: string | null
+    isFeatured: boolean
+    comparePrice: number | null
+    _count?: { orderItems: number; variants: number }
 }
 
 interface ProductTableProps {
@@ -200,6 +206,85 @@ export function ProductTable({ products }: ProductTableProps) {
                                             <RowActions
                                                 viewHref={`/admin/products/${product.id}`}
                                                 editHref={`/admin/products/${product.id}`}
+                                                modalTitle="Product Summary"
+                                                viewContent={
+                                                    <div className="space-y-6">
+                                                        <div className="flex items-start gap-4">
+                                                            <div className="h-24 w-24 overflow-hidden rounded-xl border border-slate-100 bg-slate-50 shrink-0 shadow-sm">
+                                                                {image ? (
+                                                                    <Image src={image.url} alt={product.name} width={96} height={96} className="object-cover h-full w-full" />
+                                                                ) : (
+                                                                    <div className="flex h-full w-full items-center justify-center text-xl font-black text-slate-200 uppercase">
+                                                                        {product.name.slice(0, 2)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h4 className="text-xl font-black text-brand-umber leading-tight truncate">{product.name}</h4>
+                                                                    {product.isFeatured && (
+                                                                        <span className="bg-brand-gold/20 text-brand-gold text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-brand-gold/10">Featured</span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400">{product.sku}</p>
+                                                                <div className="mt-3 flex items-center gap-3">
+                                                                    <div className="rounded-lg bg-brand-teal/5 px-3 py-1.5 border border-brand-teal/10">
+                                                                        <span className="text-2xl font-black text-brand-teal">
+                                                                            <AdminFormattedPrice amount={product.price} amountCurrency={product.currency} />
+                                                                        </span>
+                                                                    </div>
+                                                                    {discount && (
+                                                                        <div className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-100 italic">
+                                                                            {discount}% OFF
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {product.shortDescription && (
+                                                            <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-2">Short Preview</p>
+                                                                <p className="text-sm text-slate-600 italic">"{product.shortDescription}"</p>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
+                                                            <div>
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Product Type</p>
+                                                                <p className="text-xs font-black text-brand-umber tracking-wider">{product.productType.replace(/_/g, ' ')}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Commercial Impact</p>
+                                                                <p className="text-sm font-bold text-slate-700">{product._count?.orderItems ?? 0} total sales</p>
+                                                            </div>
+                                                            {(product.weight || product.dimensions) && (
+                                                                <div className="col-span-2 mt-2 pt-2 border-t border-slate-50">
+                                                                    <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Shipping Logistics</p>
+                                                                    <p className="text-xs text-slate-500">
+                                                                        {product.weight ? `${product.weight} kg` : ''} 
+                                                                        {product.weight && product.dimensions ? ' • ' : ''}
+                                                                        {product.dimensions ?? ''}
+                                                                    </p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                                                             <div className="flex flex-col gap-1">
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400">Inventory Status</p>
+                                                                <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap font-black text-xs uppercase tracking-wider", status.text)}>
+                                                                    <span className={cn("h-2 w-2 rounded-full", status.dot)} />
+                                                                    {status.label} ({product.stock} units)
+                                                                </span>
+                                                             </div>
+                                                             <div className="text-right flex flex-col items-end gap-1">
+                                                                <p className="text-[10px] font-black tracking-widest text-slate-400">Classification</p>
+                                                                <span className="text-sm font-bold text-slate-900">{product.category?.name ?? "Uncategorized"}</span>
+                                                             </div>
+                                                        </div>
+                                                    </div>
+                                                }
                                                 deleteConfig={{
                                                     action: deleteProductAction,
                                                     fields: { productId: product.id },

@@ -22,7 +22,7 @@ interface AnalyticsPageProps {
 export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps) {
   const query = await searchParams
   const daysParam = query?.days
-  const days = Math.max(Number(Array.isArray(daysParam) ? daysParam[0] : daysParam ?? "90") || 90, 7)
+  const days = Math.max(Number(Array.isArray(daysParam) ? daysParam[0] : daysParam ?? "30") || 30, 7)
 
   const analytics = await getDetailedAnalytics(days)
 
@@ -78,7 +78,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
       />
 
       {/* Strategic Insight Row */}
-      <div className="grid gap-6 lg:grid-cols-3 items-stretch">
+      <div className="grid gap-6 lg:grid-cols-4 items-stretch">
         <div className="lg:col-span-2">
           <SmartInsight
             revenueGrowth={analytics.comparisons.revenueGrowth}
@@ -89,13 +89,25 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         </div>
         <Card className="border-brand-teal/10 bg-slate-50/50 flex flex-col justify-center p-6">
           <div className="flex items-center gap-3 text-slate-500 mb-2">
-            <TrendingUp className="h-4 w-4" />
+            <TrendingUp className="h-4 w-4 text-brand-teal" />
             <span className="text-xs font-bold uppercase tracking-wider">Growth Trend</span>
           </div>
           <p className="text-2xl font-black text-brand-umber">
             {analytics.comparisons.revenueGrowth >= 0 ? "+" : ""}{analytics.comparisons.revenueGrowth.toFixed(1)}%
           </p>
           <p className="text-xs text-slate-400 mt-1">vs previous period</p>
+        </Card>
+        <Card className="border-brand-teal/10 bg-slate-50/50 flex flex-col justify-center p-6">
+          <div className="flex items-center gap-3 text-slate-500 mb-2">
+            <ShoppingBag className="h-4 w-4 text-brand-gold" />
+            <span className="text-xs font-bold uppercase tracking-wider">Abandoned Cart Rate</span>
+          </div>
+          <p className="text-2xl font-black text-brand-umber">
+            {analytics.abandonedCartMetrics.rate.toFixed(1)}%
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
+            Potential Loss: <AdminFormattedPrice amount={analytics.abandonedCartMetrics.potentialRevenue} />
+          </p>
         </Card>
       </div>
 

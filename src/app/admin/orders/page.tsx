@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
-import { CheckCircle, Clock, HelpCircle, Mail, Search, XCircle } from "lucide-react"
+import { CheckCircle, Clock, HelpCircle, Mail, Search, XCircle, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -187,18 +187,26 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                               order.status === "CONFIRMED"
                                 ? "#e7f0fa"
                                 : order.status === "PENDING"
-                                ? "#fef3c7"
-                                : order.status === "CANCELLED"
-                                ? "#fde2e1"
-                                : "#f3f4f6",
+                                  ? "#fef3c7"
+                                  : order.status === "CANCELLED"
+                                    ? "#fde2e1"
+                                    : order.status === "PROCESSING"
+                                      ? "#e7f0fa"
+                                      : order.status === "SHIPPED"
+                                        ? "#dcfce7"
+                                        : "#f3f4f6",
                             color:
                               order.status === "CONFIRMED"
                                 ? "#2563eb"
                                 : order.status === "PENDING"
-                                ? "#92400e"
-                                : order.status === "CANCELLED"
-                                ? "#b91c1c"
-                                : "#374151",
+                                  ? "#92400e"
+                                  : order.status === "CANCELLED"
+                                    ? "#b91c1c"
+                                    : order.status === "PROCESSING"
+                                      ? "#25baebff"
+                                      : order.status === "SHIPPED"
+                                        ? "#108a3cff"
+                                        : "#374151",
                           }}
                         >
                           {(() => {
@@ -209,6 +217,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                 return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
                               case "CANCELLED":
                                 return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Cancelled</>;
+                              case "PROCESSING":
+                                return <><Clock className="h-3 w-3 text-blue-500 inline mr-1" />Processing</>;
+                              case "SHIPPED":
+                                return <><Truck className="h-3 w-3 text-green-500 inline mr-1" />Shipped</>;
                               default:
                                 return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.status}</>;
                             }
@@ -228,6 +240,105 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           deleteButtonClassName="border border-border text-rose-500 hover:text-rose-600"
                           viewHref={detailHref}
                           editHref={`${detailHref}#status-update`}
+                          modalTitle={`Order ${order.orderNumber} Details`}
+                          viewContent={
+                            <div className="space-y-6">
+                              <div className="grid grid-cols-2 gap-6">
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer</p>
+                                  <p className="font-bold text-slate-900">{order.user?.name ?? 'Guest'}</p>
+                                  <p className="text-xs text-slate-500">{order.user?.email}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Payment Method</p>
+                                  <p className="font-bold text-slate-900 capitalize">{order.paymentMethod?.replace(/_/g, ' ') || 'Not specified'}</p>
+                                </div>
+                              </div>
+
+                              <div className="border border-slate-100 rounded-2xl overflow-hidden">
+                                <div className="bg-slate-50/50 px-4 py-2 border-b border-slate-100">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Order Items</p>
+                                </div>
+                                <div className="divide-y divide-slate-100 max-h-[200px] overflow-y-auto">
+                                  {order.items?.map((item: any) => (
+                                    <div key={item.id} className="px-4 py-3 flex items-center gap-4 text-sm">
+                                      <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
+                                        {item.product?.images?.[0] ? (
+                                          <img src={item.product.images[0].url} alt={item.product.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                          <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-slate-200 uppercase">
+                                            {item.product?.name?.slice(0, 2)}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0 mr-4">
+                                        <p className="font-bold text-slate-900 truncate">{item.product?.name}</p>
+                                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">Qty: {item.quantity} × <AdminFormattedPrice amount={item.price} amountCurrency={order.currency} /></p>
+                                      </div>
+                                      <p className="font-black text-slate-900 text-right">
+                                        <AdminFormattedPrice amount={item.price * item.quantity} amountCurrency={order.currency} />
+                                      </p>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="bg-slate-50/50 px-4 py-3 space-y-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-500">Subtotal</span>
+                                    <span className="font-bold"><AdminFormattedPrice amount={order.subtotal} amountCurrency={order.currency} /></span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-500">Shipping</span>
+                                    <span className="font-bold text-emerald-600">+ <AdminFormattedPrice amount={order.shipping} amountCurrency={order.currency} /></span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-slate-500">Tax</span>
+                                    <span className="font-bold text-amber-600">+ <AdminFormattedPrice amount={order.tax} amountCurrency={order.currency} /></span>
+                                  </div>
+                                  {order.subtotal + order.tax + order.shipping > order.total + 0.01 && (
+                                    <div className="flex justify-between">
+                                      <span className="text-slate-500 italic">Discount Applied</span>
+                                      <span className="font-bold text-rose-600">- <AdminFormattedPrice amount={(order.subtotal + order.tax + order.shipping) - order.total} amountCurrency={order.currency} /></span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between pt-2 border-t border-slate-200 text-base">
+                                    <span className="font-black text-brand-umber uppercase tracking-widest">Total</span>
+                                    <span className="font-black text-brand-umber"><AdminFormattedPrice amount={order.total} amountCurrency={order.currency} /></span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Shipping Destination</p>
+                                {order.shippingAddress ? (
+                                  <div className="text-sm text-slate-600 space-y-0.5">
+                                    <p className="font-semibold text-slate-800">{order.shippingAddress.address1}</p>
+                                    {order.shippingAddress.address2 && <p>{order.shippingAddress.address2}</p>}
+                                    <p>{order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}</p>
+                                    <p className="uppercase tracking-wide font-bold text-[10px] text-slate-400 mt-1">{order.shippingAddress.country}</p>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-slate-400 italic">No delivery address provided</p>
+                                )}
+                              </div>
+
+                              <div className="flex items-center justify-between pt-2">
+                                <div>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Fulfillment</p>
+                                  <StatusBadge
+                                    label={order.status.replace(/_/g, " ")}
+                                    variant={orderStatusVariantMap[order.status]}
+                                  />
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Payment</p>
+                                  <StatusBadge
+                                    label={order.paymentStatus.replace(/_/g, " ")}
+                                    variant={paymentStatusVariantMap[order.paymentStatus]}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          }
                           deleteConfig={{
                             action: deleteOrderAction,
                             fields: { orderId: order.id },

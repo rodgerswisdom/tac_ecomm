@@ -44,6 +44,12 @@ export async function getOrders(filters: OrderFilters = {}) {
             include: {
                 user: { select: { name: true, email: true } },
                 shippingAddress: true,
+                items: {
+                    include: {
+                        product: { select: { name: true, sku: true, images: { take: 1 } } }
+                    }
+                },
+                payments: { take: 1, orderBy: { createdAt: "desc" } },
                 _count: { select: { items: true } },
             },
         }),

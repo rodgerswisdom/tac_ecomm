@@ -189,7 +189,7 @@ export async function getDetailedAnalytics(days = 90) {
     const previousStart = new Date(start)
     previousStart.setDate(previousStart.getDate() - days)
 
-    const [orders, users, orderStatusGroups, paymentGroups, allPaidOrders, previousPayments, previousOrderCount] =
+    const [orders, users, orderStatusGroups, paymentGroups, allPaidOrders, previousPayments, previousOrderCount, abandonedCarts] =
         await Promise.all([
             prisma.order.findMany({
                 where: {
@@ -240,6 +240,16 @@ export async function getDetailedAnalytics(days = 90) {
                     createdAt: { gte: previousStart, lt: start },
                 },
             }),
+            prisma.cartItem.findMany({
+                where: {
+                    updatedAt: { gte: start }
+                },
+                include: {
+                    product: {
+                        select: { price: true }
+                    }
+                }
+            })
         ])
 
     // Build customer stats in JS to handle multi-currency totals correctly
@@ -393,9 +403,12 @@ export async function getDetailedAnalytics(days = 90) {
             orders: c._count._all,
         })),
         highValueCustomers: await (async () => {
-            const highValue = customerStats.filter(
-                (c) => (c._sum.total ?? 0) >= 2000
-            )
+            // Sort by total spend descending and take the top 5
+            const highValue = customerStats
+                .sort((a, b) => (b._sum.total ?? 0) - (a._sum.total ?? 0))
+                .slice(0, 5)
+                .filter(c => (c._sum.total ?? 0) > 0)
+
             if (highValue.length === 0) return []
             const users = await prisma.user.findMany({
                 where: { id: { in: highValue.map((c) => c.userId) } },
@@ -425,6 +438,19 @@ export async function getDetailedAnalytics(days = 90) {
             method: g.method ?? PaymentMethod.CREDIT_CARD,
             count: g._count._all,
         })),
+        abandonedCartMetrics: (() => {
+            const uniqueUsersInCart = new Set(abandonedCarts.map(c => c.userId))
+            const abandonedCount = uniqueUsersInCart.size
+            const potentialRevenue = abandonedCarts.reduce((sum, item) => sum + (item.quantity * (item.product?.price ?? 0)), 0)
+            const totalSessions = abandonedCount + orders.length
+            const abandonedRate = totalSessions > 0 ? (abandonedCount / totalSessions) * 100 : 0
+            
+            return {
+                count: abandonedCount,
+                potentialRevenue,
+                rate: abandonedRate
+            }
+        })(),
         comparisons: { revenueGrowth, orderGrowth, aovGrowth },
     }
 }

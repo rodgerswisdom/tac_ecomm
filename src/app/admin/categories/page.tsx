@@ -209,6 +209,50 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                       <RowActions
                         viewHref={`/admin/categories/${category.id}`}
                         editHref={`/admin/categories/${category.id}`}
+                        modalTitle="Category Summary"
+                        viewContent={
+                          <div className="space-y-6">
+                            <div className="flex items-center gap-4">
+                              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-brand-teal/20 bg-brand-teal/5 text-xl font-black text-brand-teal uppercase shrink-0">
+                                {getInitials(category.name)}
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="text-xl font-black text-brand-umber leading-tight">{category.name}</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{category.slug}</p>
+                              </div>
+                            </div>
+
+                            <div className="rounded-2xl bg-slate-50 p-6 border border-slate-100 italic">
+                               <p className="text-[10px] not-italic font-black tracking-widest text-slate-400 mb-2">Description</p>
+                               <p className="text-sm leading-relaxed text-slate-600">
+                                 {category.description || "No description set for this category."}
+                               </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Taxonomy Stats</p>
+                                <div className="space-y-1">
+                                    <p className="text-xl font-black text-brand-teal">{category._count.products} products</p>
+                                    <p className="text-xs font-bold text-brand-umber tracking-tight">{category._count.children} subcategories</p>
+                                </div>
+                              </div>
+                              <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Hierarchy Position</p>
+                                <p className="text-sm font-black text-slate-900 mt-1">
+                                  {category.parent?.name ? `Subcategory of ${category.parent.name}` : "Main Department"}
+                                </p>
+                                <p className="text-[10px] font-bold text-slate-400">Taxonomy level</p>
+                              </div>
+                            </div>
+
+                            {category.image && (
+                                <div className="rounded-2xl overflow-hidden border border-slate-100 h-32 bg-slate-50">
+                                    <img src={category.image} alt={category.name} className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                          </div>
+                        }
                         deleteConfig={{
                           action: deleteCategoryAction,
                           fields: { categoryId: category.id },

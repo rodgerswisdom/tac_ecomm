@@ -4,7 +4,7 @@ import { useState, useTransition, type ComponentProps } from "react"
 import Link from "next/link"
 import { Eye, PenSquare, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 interface DeleteConfig {
@@ -25,6 +25,8 @@ interface RowActionsProps {
   containerClassName?: string
   buttonClassName?: string
   deleteButtonClassName?: string
+  viewContent?: React.ReactNode
+  modalTitle?: string
 }
 
 export function RowActions({
@@ -36,6 +38,8 @@ export function RowActions({
   containerClassName,
   buttonClassName,
   deleteButtonClassName,
+  viewContent,
+  modalTitle,
 }: RowActionsProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -94,12 +98,35 @@ export function RowActions({
 
   return (
     <div className={cn("ml-auto flex w-fit items-center gap-1", containerClassName)}>
-      {viewHref ? (
+      {viewHref && !viewContent ? (
         <Button asChild variant="ghost" size="icon" className={cn("h-8 w-8", buttonClassName)} aria-label="View">
           <Link href={viewHref} {...viewLinkProps}>
             <Eye className="h-4 w-4" />
           </Link>
         </Button>
+      ) : viewContent ? (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className={cn("h-8 w-8", buttonClassName)} aria-label="View Quick Summary">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{modalTitle ?? "Quick View"}</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              {viewContent}
+            </div>
+            <DialogFooter className="mt-6">
+              {editHref && (
+                <Button asChild className="w-full bg-brand-teal hover:bg-brand-teal/90 text-white font-black uppercase tracking-widest py-6 rounded-2xl shadow-lg shadow-brand-teal/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
+                  <Link href={editHref}>Edit Details</Link>
+                </Button>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       ) : null}
       {editHref ? (
         <Button asChild variant="ghost" size="icon" className={cn("h-8 w-8", buttonClassName)} aria-label="Edit">
