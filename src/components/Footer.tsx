@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { patternAssets } from "@/lib/patterns";
 
 const footerLinks = [
@@ -33,6 +34,12 @@ const footerLinks = [
 ];
 
 export const Footer = () => {
+  const pathname = usePathname();
+
+  if (pathname?.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-brand-umber/50 bg-brand-umber text-white/85">
       <Image
