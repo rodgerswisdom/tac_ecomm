@@ -23,7 +23,7 @@ interface CollectionPageProps {
 }
 
 export default async function CollectionPage({ params }: CollectionPageProps) {
-  const slug = params.slug;
+  const { slug } = await params;
   if (RESERVED_SLUGS.has(slug)) {
     notFound();
   }

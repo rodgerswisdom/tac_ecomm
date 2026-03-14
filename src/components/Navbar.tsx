@@ -281,125 +281,137 @@ export const Navbar = () => {
                 <Search className="h-5 w-5" />
               </Button>
             </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden"
-                  aria-label="Open navigation menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <div className="flex justify-end">
-                  <SheetClose asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-brand-umber/70 hover:text-brand-umber"
-                      aria-label="Close navigation menu"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </SheetClose>
-                </div>
-                <div className="mt-8 flex flex-col gap-4 text-brand-umber">
-                  {sessionUser && (
-                    <div className="mb-4 pb-4 border-b border-brand-umber/10">
-                      <div className="flex items-center gap-3 px-4">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={sessionUser.image || undefined} alt={userName || ''} />
-                          <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
-                            {getUserInitials(userName, userEmail)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-brand-umber truncate">
-                            {userName || 'User'}
-                          </p>
-                          <p className="text-xs text-brand-umber/60 truncate">
-                            {userEmail}
-                          </p>
+
+            {hasMounted ? (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="lg:hidden"
+                    aria-label="Open navigation menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
+                  <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                  <div className="flex justify-end">
+                    <SheetClose asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-brand-umber/70 hover:text-brand-umber"
+                        aria-label="Close navigation menu"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </SheetClose>
+                  </div>
+                  <div className="mt-8 flex flex-col gap-4 text-brand-umber">
+                    {sessionUser && (
+                      <div className="mb-4 pb-4 border-b border-brand-umber/10">
+                        <div className="flex items-center gap-3 px-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={sessionUser.image || undefined} alt={userName || ""} />
+                            <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
+                              {getUserInitials(userName, userEmail)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-brand-umber truncate">
+                              {userName || "User"}
+                            </p>
+                            <p className="text-xs text-brand-umber/60 truncate">
+                              {userEmail}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  <span className="caps-spacing text-xs text-brand-umber/70">
-                    Menu
-                  </span>
-                  {navLinks.map((link) => {
-                    const isAnchor = link.href.includes("#");
-                    const isActive = isAnchor
-                      ? pathname === "/"
-                      : pathname === link.href || pathname.startsWith(link.href);
+                    )}
+                    <span className="caps-spacing text-xs text-brand-umber/70">
+                      Menu
+                    </span>
+                    {navLinks.map((link) => {
+                      const isAnchor = link.href.includes("#")
+                      const isActive = isAnchor
+                        ? pathname === "/"
+                        : pathname === link.href || pathname.startsWith(link.href)
 
-                    return (
-                      <div key={`mobile-${link.href}`}>
-                        <Link
-                          href={link.href}
-                          className={cn(
-                            "rounded-full px-4 py-3 text-sm font-medium transition-colors",
-                            isActive
-                              ? "bg-white text-brand-umber shadow-sm"
-                              : "text-brand-umber/70 hover:bg-white/60 hover:text-brand-umber"
+                      return (
+                        <div key={`mobile-${link.href}`}>
+                          <Link
+                            href={link.href}
+                            className={cn(
+                              "rounded-full px-4 py-3 text-sm font-medium transition-colors block",
+                              isActive
+                                ? "bg-white text-brand-umber shadow-sm"
+                                : "text-brand-umber/70 hover:bg-white/60 hover:text-brand-umber"
+                            )}
+                          >
+                            {link.label}
+                          </Link>
+                          {link.submenu && (
+                            <div className="ml-4 mt-2 space-y-2">
+                              {link.submenu.map((subLink, index) => (
+                                <Link
+                                  key={`mobile-${link.href}-${subLink.href}-${index}`}
+                                  href={subLink.href}
+                                  className="block rounded-md px-3 py-2 text-xs text-brand-umber/60 hover:text-brand-umber"
+                                >
+                                  {subLink.label}
+                                </Link>
+                              ))}
+                            </div>
                           )}
-                        >
-                          {link.label}
-                        </Link>
-                        {link.submenu && (
-                          <div className="ml-4 mt-2 space-y-2">
-                            {link.submenu.map((subLink, index) => (
-                              <Link
-                                key={`mobile-${link.href}-${subLink.href}-${index}`}
-                                href={subLink.href}
-                                className="block rounded-md px-3 py-2 text-xs text-brand-umber/60 hover:text-brand-umber"
-                              >
-                                {subLink.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {sessionUser ? (
-                    <>
+                        </div>
+                      )
+                    })}
+                    {sessionUser ? (
+                      <>
+                        <div className="pt-2 border-t border-brand-umber/10">
+                          <Link
+                            href="/profile"
+                            className={cn(
+                              "rounded-full px-4 py-3 text-sm font-medium transition-colors block",
+                              pathname === "/profile"
+                                ? "bg-white text-brand-umber shadow-sm"
+                                : "text-brand-umber/70 hover:bg-white/60 hover:text-brand-umber"
+                            )}
+                          >
+                            Profile
+                          </Link>
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full rounded-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    ) : (
                       <div className="pt-2 border-t border-brand-umber/10">
                         <Link
-                          href="/profile"
-                          className={cn(
-                            "rounded-full px-4 py-3 text-sm font-medium transition-colors block",
-                            pathname === "/profile"
-                              ? "bg-white text-brand-umber shadow-sm"
-                              : "text-brand-umber/70 hover:bg-white/60 hover:text-brand-umber"
-                          )}
+                          href="/auth/signin"
+                          className="rounded-full px-4 py-3 text-sm font-medium bg-brand-umber text-white hover:bg-brand-umber/90 transition-colors block text-center"
                         >
-                          Profile
+                          Sign In
                         </Link>
-                        <button
-                          onClick={handleSignOut}
-                          className="w-full rounded-full px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors text-left"
-                        >
-                          Sign Out
-                        </button>
                       </div>
-                    </>
-                  ) : (
-                    <div className="pt-2 border-t border-brand-umber/10">
-                      <Link
-                        href="/auth/signin"
-                        className="rounded-full px-4 py-3 text-sm font-medium bg-brand-umber text-white hover:bg-brand-umber/90 transition-colors block text-center"
-                      >
-                        Sign In
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </SheetContent>
-            </Sheet>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                aria-label="Open navigation menu"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            )}
 
             <Button
               variant="ghost"
@@ -409,7 +421,7 @@ export const Navbar = () => {
             >
               <Link href="/cart" aria-label="View cart">
                 <ShoppingBag className="h-5 w-5 transition-colors" />
-                {cartCount > 0 && (
+                {hasMounted && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand-gold text-[10px] font-semibold text-white transition-colors">
                     {cartCount}
                   </span>
@@ -417,7 +429,7 @@ export const Navbar = () => {
               </Link>
             </Button>
 
-            {isAuthenticated ? (
+            {hasMounted && isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -426,7 +438,7 @@ export const Navbar = () => {
                     className="relative hidden h-9 w-9 rounded-full sm:inline-flex"
                   >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={sessionUser?.image || undefined} alt={userName || ''} />
+                      <AvatarImage src={sessionUser?.image || undefined} alt={userName || ""} />
                       <AvatarFallback className="bg-brand-gold text-white text-xs font-semibold">
                         {getUserInitials(userName, userEmail)}
                       </AvatarFallback>
@@ -437,7 +449,7 @@ export const Navbar = () => {
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
-                        {userName || 'User'}
+                        {userName || "User"}
                       </p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {userEmail}
@@ -464,7 +476,7 @@ export const Navbar = () => {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            ) : (
+            ) : hasMounted && !isAuthenticated ? (
               <Button
                 size="sm"
                 variant="outline"
@@ -473,10 +485,12 @@ export const Navbar = () => {
               >
                 <Link href="/auth/signin">Sign In</Link>
               </Button>
+            ) : (
+              <div className="hidden lg:block w-20 h-9" />
             )}
           </div>
         </div>
       </motion.nav>
     </div>
-  );
-};
+  )
+}
