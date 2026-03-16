@@ -259,12 +259,12 @@ export function AdminDashboardShell({
           <footer className="mt-auto border-t border-[#3f3324]/10 bg-background px-4 py-6">
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-sm text-[#6e5a44] sm:flex-row">
               <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-4">
-                <p>
+                <p className="font-bold">
                   © {new Date().getFullYear()} Tac Accessories Admin. All rights reserved.
                 </p>
                 <span className="hidden h-3.5 w-px bg-[#3f3324]/20 sm:block" />
                 <p className="text-xs font-medium tracking-wide opacity-80 text-center sm:text-left">
-                  @ <a href="mailto:trulyhawona@gmail.com" className="font-bold text-[#3f3324] hover:underline" target="_blank" rel="noopener noreferrer">Simple&amp;Fascinating</a>
+                  @ <a href="mailto:trulyhawona@gmail.com" className="font-medium text-[#3f3324] hover:underline" target="_blank" rel="noopener noreferrer">Simple&amp;Fascinating</a>
                 </p>
               </div>
               <div className="flex gap-6">

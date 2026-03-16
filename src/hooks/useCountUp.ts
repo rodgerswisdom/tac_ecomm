@@ -2,25 +2,27 @@
 
 import { useEffect, useState } from "react"
 
-export function useCountUp(target: number, duration = 800) {
+export function useCountUp(target: number, duration = 800, decimals = 0) {
     const [value, setValue] = useState(0)
 
     useEffect(() => {
-        let start = 0
-        const increment = target / (duration / 16)
+        let startTimestamp: number | null = null
+        const endValue = target
 
-        const step = () => {
-            start += increment
-            if (start >= target) {
-                setValue(target)
-                return
+        const step = (timestamp: number) => {
+            if (!startTimestamp) startTimestamp = timestamp
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1)
+            
+            const currentValue = progress * endValue
+            setValue(Number(currentValue.toFixed(decimals)))
+
+            if (progress < 1) {
+                requestAnimationFrame(step)
             }
-            setValue(Math.floor(start))
-            requestAnimationFrame(step)
         }
 
         requestAnimationFrame(step)
-    }, [target, duration])
+    }, [target, duration, decimals])
 
     return value
 }

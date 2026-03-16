@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { BespokeRequestStatus } from "@prisma/client"
-import { Mail, Search } from "lucide-react"
+import { Mail, Search, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -154,10 +154,11 @@ export default async function AdminBespokePage({ searchParams }: BespokePageProp
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Mail className="h-3 w-3" />
                         <span>{req.email}</span>
+                      </div><br />
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Phone className="h-3 w-3" />
+                        <span>{req.phone}</span>
                       </div>
-                      {req.phone ? (
-                        <p className="text-xs text-muted-foreground">{req.phone}</p>
-                      ) : null}
                     </td>
                     <td className="px-4 py-4">{req.categoryLabel}</td>
                     <td className="px-4 py-4">{req.budget}</td>

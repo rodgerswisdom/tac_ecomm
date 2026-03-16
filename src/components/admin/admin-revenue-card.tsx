@@ -4,6 +4,7 @@ import { DollarSign } from "lucide-react"
 import { useCurrency } from "@/contexts/CurrencyContext"
 import { convertToUsd } from "@/lib/currency"
 import type { CurrencyCode } from "@/lib/currency"
+import { useCountUp } from "@/hooks/useCountUp"
 import { StatsCard } from "@/components/admin/stats-card"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 
@@ -22,14 +23,13 @@ interface AdminRevenueCardProps {
 }
 
 export function AdminRevenueCard({ revenue, revenueCurrency, subtitle }: AdminRevenueCardProps) {
-  const { formatPrice } = useCurrency()
-  const code = revenueCurrency ? CURRENCY_ALIAS[revenueCurrency.toUpperCase()] : undefined
-  const amountUsd = code ? convertToUsd(revenue, code) : revenue
+  const animatedRevenue = useCountUp(revenue, 1500, 2)
+  
   return (
     <StatsCard
       title="Total Revenue"
       value={revenue}
-      formattedValue={<AdminFormattedPrice amount={amountUsd} />}
+      formattedValue={<AdminFormattedPrice amount={animatedRevenue} amountCurrency={revenueCurrency} />}
       subtitle={subtitle ?? (revenue === 0 ? "Waiting for payments" : "Paid orders only")}
       icon={<DollarSign className="h-8 w-5 text-emerald-500" />}
     />

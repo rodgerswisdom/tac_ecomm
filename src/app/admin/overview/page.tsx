@@ -107,63 +107,63 @@ export default async function OverviewPage() {
           <CardTitle>Recent orders</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40">
+          <table className="hidden md:table w-full text-sm">
+            <thead className="bg-muted/40">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs">Order #</th>
+                <th className="px-4 py-3 text-left text-xs">Date</th>
+                <th className="px-4 py-3 text-left text-xs">Customer</th>
+                <th className="px-4 py-3 text-left text-xs">Payment Status</th>
+                <th className="px-4 py-3 text-right pr-8 text-xs">Total Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.recentOrders.length === 0 && (
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs">Order #</th>
-                  <th className="px-4 py-3 text-left text-xs">Date</th>
-                  <th className="px-4 py-3 text-left text-xs">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs">Payment Status</th>
-                  <th className="px-4 py-3 text-right pr-8 text-xs">Total Price</th>
+                  <td className="py-6 text-center text-muted-foreground">
+                    No recent orders found.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {metrics.recentOrders.length === 0 && (
-                  <tr>
-                    <td className="py-6 text-center text-muted-foreground">
-                      No recent orders found.
-                    </td>
-                  </tr>
-                )}
-                {metrics.recentOrders.map((order) => (
-                  <tr key={order.id} className="border-b last:border-b-0">
-                    <td className="px-4 py-3">{order.orderNumber}</td>
-                    <td className="px-4 py-3">
-                      {formatOrderDate(order.createdAt)};{""}
-                        <span className="text-xs text-gray-500">
-                          {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
-                        </span>
-                    </td>
-                    <td className="px-4 py-3">
-                        {order.user?.email ?? "Customer"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"
-                        style={{
-                          backgroundColor: order.paymentStatus === "COMPLETED" ? "#f0fdf4" : order.paymentStatus === "FAILED" ? "#fde2e1" : order.paymentStatus === "PENDING" ? "#fef3c7" : "#f3f4f6",
-                          color: order.paymentStatus === "COMPLETED" ? "#166534" : order.paymentStatus === "FAILED" ? "#b91c1c" : order.paymentStatus === "PENDING" ? "#92400e" : "#374151"
-                        }}
-                      >
-                        {(() => {
-                          switch (order.paymentStatus) {
-                            case "COMPLETED": return <><CheckCircle className="h-3 w-3 text-emerald-500 inline mr-1" />Paid</>;
-                            case "PENDING": return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
-                            case "FAILED": return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Failed</>;
-                            case "REFUNDED": return <><RotateCw className="h-3 w-3 text-blue-500 inline mr-1" />Refunded</>;
-                            case "CANCELLED": return <><Ban className="h-3 w-3 text-gray-500 inline mr-1" />Cancelled</>;
-                            default: return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.paymentStatus}</>;
-                          }
-                        })()}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-left pr-8 font-semibold">
-                      <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              )}
+              {metrics.recentOrders.map((order) => (
+                <tr key={order.id} className="border-b last:border-b-0">
+                  <td className="px-4 py-3">{order.orderNumber}</td>
+                  <td className="px-4 py-3">
+                    {formatOrderDate(order.createdAt)};{""}
+                    <span className="text-xs text-gray-500">
+                      {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {order.user?.email ?? "Customer"}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"
+                      style={{
+                        backgroundColor: order.paymentStatus === "COMPLETED" ? "#f0fdf4" : order.paymentStatus === "FAILED" ? "#fde2e1" : order.paymentStatus === "PENDING" ? "#fef3c7" : "#f3f4f6",
+                        color: order.paymentStatus === "COMPLETED" ? "#166534" : order.paymentStatus === "FAILED" ? "#b91c1c" : order.paymentStatus === "PENDING" ? "#92400e" : "#374151"
+                      }}
+                    >
+                      {(() => {
+                        switch (order.paymentStatus) {
+                          case "COMPLETED": return <><CheckCircle className="h-3 w-3 text-emerald-500 inline mr-1" />Paid</>;
+                          case "PENDING": return <><Clock className="h-3 w-3 text-amber-500 inline mr-1" />Pending</>;
+                          case "FAILED": return <><XCircle className="h-3 w-3 text-rose-500 inline mr-1" />Failed</>;
+                          case "REFUNDED": return <><RotateCw className="h-3 w-3 text-blue-500 inline mr-1" />Refunded</>;
+                          case "CANCELLED": return <><Ban className="h-3 w-3 text-gray-500 inline mr-1" />Cancelled</>;
+                          default: return <><HelpCircle className="h-3 w-3 text-slate-400 inline mr-1" />{order.paymentStatus}</>;
+                        }
+                      })()}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-left pr-8 font-semibold">
+                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
           {/* Mobile Card View */}
           <div className="md:hidden divide-y divide-slate-100">
