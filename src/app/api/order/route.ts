@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const countryTrim = String(country).trim()
 
   // Fetch cart for logged-in user from DB, else use clientCartItems for guest
-  let cartItems: Array<{ id: string; name: string; price: number; quantity: number }> = []
+  let cartItems: Array<{ id: string; variantId?: string | null; name: string; price: number; quantity: number }> = []
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
     }
     cartItems = user.cart.map(item => ({
       id: item.productId,
+      variantId: item.variantId ?? null,
       name: item.product.name,
       price: item.product.price,
       quantity: item.quantity
@@ -52,28 +53,49 @@ export async function POST(req: NextRequest) {
     if (items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
-    cartItems = items.map((item: { id: string | number; name?: string; price?: number; quantity?: number }) => ({
+    cartItems = items.map((item: { id: string | number; variantId?: string; name?: string; price?: number; quantity?: number }) => ({
       id: String(item.id),
+      variantId: item.variantId ?? null,
       name: item.name ?? '',
       price: Number(item.price) ?? 0,
       quantity: Number(item.quantity) || 1
     }))
   }
 
-  // Validate cart items: product exists, active, and in stock (product id as string)
+  // Validate cart items: product exists, active, and in stock
+  // When a variantId is present we check the variant's own stock; otherwise the product-level stock.
   let subtotal = 0
-  const validatedItems: Array<{ productId: string; quantity: number; price: number; name: string }> = []
+  const validatedItems: Array<{ productId: string; variantId?: string | null; quantity: number; price: number; name: string }> = []
   for (const item of cartItems) {
     const productId = String(item.id)
+    const qty = item.quantity || 1
     const product = await prisma.product.findUnique({ where: { id: productId } })
-    if (!product || !product.isActive || product.stock < (item.quantity || 1)) {
+    if (!product || !product.isActive) {
       return NextResponse.json({ error: `Product unavailable: ${item.name || item.id}` }, { status: 400 })
     }
+
+    if (item.variantId) {
+      // Variant-level stock check
+      const variant = await prisma.productVariant.findUnique({ where: { id: item.variantId } })
+      if (!variant || variant.stock < qty) {
+        return NextResponse.json({ error: `Variant unavailable or out of stock: ${product.name}` }, { status: 400 })
+      }
+      if (variant.productId !== product.id) {
+        return NextResponse.json({ error: 'Invalid variant for this product' }, { status: 400 })
+      }
+    } else {
+      // Product-level stock check
+      if (product.stock < qty) {
+        return NextResponse.json({ error: `Insufficient stock for: ${product.name}` }, { status: 400 })
+      }
+    }
+
     const price = product.price
-    subtotal += price * (item.quantity || 1)
+    subtotal += price * qty
     validatedItems.push({
       productId: product.id,
-      quantity: item.quantity || 1,
+      variantId: item.variantId ?? null,
+      quantity: qty,
       price,
       name: product.name
     })
@@ -181,8 +203,9 @@ export async function POST(req: NextRequest) {
       status: OrderStatus.PENDING,
       shippingMethod: shippingMethod ?? null,
       items: {
-        create: validatedItems.map(({ productId, quantity, price }) => ({
+        create: validatedItems.map(({ productId, variantId, quantity, price }) => ({
           productId,
+          variantId: variantId ?? undefined,
           quantity,
           price
         }))
@@ -253,6 +276,10 @@ export async function POST(req: NextRequest) {
       )
     }
   }
+
+  // Stock is decremented only when payment is confirmed:
+  // - Pesapal: callback/IPN handlers
+  // - Other methods: admin transition to CONFIRMED
 
   if (appliedCoupon) {
     try {

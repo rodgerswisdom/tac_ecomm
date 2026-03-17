@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
+import { decrementStock, restoreStock } from "@/lib/stock"
 
 // ─────────────────────────────────────────────
 // Schema
@@ -76,16 +77,46 @@ export async function updateOrderStatusAction(
         return { status: "error", message: "Order not found" }
     }
 
-    // Persist the update
-    await prisma.order.update({
-        where: { id: orderId },
-        data: {
-            status,
-            paymentStatus: paymentStatus ?? undefined,
-            trackingNumber: trackingNumber ?? undefined,
-            notes: note ?? undefined,
-        },
+    const didUpdate = await prisma.$transaction(async (tx) => {
+        const transition = await tx.order.updateMany({
+            where: { id: orderId, status: previousOrder.status },
+            data: {
+                status,
+                paymentStatus: paymentStatus ?? undefined,
+                trackingNumber: trackingNumber ?? undefined,
+                notes: note ?? undefined,
+            },
+        })
+
+        if (transition.count === 0) {
+            return false
+        }
+
+        const nowConfirmed = status === OrderStatus.CONFIRMED
+        const wasConfirmed = previousOrder.status === OrderStatus.CONFIRMED
+        const nowCancelledOrRefunded = status === OrderStatus.CANCELLED || status === OrderStatus.REFUNDED
+
+        if (!wasConfirmed && nowConfirmed) {
+            const items = await tx.orderItem.findMany({
+                where: { orderId },
+                select: { productId: true, variantId: true, quantity: true },
+            })
+            await decrementStock(items, tx)
+        }
+
+        if (wasConfirmed && nowCancelledOrRefunded) {
+            await restoreStock(orderId, tx)
+        }
+
+        return true
     })
+
+    if (!didUpdate) {
+        return {
+            status: "error",
+            message: "Order status changed by another request. Please refresh and try again.",
+        }
+    }
 
     revalidatePath("/admin/orders")
     revalidatePath(`/admin/orders/${orderId}`)

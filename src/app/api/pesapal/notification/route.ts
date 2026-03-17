@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { PaymentService, PaymentVerification, getPaymentConfig } from '@/lib/payments'
+import { decrementStock, restoreStock } from '@/lib/stock'
+import { deriveOrderStatus } from '@/lib/order-status'
 
 async function handleNotification(req: NextRequest) {
   const url = new URL(req.url)
@@ -54,6 +56,7 @@ async function handleNotification(req: NextRequest) {
       id: true,
       orderNumber: true,
       status: true,
+      paymentStatus: true,
       total: true,
       currency: true,
       payments: {
@@ -61,6 +64,9 @@ async function handleNotification(req: NextRequest) {
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: { id: true, currency: true }
+      },
+      items: {
+        select: { productId: true, variantId: true, quantity: true }
       }
     }
   })
@@ -75,40 +81,90 @@ async function handleNotification(req: NextRequest) {
   })
 
   const paymentStatus = mapPaymentStatus(verification.status)
-  const orderStatus = deriveOrderStatus(paymentStatus, order.status)
+  const nextOrderStatus = deriveOrderStatus(paymentStatus, order.status)
   const existingPayment = order.payments[0]
   const paymentCurrency = 'KES'
 
-  if (existingPayment) {
-    await prisma.payment.update({
-      where: { id: existingPayment.id },
-      data: {
-        status: paymentStatus,
-        transactionId: verification.transactionId ?? orderTrackingId,
-        amount: verification.amount ?? order.total,
-        currency: paymentCurrency,
-        gatewayResponse: JSON.stringify(verification)
-      }
-    })
-  } else {
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        method: PaymentMethod.PESAPAL,
-        status: paymentStatus,
-        transactionId: verification.transactionId ?? orderTrackingId,
-        amount: verification.amount ?? order.total,
-        currency: paymentCurrency,
-        gatewayResponse: JSON.stringify(verification)
-      }
-    })
-  }
+  await prisma.$transaction(async (tx) => {
+    if (existingPayment) {
+      await tx.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          status: paymentStatus,
+          transactionId: verification.transactionId ?? orderTrackingId,
+          amount: verification.amount ?? order.total,
+          currency: paymentCurrency,
+          gatewayResponse: JSON.stringify(verification)
+        }
+      })
+    } else {
+      await tx.payment.create({
+        data: {
+          orderId: order.id,
+          method: PaymentMethod.PESAPAL,
+          status: paymentStatus,
+          transactionId: verification.transactionId ?? orderTrackingId,
+          amount: verification.amount ?? order.total,
+          currency: paymentCurrency,
+          gatewayResponse: JSON.stringify(verification)
+        }
+      })
+    }
 
-  await prisma.order.update({
-    where: { id: order.id },
-    data: {
-      paymentStatus,
-      status: orderStatus
+    if (nextOrderStatus === order.status) {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus }
+      })
+      return
+    }
+
+    if (order.status === OrderStatus.PENDING && nextOrderStatus === OrderStatus.CONFIRMED) {
+      const transition = await tx.order.updateMany({
+        where: { id: order.id, status: OrderStatus.PENDING },
+        data: { paymentStatus, status: OrderStatus.CONFIRMED }
+      })
+
+      if (transition.count > 0) {
+        await decrementStock(order.items, tx)
+        return
+      }
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus }
+      })
+      return
+    }
+
+    if (order.status === OrderStatus.CONFIRMED && nextOrderStatus === OrderStatus.CANCELLED) {
+      const transition = await tx.order.updateMany({
+        where: { id: order.id, status: OrderStatus.CONFIRMED },
+        data: { paymentStatus, status: OrderStatus.CANCELLED }
+      })
+
+      if (transition.count > 0) {
+        await restoreStock(order.id, tx)
+        return
+      }
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus }
+      })
+      return
+    }
+
+    const transition = await tx.order.updateMany({
+      where: { id: order.id, status: order.status },
+      data: { paymentStatus, status: nextOrderStatus }
+    })
+
+    if (transition.count === 0) {
+      await tx.order.update({
+        where: { id: order.id },
+        data: { paymentStatus }
+      })
     }
   })
 
@@ -136,12 +192,3 @@ function mapPaymentStatus(status: PaymentVerification['status']): PaymentStatus 
   }
 }
 
-function deriveOrderStatus(nextPaymentStatus: PaymentStatus, currentStatus: OrderStatus): OrderStatus {
-  if (nextPaymentStatus === PaymentStatus.COMPLETED) {
-    return OrderStatus.CONFIRMED
-  }
-  if (nextPaymentStatus === PaymentStatus.CANCELLED || nextPaymentStatus === PaymentStatus.FAILED) {
-    return OrderStatus.CANCELLED
-  }
-  return currentStatus
-}
