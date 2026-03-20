@@ -72,6 +72,7 @@ export const Navbar = () => {
   const navLinks = buildNavLinks(shopCategories);
   const { currency, setCurrency } = useCurrency();
   const cartCount = getCartItemCount();
+  const isCheckoutPage = pathname.startsWith("/checkout");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -190,9 +191,11 @@ export const Navbar = () => {
             Tac Accessories
           </Link>
 
-          <div className="flex-1 sm:hidden">
-            <SearchBar />
-          </div>
+          {!isCheckoutPage && (
+            <div className="flex-1 sm:hidden">
+              <SearchBar />
+            </div>
+          )}
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
             {navLinks.map((link) => {
@@ -264,9 +267,11 @@ export const Navbar = () => {
             })}
           </div>
 
-          <div className="hidden lg:block flex-1 max-w-md mx-4">
-            <SearchBar />
-          </div>
+          {!isCheckoutPage && (
+            <div className="hidden lg:block flex-1 max-w-md mx-4">
+              <SearchBar />
+            </div>
+          )}
 
           <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
             <div className="hidden sm:block">

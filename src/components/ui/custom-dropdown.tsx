@@ -104,14 +104,14 @@ export function CustomDropdown({
           isOpen && "ring-2 ring-brand-teal/30"
         )}
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex min-w-0 items-center space-x-2">
           {selectedOption?.icon && (
             <span className="text-brand-beige/80">
               {selectedOption.icon}
             </span>
           )}
           <span className={cn(
-            "text-brand-beige",
+            "truncate text-brand-beige",
             !selectedOption && "text-brand-beige/70"
           )}>
             {selectedOption?.label || placeholder}

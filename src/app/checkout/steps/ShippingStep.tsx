@@ -68,7 +68,7 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
       <p className="text-sm text-muted-foreground mb-4">
         Enter your shipping details. If you have a saved address, it is shown below — you can edit any field.
       </p>
-      <form className="grid grid-cols-1 md:grid-cols-2 gap-4" onSubmit={handleSubmit} autoComplete="on">
+      <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={handleSubmit} autoComplete="on">
         <Input name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} required disabled={loading} />
         <Input name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} required disabled={loading} />
         <Input name="email" type="email" placeholder="Email" value={form.email} onChange={handleChange} required className="md:col-span-2" disabled={loading} />
@@ -77,7 +77,7 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
         <Input name="city" placeholder="City" value={form.city} onChange={handleChange} required disabled={loading} />
         <Input name="state" placeholder="State" value={form.state} onChange={handleChange} required disabled={loading} />
         <Input name="zipCode" placeholder="ZIP / Postal Code" value={form.zipCode} onChange={handleChange} required disabled={loading} />
-        <div className="md:col-span-2">
+        <div className="col-span-1 md:col-span-2">
           <CustomDropdown
             options={countries.map(c => ({ value: c.code, label: c.name }))}
             value={form.country}
@@ -89,7 +89,7 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
           />
         </div>
         {canSaveAddress && (
-          <div className="col-span-2 flex items-center gap-2">
+          <div className="col-span-1 flex items-center gap-2 md:col-span-2">
             <Checkbox
               id="save-address"
               checked={saveForNextTime}
@@ -101,9 +101,9 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
             </label>
           </div>
         )}
-        {error && <div className="text-red-500 col-span-2">{error}</div>}
-        <div className="col-span-2 flex justify-end">
-          <Button type="submit" disabled={loading || saving}>
+        {error && <div className="col-span-1 text-red-500 md:col-span-2">{error}</div>}
+        <div className="col-span-1 flex justify-stretch md:col-span-2 md:justify-end">
+          <Button type="submit" disabled={loading || saving} className="w-full md:w-auto">
             {loading ? "Loading..." : saving ? "Saving..." : "Continue to Delivery"}
           </Button>
         </div>
