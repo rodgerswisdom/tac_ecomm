@@ -98,7 +98,7 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
               )}
             </div>
 
-            <form action="/admin/users" className="relative min-w-[220px] max-w-sm">
+            <form action="/admin/users" className="relative w-full min-w-0 sm:min-w-[220px] sm:max-w-sm">
               <input type="hidden" name="page" value="1" />
               <input type="hidden" name="pageSize" value={currentPageSize} />
               {repeatBuyers && <input type="hidden" name="repeatBuyers" value="true" />}

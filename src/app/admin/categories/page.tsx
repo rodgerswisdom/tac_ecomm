@@ -120,7 +120,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
         }
         toolbar={
           <div className="flex w-full flex-wrap items-center gap-3">
-            <form action="/admin/categories" method="get" className="relative flex-1 min-w-[200px] max-w-sm">
+            <form action="/admin/categories" method="get" className="relative w-full flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="category-search"
@@ -144,7 +144,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                 <Link href={clearSearchHref}>Clear</Link>
               </Button>
             ) : null}
-            <div className="ml-auto flex items-center gap-2 text-xs font-medium text-muted-foreground">
+            <div className="flex w-full items-center gap-2 text-xs font-medium text-muted-foreground sm:ml-auto sm:w-auto">
               <span>Sort by</span>
               <AutoSubmitSelect
                 action="/admin/categories"

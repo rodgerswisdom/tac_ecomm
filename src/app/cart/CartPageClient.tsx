@@ -84,19 +84,25 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
               </div>
             </div>
 
-            <div className="relative flex items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+            <div className="relative rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 sm:px-6 sm:py-4">
+              <div className="flex items-center justify-center sm:hidden">
                 <ProgressPill step={1} label="Cart" active />
-                <ProgressPill step={2} label="Details" active={false} />
-                <ProgressPill step={3} label="Confirmation" active={false} />
               </div>
-              <Image
-                src={patternAssets.adinkraGlyph}
-                alt="Adinkra"
-                width={36}
-                height={36}
-                className="hidden opacity-60 md:block"
-              />
+
+              <div className="hidden sm:flex items-center justify-between gap-3 overflow-x-auto">
+                <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+                  <ProgressPill step={1} label="Cart" active />
+                  <ProgressPill step={2} label="Details" active={false} />
+                  <ProgressPill step={3} label="Confirmation" active={false} />
+                </div>
+                <Image
+                  src={patternAssets.adinkraGlyph}
+                  alt="Adinkra"
+                  width={36}
+                  height={36}
+                  className="hidden opacity-60 md:block"
+                />
+              </div>
             </div>
           </motion.div>
 

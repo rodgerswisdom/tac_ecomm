@@ -103,7 +103,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
         ]}
         toolbar={
           <div className="flex w-full flex-wrap items-end gap-4">
-            <form className="relative flex-1 min-w-[200px] max-w-sm" action="/admin/orders">
+            <form className="relative w-full flex-1 min-w-0 sm:min-w-[200px] sm:max-w-sm" action="/admin/orders">
               <input type="hidden" name="pageSize" value={pageSize} />
               <input type="hidden" name="page" value="1" />
               <input type="hidden" name="status" value={status ?? ""} />
@@ -119,7 +119,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                 className="h-10 rounded-full border border-transparent bg-white/95 pl-12 pr-6 text-base text-[#4a2b28] shadow-[0_14px_36px_rgba(74,43,40,0.18)] focus-visible:border-transparent focus-visible:ring-2 focus-visible:ring-[#4b9286]/35"
               />
             </form>
-            <div className="ml-auto flex items-center gap-3 min-w-[200px] max-w-[260px]">
+            <div className="flex w-full items-center gap-3 sm:ml-auto sm:w-auto sm:min-w-[200px] sm:max-w-[260px]">
               <p className="text-xs font-medium text-muted-foreground whitespace-nowrap">Status</p>
               <AutoSubmitSelect
                 action="/admin/orders"

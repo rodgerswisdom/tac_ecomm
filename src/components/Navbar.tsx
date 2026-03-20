@@ -186,13 +186,13 @@ export const Navbar = () => {
         <div className="flex w-full items-center gap-2 sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:inline-flex sm:gap-3 sm:text-xs"
+            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber lg:inline-flex lg:gap-3 lg:text-xs"
           >
             Tac Accessories
           </Link>
 
           {!isCheckoutPage && (
-            <div className="flex-1 sm:hidden">
+            <div className="flex-1 lg:hidden">
               <SearchBar />
             </div>
           )}
@@ -274,10 +274,10 @@ export const Navbar = () => {
           )}
 
           <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
-            <div className="hidden sm:block">
+            <div className="hidden lg:block">
               {renderCurrencyControl()}
             </div>
-            <div className="hidden sm:inline-flex lg:hidden">
+            <div className="hidden">
               <Button
                 variant="ghost"
                 size="icon"
@@ -334,9 +334,6 @@ export const Navbar = () => {
                         </div>
                       </div>
                     )}
-                    <span className="caps-spacing text-xs text-brand-umber/70">
-                      Menu
-                    </span>
                     {navLinks.map((link) => {
                       const isAnchor = link.href.includes("#")
                       const isActive = isAnchor
@@ -421,7 +418,7 @@ export const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative hidden sm:inline-flex"
+              className="relative hidden lg:inline-flex"
               asChild
             >
               <Link href="/cart" aria-label="View cart">
@@ -440,7 +437,7 @@ export const Navbar = () => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="relative hidden h-9 w-9 rounded-full sm:inline-flex"
+                    className="relative hidden h-9 w-9 rounded-full lg:inline-flex"
                   >
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={sessionUser?.image || undefined} alt={userName || ""} />

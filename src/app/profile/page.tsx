@@ -258,7 +258,7 @@ export default function ProfilePage() {
                   Loading address…
                 </div>
               ) : editingAddress || !shipping ? (
-                <form onSubmit={handleSaveAddress} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleSaveAddress} className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <Input name="firstName" placeholder="First Name" value={addressForm.firstName} onChange={e => setAddressForm(f => ({ ...f, firstName: e.target.value }))} required />
                   <Input name="lastName" placeholder="Last Name" value={addressForm.lastName} onChange={e => setAddressForm(f => ({ ...f, lastName: e.target.value }))} required />
                   <Input name="email" type="email" placeholder="Email" value={addressForm.email} onChange={e => setAddressForm(f => ({ ...f, email: e.target.value }))} required className="md:col-span-2" />
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                   <Input name="city" placeholder="City" value={addressForm.city} onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))} required />
                   <Input name="state" placeholder="State" value={addressForm.state} onChange={e => setAddressForm(f => ({ ...f, state: e.target.value }))} required />
                   <Input name="zipCode" placeholder="ZIP / Postal Code" value={addressForm.zipCode} onChange={e => setAddressForm(f => ({ ...f, zipCode: e.target.value }))} required />
-                  <div className="md:col-span-2">
+                  <div className="col-span-1 md:col-span-2">
                     <CustomDropdown
                       options={countries.map(c => ({ value: c.code, label: c.name }))}
                       value={addressForm.country}
@@ -277,8 +277,8 @@ export default function ProfilePage() {
                       className="w-full"
                     />
                   </div>
-                  {addressError && <p className="text-red-500 text-sm col-span-2">{addressError}</p>}
-                  <div className="col-span-2 flex gap-2">
+                  {addressError && <p className="col-span-1 text-sm text-red-500 md:col-span-2">{addressError}</p>}
+                  <div className="col-span-1 flex flex-col gap-2 md:col-span-2 md:flex-row">
                     <Button type="submit" disabled={savingAddress}>
                       {savingAddress ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                       Save address
