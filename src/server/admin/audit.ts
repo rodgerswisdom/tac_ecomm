@@ -8,6 +8,7 @@ export type AuditAction =
     | "UPDATE_ORDER_STATUS" | "DELETE_ORDER"
     | "UPDATE_USER_ROLE" | "DELETE_USER"
     | "CREATE_COUPON" | "UPDATE_COUPON" | "DELETE_COUPON" | "TOGGLE_COUPON"
+    | "UPDATE_SETTINGS" | "TOGGLE_PRODUCT_FLAG"
 
 export async function logAdminAction(
     action: AuditAction,

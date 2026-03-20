@@ -8,7 +8,7 @@ import Link from "next/link"
 
 export default async function SettingsPage() {
   await requireAdmin()
-  const { globalSettings } = await getAdminSettingsData()
+  const data = await getAdminSettingsData()
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -46,7 +46,13 @@ export default async function SettingsPage() {
         </aside>
 
         <main className="flex-1">
-          <GlobalSettingsForm initialData={globalSettings} />
+          <GlobalSettingsForm 
+            initialData={data.globalSettings} 
+            featuredProducts={data.featuredProducts}
+            bespokeProducts={data.bespokeProducts}
+            corporateGiftProducts={data.corporateGiftProducts}
+            auditLogs={data.auditLogs}
+          />
         </main>
       </div>
     </div>

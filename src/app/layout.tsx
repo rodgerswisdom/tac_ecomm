@@ -66,6 +66,9 @@ import { initializeRates } from "@/lib/currency";
 import { Footer } from "@/components/Footer";
 import { getNavShopCategories } from "@/server/storefront/collections";
 import { NavbarCategoriesProvider } from "@/contexts/NavbarCategoriesContext";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { MaintenanceMode } from "@/components/MaintenanceMode";
 
 export default async function RootLayout({
   children,
@@ -82,6 +85,13 @@ export default async function RootLayout({
   // Initialize server-side rates
   initializeRates(settings.usdToKesRate, settings.usdToEurRate);
 
+  // Check Maintenance Mode
+  const session = await auth();
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isAdmin = session?.user?.role === "ADMIN";
+  const isMaintenanceActive = settings.maintenanceMode && !isAdmin && !pathname.startsWith('/admin') && !pathname.startsWith('/auth');
+
   const shopCategories = await getNavShopCategories();
 
   return (
@@ -96,9 +106,9 @@ export default async function RootLayout({
                 <FraudDetectionProvider>
                   <div className="flex flex-col min-h-screen">
                       <main className="flex-grow">
-                          {children}
+                          {isMaintenanceActive ? <MaintenanceMode /> : children}
                       </main>
-                      <Footer />
+                      {!isMaintenanceActive && <Footer />}
                   </div>
                   <Toaster position="bottom-center" richColors />
                   <WhatsAppWidget />
