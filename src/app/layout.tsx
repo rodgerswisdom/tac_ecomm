@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   title: "Tac Accessories — The African Gallery Experience",
   description:
     "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. Tac Accessories blends African modernism with luxury minimalism.",
+  icons: {
+    icon: [],
+    apple: [],
+    shortcut: [],
+  },
   metadataBase: new URL("https://tacaccessories.com"),
   alternates: {
     canonical: "/",
@@ -67,22 +72,42 @@ import { Footer } from "@/components/Footer";
 import { getNavShopCategories } from "@/server/storefront/collections";
 import { NavbarCategoriesProvider } from "@/contexts/NavbarCategoriesContext";
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Fetch global settings for currency rates
-  const settings = await (prisma as any).settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  let settings: { usdToKesRate: number; usdToEurRate: number } = {
+    usdToKesRate: 129,
+    usdToEurRate: 0.92,
+  };
+  let shopCategories: Awaited<ReturnType<typeof getNavShopCategories>> = [];
 
-  // Initialize server-side rates
+  try {
+    // Fetch global settings for currency rates.
+    const dbSettings = await (prisma as any).settings.upsert({
+      where: { id: "singleton" },
+      update: {},
+      create: { id: "singleton" },
+    });
+    settings = {
+      usdToKesRate: dbSettings.usdToKesRate,
+      usdToEurRate: dbSettings.usdToEurRate,
+    };
+  } catch (error) {
+    console.error("Failed to load settings in layout, using defaults:", error);
+  }
+
+  try {
+    shopCategories = await getNavShopCategories();
+  } catch (error) {
+    console.error("Failed to load nav categories, using empty list:", error);
+  }
+
+  // Initialize server-side rates.
   initializeRates(settings.usdToKesRate, settings.usdToEurRate);
-
-  const shopCategories = await getNavShopCategories();
 
   return (
     <html lang="en">

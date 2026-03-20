@@ -2,8 +2,8 @@
 
 import { useState, useEffect, memo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -30,6 +30,7 @@ const ProductCardComponent = ({
   onComparisonToggle,
   onQuickView,
 }: ProductCardProps) => {
+  const router = useRouter();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -61,6 +62,10 @@ const ProductCardComponent = ({
       price: product.price,
       image: product.image,
     });
+  };
+
+  const handleOpenProduct = () => {
+    router.push(`/products/${product.slug}`);
   };
 
   // Check if user is logged in (simple check for now)
@@ -163,7 +168,7 @@ const ProductCardComponent = ({
 
   return (
     <motion.div
-      className="group relative"
+      className="group relative cursor-pointer"
       onMouseEnter={() => {
         setIsHovered(true);
         setShowQuickAdd(true);
@@ -172,13 +177,24 @@ const ProductCardComponent = ({
         setIsHovered(false);
         setShowQuickAdd(false);
       }}
+      onClick={handleOpenProduct}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOpenProduct();
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open ${product.name}`}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <Card className="relative h-full overflow-hidden bg-white transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,43,40,0.12)]">
         {/* Image Container */}
         <div className="relative aspect-square w-full overflow-hidden rounded-t-xl bg-brand-beige/30">
-          <Link href={`/products/${product.slug}`} className="block h-full w-full">
+          <div className="block h-full w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={isHovered && secondaryImage !== product.image ? "secondary" : "primary"}
@@ -202,7 +218,7 @@ const ProductCardComponent = ({
                 />
               </motion.div>
             </AnimatePresence>
-          </Link>
+          </div>
 
           {/* Sale Badge - Top Left */}
           {product.originalPrice && discountPercent > 0 && (
@@ -225,7 +241,10 @@ const ProductCardComponent = ({
           {/* Comparison Checkbox - Bottom Left */}
           {onComparisonToggle && (
             <div className="absolute bottom-3 left-3 z-10">
-              <label className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm transition-all hover:bg-white">
+              <label
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm transition-all hover:bg-white"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   checked={isSelectedForComparison}
@@ -335,12 +354,9 @@ const ProductCardComponent = ({
 
             {/* Product Name - Prominent */}
             <CardTitle className="line-clamp-2 text-left text-sm sm:text-base font-semibold leading-tight">
-              <Link
-                href={`/products/${product.slug}`}
-                className="transition-colors hover:text-brand-teal"
-              >
+              <span className="transition-colors group-hover:text-brand-teal">
                 {product.name}
-              </Link>
+              </span>
             </CardTitle>
 
             {/* Rating Stars */}

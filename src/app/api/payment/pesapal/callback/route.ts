@@ -35,10 +35,18 @@ export async function GET(req: NextRequest) {
     where: { id: orderId },
     select: {
       id: true,
+      userId: true,
       orderNumber: true,
       status: true,
+      paymentStatus: true,
       total: true,
       currency: true,
+      items: {
+        select: {
+          productId: true,
+          quantity: true
+        }
+      },
       payments: {
         where: { method: PaymentMethod.PESAPAL },
         orderBy: { createdAt: 'desc' },
@@ -64,38 +72,59 @@ export async function GET(req: NextRequest) {
     const orderStatus = deriveOrderStatus(paymentStatus, order.status)
     const existingPayment = order.payments[0]
     const paymentCurrency = 'KES'
+    const shouldRestock =
+      (paymentStatus === PaymentStatus.CANCELLED || paymentStatus === PaymentStatus.FAILED) &&
+      order.paymentStatus !== PaymentStatus.CANCELLED &&
+      order.paymentStatus !== PaymentStatus.FAILED
 
-    if (existingPayment) {
-      await prisma.payment.update({
-        where: { id: existingPayment.id },
-        data: {
-          status: paymentStatus,
-          transactionId: verification.transactionId ?? orderTrackingId,
-          amount: verification.amount ?? order.total,
-          currency: paymentCurrency,
-          gatewayResponse: JSON.stringify(verification)
-        }
-      })
-    } else {
-      await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          method: PaymentMethod.PESAPAL,
-          status: paymentStatus,
-          transactionId: verification.transactionId ?? orderTrackingId,
-          amount: verification.amount ?? order.total,
-          currency: paymentCurrency,
-          gatewayResponse: JSON.stringify(verification)
-        }
-      })
-    }
-
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus,
-        status: orderStatus
+    await prisma.$transaction(async (tx) => {
+      if (existingPayment) {
+        await tx.payment.update({
+          where: { id: existingPayment.id },
+          data: {
+            status: paymentStatus,
+            transactionId: verification.transactionId ?? orderTrackingId,
+            amount: verification.amount ?? order.total,
+            currency: paymentCurrency,
+            gatewayResponse: JSON.stringify(verification)
+          }
+        })
+      } else {
+        await tx.payment.create({
+          data: {
+            orderId: order.id,
+            method: PaymentMethod.PESAPAL,
+            status: paymentStatus,
+            transactionId: verification.transactionId ?? orderTrackingId,
+            amount: verification.amount ?? order.total,
+            currency: paymentCurrency,
+            gatewayResponse: JSON.stringify(verification)
+          }
+        })
       }
+
+      if (shouldRestock) {
+        for (const item of order.items) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } }
+          })
+        }
+      }
+
+      if (paymentStatus === PaymentStatus.COMPLETED) {
+        await tx.cartItem.deleteMany({
+          where: { userId: order.userId }
+        })
+      }
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentStatus,
+          status: orderStatus
+        }
+      })
     })
 
     const redirectStatus = verification.success

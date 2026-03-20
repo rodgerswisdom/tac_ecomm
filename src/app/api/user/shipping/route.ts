@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { passesCsrfProtection } from '@/lib/request-security'
 
 // GET /api/user/shipping - get saved default shipping address for logged-in user
 export async function GET() {
@@ -38,6 +39,10 @@ export async function GET() {
 
 // POST /api/user/shipping - save default shipping address (create or update)
 export async function POST(req: NextRequest) {
+  if (!passesCsrfProtection(req)) {
+    return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 })
+  }
+
   const session = await auth()
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })

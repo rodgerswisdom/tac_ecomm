@@ -5,8 +5,20 @@ import { auth } from '@/lib/auth'
 import { EmailService, getEmailConfig } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 import { convertFromUsd, CurrencyCode } from '@/lib/currency'
+import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
+
+type ValidatedOrderItem = {
+  productId: string
+  quantity: number
+  price: number
+  name: string
+}
 
 export async function POST(req: NextRequest) {
+  if (!passesCsrfProtection(req)) {
+    return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 })
+  }
+
   const session = await auth()
   const body = await req.json()
   const {
@@ -23,6 +35,14 @@ export async function POST(req: NextRequest) {
     }
   }
   const emailTrim = String(email).trim()
+  const rateLimit = checkCheckoutRateLimit(req, emailTrim)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many checkout attempts. Please wait and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } }
+    )
+  }
+
   const firstNameTrim = String(firstName).trim()
   const lastNameTrim = String(lastName).trim()
   const addressTrim = String(address).trim()
@@ -62,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   // Validate cart items: product exists, active, and in stock (product id as string)
   let subtotal = 0
-  const validatedItems: Array<{ productId: string; quantity: number; price: number; name: string }> = []
+  const validatedItems: ValidatedOrderItem[] = []
   for (const item of cartItems) {
     const productId = String(item.id)
     const product = await prisma.product.findUnique({ where: { id: productId } })
@@ -150,45 +170,80 @@ export async function POST(req: NextRequest) {
     update: {}
   })
 
-  // Create shipping address
-  const shippingAddress = await prisma.address.create({
-    data: {
-      firstName: firstNameTrim,
-      lastName: lastNameTrim,
-      address1: addressTrim,
-      city: cityTrim,
-      state: stateTrim,
-      postalCode: zipCodeTrim,
-      country: countryTrim,
-      phone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : null,
-      userId: user.id
-    }
-  })
-
-  // Create order
-  const order = await prisma.order.create({
-    data: {
-      orderNumber,
-      shippingAddressId: shippingAddress.id,
-      userId: user.id,
-      subtotal,
-      tax,
-      shipping,
-      total,
-      currency: orderCurrency,
-      paymentMethod: normalizedPaymentMethod ?? undefined,
-      paymentStatus: PaymentStatus.PENDING,
-      status: OrderStatus.PENDING,
-      shippingMethod: shippingMethod ?? null,
-      items: {
-        create: validatedItems.map(({ productId, quantity, price }) => ({
-          productId,
-          quantity,
-          price
-        }))
+  let order
+  try {
+    order = await prisma.$transaction(async (tx) => {
+      for (const item of validatedItems) {
+        // Reserve stock atomically to prevent overselling when concurrent checkouts happen.
+        const updateResult = await tx.product.updateMany({
+          where: { id: item.productId, isActive: true, stock: { gte: item.quantity } },
+          data: { stock: { decrement: item.quantity } }
+        })
+        if (updateResult.count !== 1) {
+          throw new Error(`INSUFFICIENT_STOCK:${item.productId}`)
+        }
       }
+
+      const shippingAddress = await tx.address.create({
+        data: {
+          firstName: firstNameTrim,
+          lastName: lastNameTrim,
+          address1: addressTrim,
+          city: cityTrim,
+          state: stateTrim,
+          postalCode: zipCodeTrim,
+          country: countryTrim,
+          phone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : null,
+          userId: user.id
+        }
+      })
+
+      const createdOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          shippingAddressId: shippingAddress.id,
+          userId: user.id,
+          subtotal,
+          tax,
+          shipping,
+          total,
+          currency: orderCurrency,
+          paymentMethod: normalizedPaymentMethod ?? undefined,
+          paymentStatus: PaymentStatus.PENDING,
+          status: OrderStatus.PENDING,
+          shippingMethod: shippingMethod ?? null,
+          items: {
+            create: validatedItems.map(({ productId, quantity, price }) => ({
+              productId,
+              quantity,
+              price
+            }))
+          }
+        }
+      })
+
+      if (appliedCoupon) {
+        await tx.coupon.update({
+          where: { id: appliedCoupon.id },
+          data: { usedCount: { increment: 1 } }
+        })
+      }
+
+      return createdOrder
+    })
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('INSUFFICIENT_STOCK:')) {
+      return NextResponse.json(
+        { error: 'One or more items are no longer in stock. Please review your cart and try again.' },
+        { status: 409 }
+      )
     }
-  })
+    console.error('Order transaction failed:', error)
+    return NextResponse.json(
+      { error: 'Unable to create order at this time. Please try again.' },
+      { status: 500 }
+    )
+  }
 
   let redirectUrl: string | undefined
 
@@ -239,29 +294,26 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Pesapal payment failed'
       console.error('Pesapal payment initialization failed', error)
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: OrderStatus.CANCELLED,
-          paymentStatus: PaymentStatus.FAILED
+      await prisma.$transaction(async (tx) => {
+        for (const item of validatedItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } }
+          })
         }
+        await tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.CANCELLED,
+            paymentStatus: PaymentStatus.FAILED
+          }
+        })
       })
 
       return NextResponse.json(
         { error: message || 'Failed to initiate Pesapal payment. Please try again.' },
         { status: 502 }
       )
-    }
-  }
-
-  if (appliedCoupon) {
-    try {
-      await prisma.coupon.update({
-        where: { id: appliedCoupon.id },
-        data: { usedCount: { increment: 1 } }
-      })
-    } catch {
-      // Ignore coupon update errors
     }
   }
 

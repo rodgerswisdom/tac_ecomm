@@ -2,6 +2,8 @@ import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
 import { ClearCartClient } from "./ClearCartClient"
+import { PaymentStatus } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
 type StatusKind = "success" | "pending" | "cancelled" | "failed"
 
@@ -37,16 +39,31 @@ type ThankYouPageProps = {
   }
 }
 
-export default function ThankYouPage({ searchParams }: ThankYouPageProps) {
+export default async function ThankYouPage({ searchParams }: ThankYouPageProps) {
   const status = (searchParams.status as StatusKind | undefined) ?? "pending"
   const copy = statusCopy[status] ?? statusCopy.pending
   const orderId = searchParams.orderId
   const trackingId = searchParams.trackingId
   const message = searchParams.message
+  let isPaymentCompleted = copy.tone === "success"
+
+  if (!isPaymentCompleted && orderId) {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { paymentStatus: true }
+      })
+      if (order?.paymentStatus === PaymentStatus.COMPLETED) {
+        isPaymentCompleted = true
+      }
+    } catch (error) {
+      console.error("Failed to read order status on thank-you page:", error)
+    }
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
-      <ClearCartClient active={copy.tone === "success"} />
+      <ClearCartClient active={isPaymentCompleted} />
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col items-center gap-10 text-center">

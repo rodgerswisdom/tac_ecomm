@@ -12,10 +12,15 @@ import { CollectionPageClient } from "./CollectionPageClient";
 const RESERVED_SLUGS = new Set(["matching-sets", "corporate-gifts"]);
 
 export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
-  const slugs = await getCollectionSlugs();
-  return slugs
-    .filter((slug) => !RESERVED_SLUGS.has(slug))
-    .map((slug) => ({ slug }));
+  try {
+    const slugs = await getCollectionSlugs();
+    return slugs
+      .filter((slug) => !RESERVED_SLUGS.has(slug))
+      .map((slug) => ({ slug }));
+  } catch (error) {
+    console.error("Failed to generate collection static params:", error);
+    return [];
+  }
 }
 
 interface CollectionPageProps {
