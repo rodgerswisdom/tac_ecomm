@@ -149,7 +149,7 @@ export default function PrivacyPolicyPage() {
                 <li>
                   Social Media Platforms: We integrate with social media platforms that may collect information about your interactions with their features on our service.
                 </li>
-                <li>Other Third-Party Services: PesaPal for Payments, Keverd for Security</li>
+                <li>Other Third-Party Services: PesaPal for Payments</li>
               </ul>
               <p className="text-muted-foreground leading-relaxed">
                 These third-party service providers have their own privacy policies addressing how they use such information.

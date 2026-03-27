@@ -4,7 +4,6 @@ import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
-import { FraudDetectionProvider } from "@/components/FraudDetectionProvider";
 import { Toaster } from "sonner";
 import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
@@ -129,16 +128,14 @@ export default async function RootLayout({
           <CartProvider>
             <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
               <NavbarCategoriesProvider categories={shopCategories}>
-                <FraudDetectionProvider>
-                  <div className="flex flex-col min-h-screen">
-                      <main className="flex-grow">
-                          {isMaintenanceActive ? <MaintenanceMode /> : children}
-                      </main>
-                      {!isMaintenanceActive && <Footer />}
-                  </div>
-                  <Toaster position="bottom-center" richColors />
-                  <WhatsAppWidget />
-                </FraudDetectionProvider>
+                <div className="flex flex-col min-h-screen">
+                    <main className="flex-grow">
+                        {isMaintenanceActive ? <MaintenanceMode /> : children}
+                    </main>
+                    {!isMaintenanceActive && <Footer />}
+                </div>
+                <Toaster position="bottom-center" richColors />
+                <WhatsAppWidget />
               </NavbarCategoriesProvider>
             </CurrencyProvider>
           </CartProvider>
