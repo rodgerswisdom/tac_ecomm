@@ -21,7 +21,7 @@ export function PaymentStatusWatcherClient({
 
     let cancelled = false;
     let attempts = 0;
-    const maxAttempts = 20;
+    const maxAttempts = 150;
 
     const poll = async () => {
       if (cancelled || attempts >= maxAttempts) return;
@@ -37,7 +37,10 @@ export function PaymentStatusWatcherClient({
         if (!res.ok) return;
 
         const data = await res.json();
-        if (data?.paymentStatus === "COMPLETED") {
+        if (
+          data?.paymentStatus === "COMPLETED" ||
+          data?.payment?.status === "COMPLETED"
+        ) {
           clearCart();
           window.location.reload();
           return;
