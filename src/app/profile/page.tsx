@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { User, Mail, Calendar, Shield, ArrowLeft, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { CustomDropdown } from '@/components/ui/custom-dropdown'
 import { countries } from '@/data/countries'
+import { Navbar } from '@/components/Navbar'
 
 type ShippingFormData = {
   firstName: string
@@ -23,6 +24,22 @@ type ShippingFormData = {
   state: string
   zipCode: string
   country: string
+}
+
+type UserOrder = {
+  id: string
+  orderNumber: string
+  status: string
+  paymentStatus: string
+  total: number
+  currency: string
+  createdAt: string
+  items: Array<{
+    quantity: number
+    product: {
+      name: string
+    } | null
+  }>
 }
 
 const emptyShipping: ShippingFormData = {
@@ -46,6 +63,8 @@ export default function ProfilePage() {
   const [addressForm, setAddressForm] = useState<ShippingFormData>(emptyShipping)
   const [savingAddress, setSavingAddress] = useState(false)
   const [addressError, setAddressError] = useState('')
+  const [orders, setOrders] = useState<UserOrder[]>([])
+  const [ordersLoading, setOrdersLoading] = useState(true)
 
   useEffect(() => {
     if (!session?.user) return
@@ -61,6 +80,22 @@ export default function ProfilePage() {
         }
       })
       .finally(() => setShippingLoading(false))
+  }, [session?.user])
+
+  useEffect(() => {
+    if (!session?.user) return
+    setOrdersLoading(true)
+    fetch('/api/orders?limit=12')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data.orders)) {
+          setOrders(data.orders)
+        } else {
+          setOrders([])
+        }
+      })
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false))
   }, [session?.user])
 
   async function handleSaveAddress(e: React.FormEvent) {
@@ -133,17 +168,13 @@ export default function ProfilePage() {
     }
   }
 
+  const formatOrderDate = (isoDate: string) =>
+    new Date(isoDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="relative z-10 p-4">
-        <Link href="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-          <span>Back to Store</span>
-        </Link>
-      </nav>
-
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Navbar />
+      <div className="gallery-container nav-clearance section-spacing max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -160,7 +191,7 @@ export default function ProfilePage() {
           {/* Profile Card */}
           <Card className="afro-card bg-background/80 backdrop-blur-sm border-border/50 shadow-xl mb-6">
             <CardHeader>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Avatar className="h-24 w-24 border-4 border-primary/20">
                   <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-emerald text-white text-2xl font-bold">
@@ -181,7 +212,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="w-full sm:w-auto">
                   <Link href="/profile/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
@@ -309,7 +340,7 @@ export default function ProfilePage() {
               <CardDescription>Manage your account and preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Button asChild variant="outline" className="h-auto py-4 justify-start">
                   <Link href="/profile/settings">
                     <Settings className="mr-2 h-5 w-5" />
@@ -320,7 +351,7 @@ export default function ProfilePage() {
                   </Link>
                 </Button>
                 <Button asChild variant="outline" className="h-auto py-4 justify-start">
-                  <Link href="/orders">
+                  <Link href="#order-history">
                     <Calendar className="mr-2 h-5 w-5" />
                     <div className="text-left">
                       <div className="font-medium">Order History</div>
@@ -329,6 +360,56 @@ export default function ProfilePage() {
                   </Link>
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card id="order-history" className="afro-card mt-6 bg-background/80 backdrop-blur-sm border-border/50 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-primary" />
+                Order History
+              </CardTitle>
+              <CardDescription>Your recent orders and payment status</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading orders…
+                </div>
+              ) : orders.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You have no orders yet.</p>
+              ) : (
+                <div className="space-y-3">
+                  {orders.map((order) => {
+                    const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0)
+                    const firstItemName = order.items[0]?.product?.name ?? 'Item'
+                    return (
+                      <div key={order.id} className="rounded-lg border border-border/60 bg-muted/20 p-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold">{order.orderNumber}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatOrderDate(order.createdAt)} · {itemCount} item{itemCount === 1 ? '' : 's'}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {firstItemName}
+                              {order.items.length > 1 ? ` +${order.items.length - 1} more` : ''}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold">
+                              {order.currency} {Number(order.total).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Order: {order.status}</p>
+                            <p className="text-xs text-muted-foreground">Payment: {order.paymentStatus}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

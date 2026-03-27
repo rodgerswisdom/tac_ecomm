@@ -26,6 +26,11 @@ export const metadata: Metadata = {
   title: "Tac Accessories — The African Gallery Experience",
   description:
     "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. Tac Accessories blends African modernism with luxury minimalism.",
+  icons: {
+    icon: [],
+    apple: [],
+    shortcut: [],
+  },
   metadataBase: new URL("https://tacaccessories.com"),
   alternates: {
     canonical: "/",
@@ -70,19 +75,43 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { MaintenanceMode } from "@/components/MaintenanceMode";
 
+export const dynamic = "force-dynamic";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Fetch global settings for currency rates
-  const settings = await (prisma as any).settings.upsert({
-    where: { id: "singleton" },
-    update: {},
-    create: { id: "singleton" },
-  });
+  let settings: { usdToKesRate: number; usdToEurRate: number; maintenanceMode: boolean } = {
+    usdToKesRate: 129,
+    usdToEurRate: 0.92,
+    maintenanceMode: false,
+  };
+  let shopCategories: Awaited<ReturnType<typeof getNavShopCategories>> = [];
 
-  // Initialize server-side rates
+  try {
+    // Fetch global settings for currency rates.
+    const dbSettings = await (prisma as any).settings.upsert({
+      where: { id: "singleton" },
+      update: {},
+      create: { id: "singleton" },
+    });
+    settings = {
+      usdToKesRate: dbSettings.usdToKesRate,
+      usdToEurRate: dbSettings.usdToEurRate,
+      maintenanceMode: Boolean((dbSettings as any).maintenanceMode),
+    };
+  } catch (error) {
+    console.error("Failed to load settings in layout, using defaults:", error);
+  }
+
+  try {
+    shopCategories = await getNavShopCategories();
+  } catch (error) {
+    console.error("Failed to load nav categories, using empty list:", error);
+  }
+
+  // Initialize server-side rates.
   initializeRates(settings.usdToKesRate, settings.usdToEurRate);
 
   // Check Maintenance Mode
@@ -91,9 +120,6 @@ export default async function RootLayout({
   const pathname = headersList.get("x-pathname") || "";
   const isAdmin = session?.user?.role === "ADMIN";
   const isMaintenanceActive = settings.maintenanceMode && !isAdmin && !pathname.startsWith('/admin') && !pathname.startsWith('/auth');
-
-  const shopCategories = await getNavShopCategories();
-
   return (
     <html lang="en">
       <body

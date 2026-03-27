@@ -2,8 +2,8 @@
 
 import { useState, useEffect, memo } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -16,6 +16,8 @@ import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ProductCardData } from "@/types/product";
+import { cn } from "@/lib/utils";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -30,6 +32,7 @@ const ProductCardComponent = ({
   onComparisonToggle,
   onQuickView,
 }: ProductCardProps) => {
+  const router = useRouter();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
   const [isWishlisted, setIsWishlisted] = useState(false);
@@ -39,9 +42,8 @@ const ProductCardComponent = ({
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   // Calculate discount percentage
-  const discountPercent = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
 
   // Get secondary image for hover swap (use second gallery image or first if only one)
   const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
@@ -61,6 +63,10 @@ const ProductCardComponent = ({
       price: product.price,
       image: product.image,
     });
+  };
+
+  const handleOpenProduct = () => {
+    router.push(`/products/${product.slug}`);
   };
 
   // Check if user is logged in (simple check for now)
@@ -163,7 +169,7 @@ const ProductCardComponent = ({
 
   return (
     <motion.div
-      className="group relative"
+      className="group relative cursor-pointer"
       onMouseEnter={() => {
         setIsHovered(true);
         setShowQuickAdd(true);
@@ -172,13 +178,24 @@ const ProductCardComponent = ({
         setIsHovered(false);
         setShowQuickAdd(false);
       }}
+      onClick={handleOpenProduct}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOpenProduct();
+        }
+      }}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open ${product.name}`}
       whileHover={{ y: -4 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <Card className="relative h-full overflow-hidden bg-white transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,43,40,0.12)]">
         {/* Image Container */}
         <div className="relative aspect-square w-full overflow-hidden rounded-t-xl bg-brand-beige/30">
-          <Link href={`/products/${product.slug}`} className="block h-full w-full">
+          <div className="block h-full w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={isHovered && secondaryImage !== product.image ? "secondary" : "primary"}
@@ -202,30 +219,29 @@ const ProductCardComponent = ({
                 />
               </motion.div>
             </AnimatePresence>
-          </Link>
+          </div>
 
           {/* Sale Badge - Top Left */}
-          {product.originalPrice && discountPercent > 0 && (
-            <div className="absolute left-3 top-3 z-10">
+          <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+            {isDiscounted && (
               <span className="rounded-md bg-brand-coral px-2 py-1 text-xs font-semibold text-white shadow-md">
                 -{discountPercent}%
               </span>
-            </div>
-          )}
-
-          {/* Best Seller Badge */}
-          {product.isBestSeller && (
-            <div className="absolute left-3 top-3 z-10">
+            )}
+            {product.isBestSeller && (
               <span className="rounded-md bg-brand-teal px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
                 Best Seller
               </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Comparison Checkbox - Bottom Left */}
           {onComparisonToggle && (
             <div className="absolute bottom-3 left-3 z-10">
-              <label className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm transition-all hover:bg-white">
+              <label
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-2.5 py-1.5 backdrop-blur-sm transition-all hover:bg-white sm:px-3"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <input
                   type="checkbox"
                   checked={isSelectedForComparison}
@@ -236,7 +252,7 @@ const ProductCardComponent = ({
                   onClick={(e) => e.stopPropagation()}
                   className="h-4 w-4 rounded border-brand-teal text-brand-teal focus:ring-brand-teal"
                 />
-                <span className="text-xs font-medium text-brand-umber">Compare</span>
+                <span className="hidden text-xs font-medium text-brand-umber sm:inline">Compare</span>
               </label>
             </div>
           )}
@@ -302,7 +318,10 @@ const ProductCardComponent = ({
 
           {/* Image Pagination Dots - Bottom Center */}
           {product.gallery.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+            <div className={cn(
+              "absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 gap-1.5 sm:flex",
+              onComparisonToggle && "sm:bottom-2"
+            )}>
               {product.gallery.slice(0, 5).map((_, index) => (
                 <button
                   key={index}
@@ -325,7 +344,7 @@ const ProductCardComponent = ({
 
         {/* Product Information */}
         <CardContent className="p-2.5 sm:p-4">
-          <div className="space-y-1 sm:space-y-2">
+          <div className="space-y-1 sm:space-y-2 min-w-0">
             {/* Brand Name - Subtle */}
             {product.brand && (
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-umber/50">
@@ -334,13 +353,10 @@ const ProductCardComponent = ({
             )}
 
             {/* Product Name - Prominent */}
-            <CardTitle className="line-clamp-2 text-left text-sm sm:text-base font-semibold leading-tight">
-              <Link
-                href={`/products/${product.slug}`}
-                className="transition-colors hover:text-brand-teal"
-              >
+            <CardTitle className="line-clamp-2 min-w-0 text-left text-sm font-semibold leading-tight sm:text-base">
+              <span className="transition-colors group-hover:text-brand-teal">
                 {product.name}
-              </Link>
+              </span>
             </CardTitle>
 
             {/* Rating Stars */}
@@ -351,7 +367,7 @@ const ProductCardComponent = ({
               <span className="text-sm sm:text-lg font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <span className="text-xs sm:text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </span>

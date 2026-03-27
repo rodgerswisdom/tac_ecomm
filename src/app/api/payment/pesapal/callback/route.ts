@@ -37,19 +37,24 @@ export async function GET(req: NextRequest) {
     where: { id: orderId },
     select: {
       id: true,
+      userId: true,
       orderNumber: true,
       status: true,
       paymentStatus: true,
       total: true,
       currency: true,
+      items: {
+        select: {
+          productId: true,
+          variantId: true,
+          quantity: true
+        }
+      },
       payments: {
         where: { method: PaymentMethod.PESAPAL },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: { id: true, currency: true }
-      },
-      items: {
-        select: { productId: true, variantId: true, quantity: true }
       }
     }
   })
@@ -70,7 +75,6 @@ export async function GET(req: NextRequest) {
     const nextOrderStatus = deriveOrderStatus(paymentStatus, order.status)
     const existingPayment = order.payments[0]
     const paymentCurrency = 'KES'
-
     await prisma.$transaction(async (tx) => {
       if (existingPayment) {
         await tx.payment.update({
@@ -94,6 +98,12 @@ export async function GET(req: NextRequest) {
             currency: paymentCurrency,
             gatewayResponse: JSON.stringify(verification)
           }
+        })
+      }
+
+      if (paymentStatus === PaymentStatus.COMPLETED) {
+        await tx.cartItem.deleteMany({
+          where: { userId: order.userId }
         })
       }
 
@@ -151,6 +161,7 @@ export async function GET(req: NextRequest) {
           where: { id: order.id },
           data: { paymentStatus }
         })
+        return
       }
     })
 

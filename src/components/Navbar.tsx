@@ -4,8 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings, X } from "lucide-react";
-import { SearchBar } from "@/components/SearchBar";
+import { ShoppingBag, Menu, ChevronDown, User, LogOut, Settings, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -75,7 +74,9 @@ export const Navbar = () => {
   const isCheckoutPage = pathname.startsWith("/checkout");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isFloatingNav, setIsFloatingNav] = useState(true);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastScrollYRef = useRef(0);
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -133,6 +134,29 @@ export const Navbar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      const prevY = lastScrollYRef.current;
+
+      if (currentY <= 12) {
+        setIsFloatingNav(true);
+      } else if (currentY < prevY) {
+        // Scrolling up: dock navigation (non-floating look)
+        setIsFloatingNav(false);
+      } else if (currentY > prevY) {
+        // Scrolling down: bring back floating style
+        setIsFloatingNav(true);
+      }
+
+      lastScrollYRef.current = currentY;
+    };
+
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const renderCurrencyControl = () => {
     if (!hasMounted) {
       return (
@@ -176,26 +200,30 @@ export const Navbar = () => {
   const isAuthenticated = Boolean(sessionUser);
 
   return (
-    <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
+    <div
+      className={cn(
+        "pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full flex-col items-center transition-all duration-300",
+        isFloatingNav ? "px-3 pb-4 pt-4 sm:px-4 sm:pt-6" : "px-0 pb-0 pt-0"
+      )}
+    >
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8"
+        className={cn(
+          "pointer-events-auto w-full border bg-white/90 backdrop-blur-xl transition-all duration-300",
+          isFloatingNav
+            ? "max-w-6xl rounded-full border-brand-umber/12 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] sm:px-6 sm:py-4 lg:px-8"
+            : "max-w-none rounded-none border-x-0 border-t-0 border-b-brand-umber/12 px-3 py-2 sm:px-4 sm:py-3 lg:px-8 shadow-[0_8px_22px_rgba(74,43,40,0.08)]"
+        )}
       >
-        <div className="flex w-full items-center gap-2 sm:gap-4">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:inline-flex sm:gap-3 sm:text-xs"
+            className="caps-spacing inline-flex flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
           >
             Tac Accessories
           </Link>
-
-          {!isCheckoutPage && (
-            <div className="flex-1 sm:hidden">
-              <SearchBar />
-            </div>
-          )}
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
             {navLinks.map((link) => {
@@ -267,24 +295,9 @@ export const Navbar = () => {
             })}
           </div>
 
-          {!isCheckoutPage && (
-            <div className="hidden lg:block flex-1 max-w-md mx-4">
-              <SearchBar />
-            </div>
-          )}
-
-          <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
-            <div className="hidden sm:block">
+          <div className="ml-auto flex items-center justify-end gap-1.5 sm:gap-3">
+            <div className="hidden md:block">
               {renderCurrencyControl()}
-            </div>
-            <div className="hidden sm:inline-flex lg:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
             </div>
 
             {hasMounted ? (
@@ -299,7 +312,10 @@ export const Navbar = () => {
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-72 bg-brand-beige/95 backdrop-blur-xl">
+                <SheetContent
+                  side="left"
+                  className="w-72 overflow-y-auto overflow-x-hidden overscroll-contain bg-brand-beige/95 backdrop-blur-xl"
+                >
                   <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                   <div className="flex justify-end">
                     <SheetClose asChild>
@@ -337,6 +353,36 @@ export const Navbar = () => {
                     <span className="caps-spacing text-xs text-brand-umber/70">
                       Menu
                     </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link
+                        href="/cart"
+                        className="rounded-full px-4 py-2.5 text-xs font-medium bg-white text-brand-umber shadow-sm"
+                      >
+                        Cart {cartCount > 0 ? `(${cartCount})` : ""}
+                      </Link>
+                      <Link
+                        href="/wishlist"
+                        className="rounded-full px-4 py-2.5 text-xs font-medium bg-white text-brand-umber shadow-sm"
+                      >
+                        Wishlist
+                      </Link>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <button
+                          key={`mobile-currency-${opt.code}`}
+                          onClick={() => setCurrency(opt.code)}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                            currency === opt.code
+                              ? "bg-brand-teal text-white"
+                              : "bg-white text-brand-umber/70 hover:text-brand-umber"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                     {navLinks.map((link) => {
                       const isAnchor = link.href.includes("#")
                       const isActive = isAnchor
@@ -418,10 +464,23 @@ export const Navbar = () => {
               </Button>
             )}
 
+            {!isCheckoutPage && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="inline-flex lg:hidden"
+                asChild
+              >
+                <Link href="/search" aria-label="Open search">
+                  <Search className="h-5 w-5 transition-colors" />
+                </Link>
+              </Button>
+            )}
+
             <Button
               variant="ghost"
               size="icon"
-              className="relative hidden sm:inline-flex"
+              className="relative inline-flex"
               asChild
             >
               <Link href="/cart" aria-label="View cart">

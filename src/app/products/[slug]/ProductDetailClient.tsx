@@ -11,6 +11,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
 import { ProductCardData } from "@/types/product";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
@@ -21,10 +22,8 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
 
-  const discountPercent =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
 
   const handleAddToCart = () => {
     addToCart({
@@ -80,7 +79,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                   <p className="caps-spacing text-xs text-brand-umber/50">Investment</p>
                   <p className="text-3xl font-heading text-brand-coral">{formatPrice(product.price)}</p>
                 </div>
-                {product.originalPrice && (
+                {isDiscounted && product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
                     {formatPrice(product.originalPrice)}
                   </span>
@@ -153,6 +152,8 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 function ProductSummary({ product }: { product: ProductCardData }) {
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -204,9 +205,9 @@ function ProductSummary({ product }: { product: ProductCardData }) {
               Add to Cart
             </Button>
           </div>
-          {product.originalPrice && (
+          {isDiscounted && (
             <div className="absolute top-3 left-3 bg-brand-coral text-white text-xs font-semibold px-2 py-1 rounded-full">
-              Sale
+              -{discountPercent}%
             </div>
           )}
         </div>
@@ -224,7 +225,7 @@ function ProductSummary({ product }: { product: ProductCardData }) {
               <p className="text-lg font-semibold text-brand-coral">
                 {formatPrice(product.price)}
               </p>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <p className="text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </p>

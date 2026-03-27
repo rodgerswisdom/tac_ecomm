@@ -123,7 +123,7 @@ export const CollectionPageClient = ({
         </div>
 
         <div className="relative z-10">
-          <div className="gallery-container flex flex-col gap-8 py-28 sm:py-32">
+          <div className="gallery-container flex flex-col gap-8 py-24 sm:py-28 md:py-32">
             <div className="flex flex-wrap items-center gap-3 text-sm text-brand-beige/80">
               <Link
                 href="/collections"
@@ -146,7 +146,7 @@ export const CollectionPageClient = ({
               <span className="caps-spacing text-xs text-brand-beige/70">
                 TAC Collection
               </span>
-              <h1 className="font-heading text-5xl leading-tight sm:text-6xl">
+              <h1 className="font-heading text-3xl leading-tight sm:text-5xl md:text-6xl">
                 {heroTitle}
               </h1>
               <p className="text-base text-brand-beige/80 sm:text-lg">
@@ -260,8 +260,8 @@ export const CollectionPageClient = ({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-brand-umber/10 bg-brand-beige/50 px-4 py-3 sm:px-6">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-brand-umber/70">
+          <div className="flex flex-col gap-3 rounded-3xl border border-brand-umber/10 bg-brand-beige/50 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-3 overflow-x-auto pb-1 text-sm text-brand-umber/70">
               <span className="flex items-center gap-2 uppercase tracking-[0.3em]">
                 <Filter className="h-4 w-4" />
                 Filters
@@ -271,7 +271,7 @@ export const CollectionPageClient = ({
                   key={option}
                   onClick={() => setSelectedSubcategory(option)}
                   className={cn(
-                    "rounded-full px-3 py-1 text-xs uppercase tracking-[0.25em] transition-colors",
+                    "shrink-0 rounded-full px-3 py-1 text-xs uppercase tracking-[0.25em] transition-colors",
                     selectedSubcategory === option
                       ? "bg-brand-umber text-brand-beige"
                       : "bg-white text-brand-umber/70 hover:bg-brand-umber/10"
@@ -284,7 +284,7 @@ export const CollectionPageClient = ({
               ))}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between gap-3 md:justify-start">
               <span className="text-xs uppercase tracking-[0.3em] text-brand-umber/50">
                 Sort
               </span>

@@ -5,8 +5,13 @@ import { auth } from '@/lib/auth'
 import { EmailService, getEmailConfig } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 import { convertFromUsd, CurrencyCode } from '@/lib/currency'
+import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 
 export async function POST(req: NextRequest) {
+  if (!passesCsrfProtection(req)) {
+    return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 })
+  }
+
   const session = await auth()
   const body = await req.json()
   const {
@@ -23,6 +28,14 @@ export async function POST(req: NextRequest) {
     }
   }
   const emailTrim = String(email).trim()
+  const rateLimit = checkCheckoutRateLimit(req, emailTrim)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many checkout attempts. Please wait and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } }
+    )
+  }
+
   const firstNameTrim = String(firstName).trim()
   const lastNameTrim = String(lastName).trim()
   const addressTrim = String(address).trim()
@@ -291,7 +304,6 @@ export async function POST(req: NextRequest) {
       // Ignore coupon update errors
     }
   }
-
   // Send order confirmation email (do not fail the request if email fails)
   try {
     const emailService = new EmailService(getEmailConfig())

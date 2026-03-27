@@ -212,7 +212,9 @@ export function CartProvider({ children }: CartProviderProps) {
 
   const clearCart = () => {
     setCart([])
-    if (user) queueMicrotask(() => saveUserCart([]))
+    // Always attempt server sync. Auth is determined by cookies on the API route,
+    // and on payment redirect the session object may not be hydrated yet.
+    queueMicrotask(() => saveUserCart([]))
   }
 
   const isInCart = (id: number | string) => {

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCardData } from "@/types/product";
 import { useSession } from "next-auth/react";
+import { Navbar } from "@/components/Navbar";
 
 export default function WishlistPage() {
   const { data: session } = useSession();
@@ -35,19 +36,24 @@ export default function WishlistPage() {
   }, [session]);
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">My Wishlist</h1>
-      {loading ? (
-        <div>Loading...</div>
-      ) : wishlist.length === 0 ? (
-        <div className="text-muted-foreground">Your wishlist is empty.</div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {wishlist.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+    <main className="min-h-screen bg-brand-beige bg-texture-linen">
+      <Navbar />
+      <section className="nav-clearance section-spacing">
+        <div className="gallery-container max-w-5xl">
+          <h1 className="mobile-page-title font-heading text-brand-umber mb-6">My Wishlist</h1>
+          {loading ? (
+            <div className="text-brand-umber/70">Loading...</div>
+          ) : wishlist.length === 0 ? (
+            <div className="text-brand-umber/70">Your wishlist is empty.</div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {wishlist.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+      </section>
+    </main>
   );
 }
