@@ -16,6 +16,7 @@ import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ProductCardData } from "@/types/product";
+import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -242,7 +243,7 @@ const ProductCardComponent = ({
           {onComparisonToggle && (
             <div className="absolute bottom-3 left-3 z-10">
               <label
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 backdrop-blur-sm transition-all hover:bg-white"
+                className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-2.5 py-1.5 backdrop-blur-sm transition-all hover:bg-white sm:px-3"
                 onClick={(e) => e.stopPropagation()}
               >
                 <input
@@ -255,7 +256,7 @@ const ProductCardComponent = ({
                   onClick={(e) => e.stopPropagation()}
                   className="h-4 w-4 rounded border-brand-teal text-brand-teal focus:ring-brand-teal"
                 />
-                <span className="text-xs font-medium text-brand-umber">Compare</span>
+                <span className="hidden text-xs font-medium text-brand-umber sm:inline">Compare</span>
               </label>
             </div>
           )}
@@ -321,7 +322,10 @@ const ProductCardComponent = ({
 
           {/* Image Pagination Dots - Bottom Center */}
           {product.gallery.length > 1 && (
-            <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5">
+            <div className={cn(
+              "absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 gap-1.5 sm:flex",
+              onComparisonToggle && "sm:bottom-2"
+            )}>
               {product.gallery.slice(0, 5).map((_, index) => (
                 <button
                   key={index}
@@ -344,7 +348,7 @@ const ProductCardComponent = ({
 
         {/* Product Information */}
         <CardContent className="p-2.5 sm:p-4">
-          <div className="space-y-1 sm:space-y-2">
+          <div className="space-y-1 sm:space-y-2 min-w-0">
             {/* Brand Name - Subtle */}
             {product.brand && (
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-umber/50">
@@ -353,7 +357,7 @@ const ProductCardComponent = ({
             )}
 
             {/* Product Name - Prominent */}
-            <CardTitle className="line-clamp-2 text-left text-sm sm:text-base font-semibold leading-tight">
+            <CardTitle className="line-clamp-2 min-w-0 text-left text-sm font-semibold leading-tight sm:text-base">
               <span className="transition-colors group-hover:text-brand-teal">
                 {product.name}
               </span>

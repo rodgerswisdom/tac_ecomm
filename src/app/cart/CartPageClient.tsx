@@ -68,15 +68,15 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                   Each selection is reserved for 24 hours. Complete the experience to invite these pieces into your private collection.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" asChild>
+              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                <Button variant="outline" asChild className="w-full sm:w-auto">
                   <Link href="/collections">Continue Browsing</Link>
                 </Button>
                 {hasItems && (
                   <Button
                     variant="ghost"
                     onClick={clearCart}
-                    className="text-brand-coral hover:text-brand-coral/90"
+                    className="w-full text-brand-coral hover:text-brand-coral/90 sm:w-auto"
                   >
                     Clear Tray
                   </Button>
@@ -84,7 +84,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
               </div>
             </div>
 
-            <div className="relative flex items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:px-6 sm:py-4">
+            <div className="relative hidden items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:flex sm:px-6 sm:py-4">
               <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
                 <ProgressPill step={1} label="Cart" active />
                 <ProgressPill step={2} label="Details" active={false} />
@@ -131,14 +131,14 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           className="object-cover"
                         />
                       </div>
-                      <div className="flex flex-col justify-between">
+                      <div className="flex min-w-0 flex-col justify-between">
                         <div>
-                          <p className="font-heading text-lg text-brand-umber">{item.name}</p>
+                          <p className="font-heading text-lg text-brand-umber line-clamp-2 break-words">{item.name}</p>
                           <span className="text-sm text-brand-coral">
                             {formatPrice(item.price)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="mt-3 flex flex-col gap-2 sm:mt-0 sm:flex-row sm:items-center sm:justify-between">
                           <div className="inline-flex items-center gap-3 rounded-full border border-brand-teal/25 px-3 py-1 text-sm text-brand-umber/70">
                             <button
                               type="button"
@@ -159,7 +159,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.id)}
-                            className="rounded-full bg-brand-coral/10 p-2 text-brand-coral transition hover:bg-brand-coral/20"
+                            className="self-end rounded-full bg-brand-coral/10 p-2 text-brand-coral transition hover:bg-brand-coral/20 sm:self-auto"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>

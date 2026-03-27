@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { User, Mail, Calendar, Shield, ArrowLeft, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { CustomDropdown } from '@/components/ui/custom-dropdown'
 import { countries } from '@/data/countries'
+import { Navbar } from '@/components/Navbar'
 
 type ShippingFormData = {
   firstName: string
@@ -135,15 +136,8 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="relative z-10 p-4">
-        <Link href="/" className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-          <span>Back to Store</span>
-        </Link>
-      </nav>
-
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <Navbar />
+      <div className="gallery-container nav-clearance section-spacing max-w-4xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -160,7 +154,7 @@ export default function ProfilePage() {
           {/* Profile Card */}
           <Card className="afro-card bg-background/80 backdrop-blur-sm border-border/50 shadow-xl mb-6">
             <CardHeader>
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                 <Avatar className="h-24 w-24 border-4 border-primary/20">
                   <AvatarImage src={session.user.image || undefined} alt={userName || ''} />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-emerald text-white text-2xl font-bold">
@@ -181,7 +175,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                <Button asChild variant="outline">
+                <Button asChild variant="outline" className="w-full sm:w-auto">
                   <Link href="/profile/settings">
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
@@ -309,7 +303,7 @@ export default function ProfilePage() {
               <CardDescription>Manage your account and preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <Button asChild variant="outline" className="h-auto py-4 justify-start">
                   <Link href="/profile/settings">
                     <Settings className="mr-2 h-5 w-5" />

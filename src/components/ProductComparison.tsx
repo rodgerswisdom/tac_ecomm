@@ -32,8 +32,8 @@ export function ProductComparison({
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-brand-teal/20 bg-white/95 backdrop-blur-md shadow-lg"
       >
         <div className="gallery-container">
-          <div className="flex items-center justify-between py-4">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div className="flex items-center gap-2">
                 <GitCompare className="h-5 w-5 text-brand-teal" />
                 <span className="font-semibold text-brand-umber">
@@ -41,7 +41,7 @@ export function ProductComparison({
                   {selectedProducts.length > 1 ? "s" : ""} selected
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {selectedProducts.map((product) => (
                   <div
                     key={product.id}
@@ -65,15 +65,16 @@ export function ProductComparison({
                 ))}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:flex sm:items-center">
               <Button
                 onClick={() => setIsExpanded(!isExpanded)}
                 variant="outline"
                 size="sm"
+                className="w-full"
               >
                 {isExpanded ? "Collapse" : "Compare"}
               </Button>
-              <Button onClick={onClear} variant="outline" size="sm">
+              <Button onClick={onClear} variant="outline" size="sm" className="w-full">
                 Clear All
               </Button>
             </div>

@@ -163,7 +163,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, ease: [0.33, 1, 0.68, 1] }}
-                  className="font-heading text-3xl leading-tight text-brand-umber sm:text-4xl md:text-5xl lg:text-6xl"
+                  className="font-heading mobile-page-title leading-tight text-brand-umber sm:text-4xl md:text-5xl lg:text-6xl"
                 >
                   {activeSlide.subtitle ? (
                     <>
@@ -333,7 +333,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
               </div>
             </div>
 
-            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 flex-col gap-2 sm:right-4 sm:gap-3 lg:right-[-3.5rem] z-20">
+            <div className="absolute right-2 top-1/2 z-20 flex -translate-y-1/2 flex-col gap-2 sm:right-4 sm:gap-3">
               {allSlides.map((slide, index) => {
                 const isActive = index === activeIndex;
                 return (

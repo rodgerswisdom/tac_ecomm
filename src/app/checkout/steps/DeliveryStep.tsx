@@ -4,7 +4,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 
 const deliveryOptions = [
   { id: "standard", label: "Standard Delivery (3-5 days)", price: 0 },
-  { id: "express", label: "Express Delivery (1-2 days)", price: 7.99 },
   { id: "pickup", label: "In-Store Pickup", price: 0 }
 ];
 
@@ -28,7 +27,7 @@ export function DeliveryStep({ onNext }: { onNext?: (method: DeliveryMethod) => 
       <h2 className="text-lg font-semibold mb-4">Delivery Method</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         {deliveryOptions.map(opt => (
-          <label key={opt.id} className="flex items-center gap-3 p-3 border rounded cursor-pointer">
+          <label key={opt.id} className="flex min-h-12 items-center gap-3 rounded border p-3 cursor-pointer">
             <input
               type="radio"
               name="deliveryMethod"
@@ -42,11 +41,11 @@ export function DeliveryStep({ onNext }: { onNext?: (method: DeliveryMethod) => 
         ))}
         {error && <div className="text-red-500">{error}</div>}
         <div className="flex justify-end">
-          <Button type="submit">Review order</Button>
+          <Button type="submit" className="w-full sm:w-auto">Review order</Button>
         </div>
       </form>
     </div>
   );
 }
 
-export type DeliveryMethod = "standard" | "express" | "pickup";
+export type DeliveryMethod = "standard" | "pickup";

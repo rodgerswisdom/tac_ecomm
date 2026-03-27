@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShoppingBag, Menu, ChevronDown, Search, User, LogOut, Settings, X } from "lucide-react";
+import { ShoppingBag, Menu, ChevronDown, User, LogOut, Settings, X } from "lucide-react";
 import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
@@ -175,24 +175,20 @@ export const Navbar = () => {
   const isAuthenticated = Boolean(sessionUser);
 
   return (
-    <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full justify-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
+    <div className="pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full flex-col items-center px-3 pb-4 pt-4 sm:px-4 sm:pt-6">
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
         className="pointer-events-auto w-full max-w-6xl rounded-full border border-brand-umber/12 bg-white/90 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8"
       >
-        <div className="flex w-full items-center gap-2 sm:gap-4">
+        <div className="flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
           <Link
             href="/"
-            className="caps-spacing hidden flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:inline-flex sm:gap-3 sm:text-xs"
+            className="caps-spacing inline-flex flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
           >
             Tac Accessories
           </Link>
-
-          <div className="flex-1 sm:hidden">
-            <SearchBar />
-          </div>
 
           <div className="hidden flex-1 items-center justify-center gap-2 lg:flex lg:gap-4">
             {navLinks.map((link) => {
@@ -268,18 +264,9 @@ export const Navbar = () => {
             <SearchBar />
           </div>
 
-          <div className="ml-auto flex items-center justify-end gap-1 sm:gap-3">
-            <div className="hidden sm:block">
+          <div className="ml-auto flex items-center justify-end gap-1.5 sm:gap-3">
+            <div className="hidden md:block">
               {renderCurrencyControl()}
-            </div>
-            <div className="hidden sm:inline-flex lg:hidden">
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Search"
-              >
-                <Search className="h-5 w-5" />
-              </Button>
             </div>
 
             {hasMounted ? (
@@ -332,6 +319,36 @@ export const Navbar = () => {
                     <span className="caps-spacing text-xs text-brand-umber/70">
                       Menu
                     </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link
+                        href="/cart"
+                        className="rounded-full px-4 py-2.5 text-xs font-medium bg-white text-brand-umber shadow-sm"
+                      >
+                        Cart {cartCount > 0 ? `(${cartCount})` : ""}
+                      </Link>
+                      <Link
+                        href="/wishlist"
+                        className="rounded-full px-4 py-2.5 text-xs font-medium bg-white text-brand-umber shadow-sm"
+                      >
+                        Wishlist
+                      </Link>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {CURRENCY_OPTIONS.map((opt) => (
+                        <button
+                          key={`mobile-currency-${opt.code}`}
+                          onClick={() => setCurrency(opt.code)}
+                          className={cn(
+                            "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                            currency === opt.code
+                              ? "bg-brand-teal text-white"
+                              : "bg-white text-brand-umber/70 hover:text-brand-umber"
+                          )}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
                     {navLinks.map((link) => {
                       const isAnchor = link.href.includes("#")
                       const isActive = isAnchor
@@ -416,7 +433,7 @@ export const Navbar = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="relative hidden sm:inline-flex"
+              className="relative inline-flex"
               asChild
             >
               <Link href="/cart" aria-label="View cart">
@@ -491,6 +508,9 @@ export const Navbar = () => {
           </div>
         </div>
       </motion.nav>
+      <div className="pointer-events-auto mt-2 w-full max-w-6xl sm:hidden">
+        <SearchBar />
+      </div>
     </div>
   )
 }
