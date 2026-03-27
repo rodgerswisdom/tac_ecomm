@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
 import { ClearCartClient } from "./ClearCartClient"
+import { PaymentStatusWatcherClient } from "./PaymentStatusWatcherClient"
 import { PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
@@ -64,6 +65,11 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <ClearCartClient active={isPaymentCompleted} />
+      <PaymentStatusWatcherClient
+        enabled={!isPaymentCompleted && status === "pending"}
+        orderId={orderId}
+        trackingId={trackingId}
+      />
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col items-center gap-10 text-center">
