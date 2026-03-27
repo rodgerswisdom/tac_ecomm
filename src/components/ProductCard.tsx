@@ -17,6 +17,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ProductCardData } from "@/types/product";
 import { cn } from "@/lib/utils";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -41,9 +42,8 @@ const ProductCardComponent = ({
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
   // Calculate discount percentage
-  const discountPercent = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-    : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
 
   // Get secondary image for hover swap (use second gallery image or first if only one)
   const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
@@ -222,22 +222,18 @@ const ProductCardComponent = ({
           </div>
 
           {/* Sale Badge - Top Left */}
-          {product.originalPrice && discountPercent > 0 && (
-            <div className="absolute left-3 top-3 z-10">
+          <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+            {isDiscounted && (
               <span className="rounded-md bg-brand-coral px-2 py-1 text-xs font-semibold text-white shadow-md">
                 -{discountPercent}%
               </span>
-            </div>
-          )}
-
-          {/* Best Seller Badge */}
-          {product.isBestSeller && (
-            <div className="absolute left-3 top-3 z-10">
+            )}
+            {product.isBestSeller && (
               <span className="rounded-md bg-brand-teal px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
                 Best Seller
               </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Comparison Checkbox - Bottom Left */}
           {onComparisonToggle && (
@@ -371,7 +367,7 @@ const ProductCardComponent = ({
               <span className="text-sm sm:text-lg font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <span className="text-xs sm:text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </span>

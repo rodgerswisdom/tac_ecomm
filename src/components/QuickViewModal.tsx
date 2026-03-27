@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCardData } from "@/types/product";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface QuickViewModalProps {
   product: ProductCardData | null;
@@ -29,10 +30,8 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   if (!product) return null;
 
-  const discountPercent =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
 
   const images = product.gallery.length > 0 ? product.gallery : [product.image];
   const hasMultipleImages = images.length > 1;
@@ -171,7 +170,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <span className="text-3xl font-heading font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <span className="text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </span>
