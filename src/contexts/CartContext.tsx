@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
@@ -39,6 +39,8 @@ export function CartProvider({ children }: CartProviderProps) {
   const [cart, setCart] = useState<CartItem[]>([])
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasSyncedServerCart, setHasSyncedServerCart] = useState(false)
+  const hasClearedGuestCartRef = useRef(false)
+  const isHydratingGuestCartRef = useRef(false)
   const { data: session } = useSession()
   const user = session?.user
   const userEmail = user?.email ?? null
@@ -98,14 +100,22 @@ export function CartProvider({ children }: CartProviderProps) {
   // Load cart from localStorage on mount (for guests)
   useEffect(() => {
     if (typeof window !== 'undefined' && !user) {
+      if (hasClearedGuestCartRef.current) {
+        setCart([])
+        setIsLoaded(true)
+        return
+      }
+
+      isHydratingGuestCartRef.current = true
       try {
         const savedCart = localStorage.getItem('tac-cart')
-        if (savedCart) {
+        if (savedCart && !hasClearedGuestCartRef.current) {
           setCart(JSON.parse(savedCart))
         }
       } catch (error) {
         console.error('Error loading cart from localStorage:', error)
       } finally {
+        isHydratingGuestCartRef.current = false
         setIsLoaded(true)
       }
     }
@@ -155,6 +165,13 @@ export function CartProvider({ children }: CartProviderProps) {
   // Save cart to localStorage whenever it changes (for guests)
   useEffect(() => {
     if (isLoaded && typeof window !== 'undefined' && !user) {
+      if (isHydratingGuestCartRef.current) return
+
+      if (hasClearedGuestCartRef.current && cart.length === 0) {
+        localStorage.removeItem('tac-cart')
+        return
+      }
+
       try {
         localStorage.setItem('tac-cart', JSON.stringify(cart))
       } catch (error) {
@@ -164,6 +181,10 @@ export function CartProvider({ children }: CartProviderProps) {
   }, [cart, isLoaded, user])
 
   const addToCart = (item: Omit<CartItem, 'quantity'>) => {
+    if (!user) {
+      hasClearedGuestCartRef.current = false
+    }
+
     setCart(prevCart => {
       const existingItem = prevCart.find(cartItem => cartItem.id === item.id)
       const next = existingItem
@@ -211,6 +232,11 @@ export function CartProvider({ children }: CartProviderProps) {
   }
 
   const clearCart = () => {
+    if (typeof window !== 'undefined') {
+      hasClearedGuestCartRef.current = true
+      localStorage.removeItem('tac-cart')
+    }
+
     setCart([])
     // Always attempt server sync. Auth is determined by cookies on the API route,
     // and on payment redirect the session object may not be hydrated yet.

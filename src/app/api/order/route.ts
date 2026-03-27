@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { EmailService, getEmailConfig } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 import { convertFromUsd, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
@@ -304,37 +303,6 @@ export async function POST(req: NextRequest) {
       // Ignore coupon update errors
     }
   }
-  // Send order confirmation email (do not fail the request if email fails)
-  try {
-    const emailService = new EmailService(getEmailConfig())
-    await emailService.sendOrderConfirmation({
-      customerName: `${firstNameTrim} ${lastNameTrim}`,
-      customerEmail: emailTrim,
-      orderNumber,
-      orderDate: new Date(order.createdAt).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      }),
-      items: validatedItems.map(({ name, quantity, price }) => ({ name, quantity, price })),
-      subtotal,
-      tax,
-      shipping,
-      total,
-      shippingAddress: {
-        name: `${firstNameTrim} ${lastNameTrim}`,
-        address: addressTrim,
-        city: cityTrim,
-        state: stateTrim,
-        zipCode: zipCodeTrim,
-        country: countryTrim
-      },
-      ...(appliedCoupon && { couponCode: appliedCoupon.code, couponDiscount: couponDiscountUsd })
-    })
-  } catch (err) {
-    console.error('Order confirmation email failed:', err)
-  }
-  
   return NextResponse.json({
     success: true,
     orderId: order.id,
