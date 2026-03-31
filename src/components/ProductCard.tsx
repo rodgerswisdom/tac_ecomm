@@ -44,6 +44,7 @@ const ProductCardComponent = ({
   // Calculate discount percentage
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
+  const isOutOfStock = product.isOutOfStock === true;
 
   // Get secondary image for hover swap (use second gallery image or first if only one)
   const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
@@ -57,6 +58,7 @@ const ProductCardComponent = ({
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -223,6 +225,11 @@ const ProductCardComponent = ({
 
           {/* Sale Badge - Top Left */}
           <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
+            {isOutOfStock && (
+              <span className="rounded-md bg-red-600 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
+                Out of Stock
+              </span>
+            )}
             {isDiscounted && (
               <span className="rounded-md bg-brand-coral px-2 py-1 text-xs font-semibold text-white shadow-md">
                 -{discountPercent}%
@@ -307,10 +314,11 @@ const ProductCardComponent = ({
                 <Button
                   onClick={handleQuickAdd}
                   size="sm"
-                  className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm hover:bg-white hover:scale-105"
+                  disabled={isOutOfStock}
+                  className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm hover:bg-white hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  Quick Add
+                  {isOutOfStock ? "Unavailable" : "Quick Add"}
                 </Button>
               </motion.div>
             )}
@@ -378,10 +386,11 @@ const ProductCardComponent = ({
             <div className="sm:hidden pt-1">
               <button
                 onClick={handleQuickAdd}
-                className="flex w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/30 bg-white py-1.5 text-xs font-semibold text-brand-umber transition hover:border-brand-teal hover:bg-brand-teal/10"
+                disabled={isOutOfStock}
+                className="flex w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/30 bg-white py-1.5 text-xs font-semibold text-brand-umber transition hover:border-brand-teal hover:bg-brand-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Plus className="h-3 w-3" />
-                Add to Bag
+                {isOutOfStock ? "Out of Stock" : "Add to Bag"}
               </button>
             </div>
 

@@ -32,6 +32,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
+  const isOutOfStock = product.isOutOfStock === true;
 
   const images = product.gallery.length > 0 ? product.gallery : [product.image];
   const hasMultipleImages = images.length > 1;
@@ -45,6 +46,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
   };
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -180,6 +182,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
                   {discountPercent}% off
                 </span>
               )}
+              {isOutOfStock && (
+                <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+                  Out of stock
+                </span>
+              )}
             </div>
 
             {/* Materials */}
@@ -212,9 +219,9 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             )}
 
             {/* Add to Cart Button */}
-            <Button size="lg" onClick={handleAddToCart} className="w-full">
+            <Button size="lg" onClick={handleAddToCart} className="w-full" disabled={isOutOfStock}>
               <ShoppingBag className="mr-2 h-5 w-5" />
-              Add to Basket
+              {isOutOfStock ? "Out of Stock" : "Add to Basket"}
             </Button>
 
             {/* View Full Details Link */}

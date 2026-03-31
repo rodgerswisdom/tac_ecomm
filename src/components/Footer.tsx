@@ -20,7 +20,7 @@ const footerLinks = [
     items: [
       { label: "About TAC", href: "/about" },
       { label: "Artisan Stories", href: "/stories" },
-      { label: "Our Legacy", href: "#legacy" },
+      { label: "Our Legacy", href: "/about#legacy" },
     ],
   },
   {

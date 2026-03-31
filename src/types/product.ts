@@ -26,6 +26,8 @@ export interface ProductCardData {
   rating?: number
   reviewCount?: number
   isBestSeller?: boolean
+  stock?: number
+  isOutOfStock?: boolean
   colors?: string[]
   sizes?: string[]
   createdAt?: string

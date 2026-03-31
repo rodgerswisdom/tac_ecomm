@@ -37,6 +37,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   const fallbackProductImage = patternAssets.kubaGrid;
 
   const handleAddRecommendation = (product: ProductCardData) => {
+    if (product.isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -210,7 +211,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 <div className="grid gap-4 grid-cols-1 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {recommendations.map((product) => (
                     <div key={product.id} className="group">
-                      <div className="aspect-square overflow-hidden rounded-2xl mb-4">
+                      <div className="relative aspect-square overflow-hidden rounded-2xl mb-4">
                         <Image
                           src={product.image || fallbackProductImage}
                           alt={product.name}
@@ -218,6 +219,11 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           height={300}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
+                        {product.isOutOfStock && (
+                          <span className="absolute left-3 top-3 rounded-md bg-red-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-heading text-lg text-brand-umber mb-2">
                         {product.name}
@@ -229,8 +235,8 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                         <span className="font-semibold text-brand-umber">
                           {formatPrice(product.price)}
                         </span>
-                        <Button size="sm" variant="outline" onClick={() => handleAddRecommendation(product)}>
-                          Add to Cart
+                        <Button size="sm" variant="outline" onClick={() => handleAddRecommendation(product)} disabled={product.isOutOfStock}>
+                          {product.isOutOfStock ? "Out of Stock" : "Add to Cart"}
                         </Button>
                       </div>
                     </div>

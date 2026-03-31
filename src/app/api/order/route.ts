@@ -177,12 +177,34 @@ export async function POST(req: NextRequest) {
   }
   const orderNumber = generateOrderNumber()
 
-  // Get or create user (Order and Address require userId)
-  const user = await prisma.user.upsert({
-    where: { email: emailTrim },
-    create: { email: emailTrim, name: `${firstNameTrim} ${lastNameTrim}` },
-    update: {}
-  })
+  // Resolve order owner:
+  // - Authenticated checkout must stay tied to the signed-in user so payment callbacks
+  //   clear the same user's DB cart.
+  // - Guest checkout falls back to email-based upsert.
+  let user: { id: string; email: string }
+  if (session?.user?.email) {
+    const sessionEmail = String(session.user.email).trim()
+    const existingSessionUser = await prisma.user.findUnique({
+      where: { email: sessionEmail },
+      select: { id: true, email: true }
+    })
+
+    if (existingSessionUser) {
+      user = existingSessionUser
+    } else {
+      user = await prisma.user.create({
+        data: { email: sessionEmail, name: `${firstNameTrim} ${lastNameTrim}` },
+        select: { id: true, email: true }
+      })
+    }
+  } else {
+    user = await prisma.user.upsert({
+      where: { email: emailTrim },
+      create: { email: emailTrim, name: `${firstNameTrim} ${lastNameTrim}` },
+      update: {},
+      select: { id: true, email: true }
+    })
+  }
 
   // Create shipping address
   const shippingAddress = await prisma.address.create({
@@ -239,7 +261,7 @@ export async function POST(req: NextRequest) {
         amount: paymentAmount,
         currency: paymentCurrency,
         orderId: order.orderNumber,
-        customerEmail: emailTrim,
+        customerEmail: user.email,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
         customerPhone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : undefined,
         description: `Order ${order.orderNumber}`,

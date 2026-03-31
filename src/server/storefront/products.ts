@@ -222,6 +222,8 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     rating: ratingAverage,
     reviewCount: reviewCount || undefined,
     isBestSeller: product.isFeatured,
+    stock: product.stock,
+    isOutOfStock: !product.isActive || product.stock <= 0,
     colors: undefined,
     sizes: undefined,
     createdAt: product.createdAt.toISOString(),
