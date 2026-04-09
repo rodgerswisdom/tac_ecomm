@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { EmailService, getEmailConfig } from '@/lib/email'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 import { convertFromUsd, CurrencyCode } from '@/lib/currency'
+import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 
 export async function POST(req: NextRequest) {
+  if (!passesCsrfProtection(req)) {
+    return NextResponse.json({ error: 'CSRF validation failed' }, { status: 403 })
+  }
+
   const session = await auth()
   const body = await req.json()
   const {
@@ -23,6 +27,14 @@ export async function POST(req: NextRequest) {
     }
   }
   const emailTrim = String(email).trim()
+  const rateLimit = checkCheckoutRateLimit(req, emailTrim)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many checkout attempts. Please wait and try again.' },
+      { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } }
+    )
+  }
+
   const firstNameTrim = String(firstName).trim()
   const lastNameTrim = String(lastName).trim()
   const addressTrim = String(address).trim()
@@ -165,12 +177,34 @@ export async function POST(req: NextRequest) {
   }
   const orderNumber = generateOrderNumber()
 
-  // Get or create user (Order and Address require userId)
-  const user = await prisma.user.upsert({
-    where: { email: emailTrim },
-    create: { email: emailTrim, name: `${firstNameTrim} ${lastNameTrim}` },
-    update: {}
-  })
+  // Resolve order owner:
+  // - Authenticated checkout must stay tied to the signed-in user so payment callbacks
+  //   clear the same user's DB cart.
+  // - Guest checkout falls back to email-based upsert.
+  let user: { id: string; email: string }
+  if (session?.user?.email) {
+    const sessionEmail = String(session.user.email).trim()
+    const existingSessionUser = await prisma.user.findUnique({
+      where: { email: sessionEmail },
+      select: { id: true, email: true }
+    })
+
+    if (existingSessionUser) {
+      user = existingSessionUser
+    } else {
+      user = await prisma.user.create({
+        data: { email: sessionEmail, name: `${firstNameTrim} ${lastNameTrim}` },
+        select: { id: true, email: true }
+      })
+    }
+  } else {
+    user = await prisma.user.upsert({
+      where: { email: emailTrim },
+      create: { email: emailTrim, name: `${firstNameTrim} ${lastNameTrim}` },
+      update: {},
+      select: { id: true, email: true }
+    })
+  }
 
   // Create shipping address
   const shippingAddress = await prisma.address.create({
@@ -227,7 +261,7 @@ export async function POST(req: NextRequest) {
         amount: paymentAmount,
         currency: paymentCurrency,
         orderId: order.orderNumber,
-        customerEmail: emailTrim,
+        customerEmail: user.email,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
         customerPhone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : undefined,
         description: `Order ${order.orderNumber}`,
@@ -291,38 +325,6 @@ export async function POST(req: NextRequest) {
       // Ignore coupon update errors
     }
   }
-
-  // Send order confirmation email (do not fail the request if email fails)
-  try {
-    const emailService = new EmailService(getEmailConfig())
-    await emailService.sendOrderConfirmation({
-      customerName: `${firstNameTrim} ${lastNameTrim}`,
-      customerEmail: emailTrim,
-      orderNumber,
-      orderDate: new Date(order.createdAt).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      }),
-      items: validatedItems.map(({ name, quantity, price }) => ({ name, quantity, price })),
-      subtotal,
-      tax,
-      shipping,
-      total,
-      shippingAddress: {
-        name: `${firstNameTrim} ${lastNameTrim}`,
-        address: addressTrim,
-        city: cityTrim,
-        state: stateTrim,
-        zipCode: zipCodeTrim,
-        country: countryTrim
-      },
-      ...(appliedCoupon && { couponCode: appliedCoupon.code, couponDiscount: couponDiscountUsd })
-    })
-  } catch (err) {
-    console.error('Order confirmation email failed:', err)
-  }
-  
   return NextResponse.json({
     success: true,
     orderId: order.id,

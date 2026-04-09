@@ -41,6 +41,8 @@
     "Scripts/resetAdminPassword.js"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "playwright.config.ts",
+    "tests/e2e/**"
   ]
 }

@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCardData } from "@/types/product";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface QuickViewModalProps {
   product: ProductCardData | null;
@@ -29,10 +30,9 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
   if (!product) return null;
 
-  const discountPercent =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
+  const isOutOfStock = product.isOutOfStock === true;
 
   const images = product.gallery.length > 0 ? product.gallery : [product.image];
   const hasMultipleImages = images.length > 1;
@@ -46,6 +46,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
   };
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -171,7 +172,7 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               <span className="text-3xl font-heading font-bold text-brand-coral">
                 {formatPrice(product.price)}
               </span>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <span className="text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </span>
@@ -179,6 +180,11 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
               {discountPercent > 0 && (
                 <span className="rounded-full bg-brand-coral/20 px-3 py-1 text-sm font-semibold text-brand-coral">
                   {discountPercent}% off
+                </span>
+              )}
+              {isOutOfStock && (
+                <span className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+                  Out of stock
                 </span>
               )}
             </div>
@@ -213,9 +219,9 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
             )}
 
             {/* Add to Cart Button */}
-            <Button size="lg" onClick={handleAddToCart} className="w-full">
+            <Button size="lg" onClick={handleAddToCart} className="w-full" disabled={isOutOfStock}>
               <ShoppingBag className="mr-2 h-5 w-5" />
-              Add to Basket
+              {isOutOfStock ? "Out of Stock" : "Add to Basket"}
             </Button>
 
             {/* View Full Details Link */}

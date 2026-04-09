@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react"
 import { useFormStatus } from "react-dom"
-import { updateGlobalSettingsAction, toggleProductFlagAction, type SettingsFormState } from "@/server/admin/settings"
+import { updateGlobalSettingsAction, toggleProductFlagAction } from "@/server/admin/settings"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -31,6 +31,10 @@ export function GlobalSettingsForm({
 }) {
     const [state, formAction] = useActionState(updateGlobalSettingsAction, { status: "idle" })
     const [showOlderLogs, setShowOlderLogs] = useState(false)
+    const [featuredProductsState, setFeaturedProductsState] = useState<any[]>(featuredProducts)
+    const [bespokeProductsState, setBespokeProductsState] = useState<any[]>(bespokeProducts)
+    const [corporateGiftProductsState, setCorporateGiftProductsState] = useState<any[]>(corporateGiftProducts)
+    const [removingProductIds, setRemovingProductIds] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
         if (state.status === "success") {
@@ -39,6 +43,50 @@ export function GlobalSettingsForm({
             toast.error(state.message || "Failed to update settings")
         }
     }, [state])
+
+    useEffect(() => {
+        setFeaturedProductsState(featuredProducts)
+    }, [featuredProducts])
+
+    useEffect(() => {
+        setBespokeProductsState(bespokeProducts)
+    }, [bespokeProducts])
+
+    useEffect(() => {
+        setCorporateGiftProductsState(corporateGiftProducts)
+    }, [corporateGiftProducts])
+
+    async function handleRemoveCuratedProduct(productId: string, field: "isFeatured" | "isBespoke" | "isCorporateGift" | "isActive") {
+        const pendingKey = `${field}:${productId}`
+        setRemovingProductIds(prev => ({ ...prev, [pendingKey]: true }))
+
+        try {
+            const formData = new FormData()
+            formData.append("productId", productId)
+            formData.append("field", field)
+            formData.append("value", "false")
+            await toggleProductFlagAction(formData)
+
+            if (field === "isFeatured") {
+                setFeaturedProductsState(prev => prev.filter((product: any) => product.id !== productId))
+            } else if (field === "isBespoke") {
+                setBespokeProductsState(prev => prev.filter((product: any) => product.id !== productId))
+            } else if (field === "isCorporateGift") {
+                setCorporateGiftProductsState(prev => prev.filter((product: any) => product.id !== productId))
+            }
+
+            toast.success("Product removed from curated section")
+        } catch (error) {
+            console.error("Failed to remove curated product:", error)
+            toast.error("Could not remove product. Please try again.")
+        } finally {
+            setRemovingProductIds(prev => {
+                const next = { ...prev }
+                delete next[pendingKey]
+                return next
+            })
+        }
+    }
 
     return (
         <form action={formAction} className="pb-10">
@@ -290,27 +338,33 @@ export function GlobalSettingsForm({
                             title="Featured Collection" 
                             description="Selected items prominently displayed on the primary landing path."
                             icon={<Stars className="h-5 w-5 text-amber-500" />}
-                            products={featuredProducts}
+                            products={featuredProductsState}
                             field="isFeatured"
                             emptyMessage="No featured products. High-quality imagery recommended for this slot."
+                            onRemoveProduct={handleRemoveCuratedProduct}
+                            removingProductIds={removingProductIds}
                         />
 
                         <CurationSection 
                             title="Bespoke Showcase" 
                             description="Artisanal masterpieces highlighted in the custom-craft section."
                             icon={<Sparkles className="h-5 w-5 text-indigo-500" />}
-                            products={bespokeProducts}
+                            products={bespokeProductsState}
                             field="isBespoke"
                             emptyMessage="The bespoke gallery is currently empty. Add products that define your craft."
+                            onRemoveProduct={handleRemoveCuratedProduct}
+                            removingProductIds={removingProductIds}
                         />
 
                         <CurationSection 
                             title="Corporate Gifting" 
                             description="Professional-grade selections curated for business partnerships."
                             icon={<Gift className="h-5 w-5 text-emerald-500" />}
-                            products={corporateGiftProducts}
+                            products={corporateGiftProductsState}
                             field="isCorporateGift"
                             emptyMessage="No corporate gift items. Select products suitable for bulk professional orders."
+                            onRemoveProduct={handleRemoveCuratedProduct}
+                            removingProductIds={removingProductIds}
                         />
 
                         <Card className="border-dashed border-2 border-[#2d3b34]/10 bg-[#b8d3c2]/5">
@@ -435,7 +489,7 @@ export function GlobalSettingsForm({
     )
 }
 
-function CurationSection({ title, description, icon, products, field, emptyMessage }: any) {
+function CurationSection({ title, description, icon, products, field, emptyMessage, onRemoveProduct, removingProductIds }: any) {
     const [isExpanded, setIsExpanded] = useState(false)
 
     return (
@@ -479,6 +533,8 @@ function CurationSection({ title, description, icon, products, field, emptyMessa
                                     key={product.id} 
                                     product={product} 
                                     field={field} 
+                                    onRemoveProduct={onRemoveProduct}
+                                    isRemoving={Boolean(removingProductIds[`${field}:${product.id}`])}
                                 />
                             ))}
                         </div>
@@ -493,7 +549,17 @@ function CurationSection({ title, description, icon, products, field, emptyMessa
     )
 }
 
-function CurationItem({ product, field }: { product: any, field: string }) {
+function CurationItem({
+    product,
+    field,
+    onRemoveProduct,
+    isRemoving
+}: {
+    product: any,
+    field: "isFeatured" | "isBespoke" | "isCorporateGift" | "isActive",
+    onRemoveProduct: (productId: string, field: "isFeatured" | "isBespoke" | "isCorporateGift" | "isActive") => Promise<void>,
+    isRemoving: boolean
+}) {
     return (
         <div className="flex items-center justify-between p-4 group hover:bg-slate-50/50 transition-colors">
             <div className="flex items-center gap-4">
@@ -520,15 +586,11 @@ function CurationItem({ product, field }: { product: any, field: string }) {
             </div>
             
             <Button 
+                type="button"
                 variant="ghost" 
                 size="icon" 
-                onClick={async () => {
-                    const formData = new FormData()
-                    formData.append("productId", product.id)
-                    formData.append("field", field)
-                    formData.append("value", "false")
-                    await toggleProductFlagAction(formData)
-                }}
+                disabled={isRemoving}
+                onClick={() => onRemoveProduct(product.id, field)}
                 className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
             >
                 <Trash2 className="h-4 w-4" />

@@ -64,26 +64,26 @@ export default function ContactPage() {
     {
       icon: <Mail className="h-6 w-6 text-emerald-500" />,
       title: "Email Us",
-      details: "hello@tacjewellery.com",
+      details: "info@tacaccessories.co.ke",
       description: "Send us an email anytime"
     },
     {
       icon: <Phone className="h-6 w-6 text-blue-500" />,
       title: "Call Us",
-      details: "+1 (555) 123-4567",
-      description: "Mon-Fri from 9am to 6pm"
+      details: "+254 704 800866",
+      description: "Mon to Friday, 9am-5pm"
     },
     {
       icon: <MapPin className="h-6 w-6 text-gold" />,
       title: "Visit Us",
-      details: "123 Heritage Street, Accra, Ghana",
-      description: "Our flagship store location"
+      details: "Nairobi, Kenya",
+      description: "Our operations hub"
     },
     {
       icon: <Clock className="h-6 w-6 text-purple-500" />,
       title: "Business Hours",
-      details: "Mon-Sat: 9am-7pm",
-      description: "Sunday: 12pm-5pm"
+      details: "Mon to Friday: 9am-5pm",
+      description: "Closed on weekends"
     }
   ]
 
@@ -220,7 +220,7 @@ export default function ContactPage() {
                             value={form.phone}
                             onChange={handleInputChange}
                             className="h-12"
-                            placeholder="+1 (555) 123-4567"
+                            placeholder="+254 704 800866"
                           />
                         </div>
                         <div>
@@ -329,7 +329,7 @@ export default function ContactPage() {
                         <MapPin className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
                         <p className="text-muted-foreground">Interactive Map</p>
                         <p className="text-sm text-muted-foreground/70">
-                          Our flagship store in Accra, Ghana
+                          Nairobi, Kenya
                         </p>
                       </div>
                     </div>

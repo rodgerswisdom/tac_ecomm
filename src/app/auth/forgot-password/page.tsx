@@ -52,7 +52,7 @@ function ForgotPasswordForm() {
     }
 
     return (
-        <div className="min-h-screen bg-background relative overflow-hidden">
+        <div className="relative min-h-screen overflow-hidden bg-background pb-8">
             {/* Background pattern — matches sign-in page */}
             <div className="absolute inset-0 opacity-5">
                 <div className="absolute inset-0 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/10" />
@@ -60,7 +60,7 @@ function ForgotPasswordForm() {
             </div>
 
             {/* Navigation */}
-            <nav className="relative z-10 p-4">
+            <nav className="relative z-10 px-4 py-3 sm:py-4">
                 <Link
                     href="/auth/signin"
                     className="flex items-center space-x-2 text-foreground hover:text-primary transition-colors"
@@ -70,7 +70,7 @@ function ForgotPasswordForm() {
                 </Link>
             </nav>
 
-            <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-80px)] px-4">
+            <div className="relative z-10 flex min-h-[calc(100vh-72px)] items-center justify-center px-4">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -98,7 +98,7 @@ function ForgotPasswordForm() {
                                     </div>
                                 </motion.div>
 
-                                <CardTitle className="text-2xl luxury-heading">
+                                <CardTitle className="luxury-heading text-xl sm:text-2xl">
                                     Forgot your <span className="afro-text-gradient">password?</span>
                                 </CardTitle>
                                 <CardDescription className="luxury-text">

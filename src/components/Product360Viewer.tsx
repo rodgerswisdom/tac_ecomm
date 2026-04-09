@@ -97,7 +97,7 @@ export function Product360Viewer({
           alt={productName}
           width={960}
           height={720}
-          className="h-[520px] w-full rounded-[2.5rem] object-cover"
+          className="h-[340px] w-full rounded-[2.5rem] object-cover sm:h-[420px] lg:h-[520px]"
           priority
         />
       </div>
@@ -117,7 +117,7 @@ export function Product360Viewer({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="relative h-[520px] w-full overflow-hidden">
+        <div className="relative h-[340px] w-full overflow-hidden sm:h-[420px] lg:h-[520px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -140,7 +140,7 @@ export function Product360Viewer({
         </div>
 
         {/* Rotation controls */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg">
+        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm sm:bottom-4 sm:px-4 sm:py-2">
           <Button
             type="button"
             variant="ghost"
@@ -185,7 +185,7 @@ export function Product360Viewer({
       </div>
 
       {/* Thumbnail navigation */}
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 sm:gap-4">
         {displayImages.map((image, index) => (
           <button
             key={`thumb-${index}`}
@@ -194,7 +194,7 @@ export function Product360Viewer({
               setCurrentIndex(index);
               setRotation((index / totalImages) * 360);
             }}
-            className={`relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl border transition ${
+            className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border transition sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
               currentIndex === index
                 ? "border-brand-gold shadow-[0_12px_30px_rgba(223,160,83,0.28)]"
                 : "border-brand-teal/20"

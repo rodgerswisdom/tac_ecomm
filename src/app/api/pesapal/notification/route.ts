@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { PaymentService, PaymentVerification, getPaymentConfig } from '@/lib/payments'
 import { decrementStock, restoreStock } from '@/lib/stock'
 import { deriveOrderStatus } from '@/lib/order-status'
+import { sendPaidOrderConfirmedEmail } from '@/lib/order-email'
 
 async function handleNotification(req: NextRequest) {
   const url = new URL(req.url)
@@ -54,19 +55,24 @@ async function handleNotification(req: NextRequest) {
       : { payments: { some: { transactionId: orderTrackingId, method: PaymentMethod.PESAPAL } } },
     select: {
       id: true,
+      userId: true,
       orderNumber: true,
       status: true,
       paymentStatus: true,
       total: true,
       currency: true,
+      items: {
+        select: {
+          productId: true,
+          variantId: true,
+          quantity: true
+        }
+      },
       payments: {
         where: { method: PaymentMethod.PESAPAL },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: { id: true, currency: true }
-      },
-      items: {
-        select: { productId: true, variantId: true, quantity: true }
       }
     }
   })
@@ -84,7 +90,7 @@ async function handleNotification(req: NextRequest) {
   const nextOrderStatus = deriveOrderStatus(paymentStatus, order.status)
   const existingPayment = order.payments[0]
   const paymentCurrency = 'KES'
-
+  let shouldSendPaidEmail = false
   await prisma.$transaction(async (tx) => {
     if (existingPayment) {
       await tx.payment.update({
@@ -111,6 +117,12 @@ async function handleNotification(req: NextRequest) {
       })
     }
 
+    if (paymentStatus === PaymentStatus.COMPLETED) {
+      await tx.cartItem.deleteMany({
+        where: { userId: order.userId }
+      })
+    }
+
     if (nextOrderStatus === order.status) {
       await tx.order.update({
         where: { id: order.id },
@@ -127,6 +139,7 @@ async function handleNotification(req: NextRequest) {
 
       if (transition.count > 0) {
         await decrementStock(order.items, tx)
+        shouldSendPaidEmail = true
         return
       }
 
@@ -165,8 +178,17 @@ async function handleNotification(req: NextRequest) {
         where: { id: order.id },
         data: { paymentStatus }
       })
+      return
     }
   })
+
+  if (shouldSendPaidEmail) {
+    try {
+      await sendPaidOrderConfirmedEmail(order.id)
+    } catch (error) {
+      console.error('Failed to send paid order confirmation email:', error)
+    }
+  }
 
   return NextResponse.json({ success: true, status: verification.status })
 }

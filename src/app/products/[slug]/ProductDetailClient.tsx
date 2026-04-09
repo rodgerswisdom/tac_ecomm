@@ -11,6 +11,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
 import { ProductCardData } from "@/types/product";
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
@@ -21,12 +22,12 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
 
-  const discountPercent =
-    product.originalPrice && product.originalPrice > product.price
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0;
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
+  const isOutOfStock = product.isOutOfStock === true;
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -80,7 +81,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                   <p className="caps-spacing text-xs text-brand-umber/50">Investment</p>
                   <p className="text-3xl font-heading text-brand-coral">{formatPrice(product.price)}</p>
                 </div>
-                {product.originalPrice && (
+                {isDiscounted && product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
                     {formatPrice(product.originalPrice)}
                   </span>
@@ -93,6 +94,11 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 <div className="flex items-center gap-2 rounded-full bg-brand-jade/30 px-3 py-1 text-sm text-brand-umber/70">
                   <Star className="h-4 w-4 text-brand-gold" /> Collectors&apos; favourite
                 </div>
+                {isOutOfStock && (
+                  <div className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
+                    Out of stock
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -109,7 +115,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 </div>
               </div>
 
-              <Button size="lg" className="w-full" onClick={handleAddToCart}>
+              <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isOutOfStock}>
                 <ShoppingBag className="mr-2 h-5 w-5" /> Add to Basket
               </Button>
 
@@ -153,10 +159,14 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 function ProductSummary({ product }: { product: ProductCardData }) {
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const discountPercent = getDiscountPercent(product.price, product.originalPrice);
+  const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
+  const isOutOfStock = product.isOutOfStock === true;
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -198,15 +208,21 @@ function ProductSummary({ product }: { product: ProductCardData }) {
             <Button
               size="sm"
               className="bg-brand-teal/95 backdrop-blur-sm hover:bg-brand-teal"
+              disabled={isOutOfStock}
               onClick={handleQuickAdd}
             >
               <ShoppingBag className="h-4 w-4 mr-2" />
-              Add to Cart
+              {isOutOfStock ? "Out of Stock" : "Add to Cart"}
             </Button>
           </div>
-          {product.originalPrice && (
+          {isDiscounted && (
             <div className="absolute top-3 left-3 bg-brand-coral text-white text-xs font-semibold px-2 py-1 rounded-full">
-              Sale
+              -{discountPercent}%
+            </div>
+          )}
+          {isOutOfStock && (
+            <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full uppercase">
+              Out of Stock
             </div>
           )}
         </div>
@@ -224,7 +240,7 @@ function ProductSummary({ product }: { product: ProductCardData }) {
               <p className="text-lg font-semibold text-brand-coral">
                 {formatPrice(product.price)}
               </p>
-              {product.originalPrice && (
+              {isDiscounted && product.originalPrice && (
                 <p className="text-sm text-brand-umber/40 line-through">
                   {formatPrice(product.originalPrice)}
                 </p>

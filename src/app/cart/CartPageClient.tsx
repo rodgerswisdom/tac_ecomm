@@ -37,6 +37,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   const fallbackProductImage = patternAssets.kubaGrid;
 
   const handleAddRecommendation = (product: ProductCardData) => {
+    if (product.isOutOfStock) return;
     addToCart({
       id: product.id,
       name: product.name,
@@ -68,15 +69,15 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                   Each selection is reserved for 24 hours. Complete the experience to invite these pieces into your private collection.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Button variant="outline" asChild>
+              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+                <Button variant="outline" asChild className="w-full sm:w-auto">
                   <Link href="/collections">Continue Browsing</Link>
                 </Button>
                 {hasItems && (
                   <Button
                     variant="ghost"
                     onClick={clearCart}
-                    className="text-brand-coral hover:text-brand-coral/90"
+                    className="w-full text-brand-coral hover:text-brand-coral/90 sm:w-auto"
                   >
                     Clear Tray
                   </Button>
@@ -84,25 +85,19 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
               </div>
             </div>
 
-            <div className="relative rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 sm:px-6 sm:py-4">
-              <div className="flex items-center justify-center sm:hidden">
+            <div className="relative hidden items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:flex sm:px-6 sm:py-4">
+              <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
                 <ProgressPill step={1} label="Cart" active />
+                <ProgressPill step={2} label="Details" active={false} />
+                <ProgressPill step={3} label="Confirmation" active={false} />
               </div>
-
-              <div className="hidden sm:flex items-center justify-between gap-3 overflow-x-auto">
-                <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
-                  <ProgressPill step={1} label="Cart" active />
-                  <ProgressPill step={2} label="Details" active={false} />
-                  <ProgressPill step={3} label="Confirmation" active={false} />
-                </div>
-                <Image
-                  src={patternAssets.adinkraGlyph}
-                  alt="Adinkra"
-                  width={36}
-                  height={36}
-                  className="hidden opacity-60 md:block"
-                />
-              </div>
+              <Image
+                src={patternAssets.adinkraGlyph}
+                alt="Adinkra"
+                width={36}
+                height={36}
+                className="hidden opacity-60 md:block"
+              />
             </div>
           </motion.div>
 
@@ -137,14 +132,14 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           className="object-cover"
                         />
                       </div>
-                      <div className="flex flex-col justify-between">
+                      <div className="flex min-w-0 flex-col justify-between">
                         <div>
-                          <p className="font-heading text-lg text-brand-umber">{item.name}</p>
+                          <p className="font-heading text-lg text-brand-umber line-clamp-2 break-words">{item.name}</p>
                           <span className="text-sm text-brand-coral">
                             {formatPrice(item.price)}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="mt-3 flex flex-col gap-2 sm:mt-0 sm:flex-row sm:items-center sm:justify-between">
                           <div className="inline-flex items-center gap-3 rounded-full border border-brand-teal/25 px-3 py-1 text-sm text-brand-umber/70">
                             <button
                               type="button"
@@ -165,7 +160,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           <button
                             type="button"
                             onClick={() => removeFromCart(item.id)}
-                            className="rounded-full bg-brand-coral/10 p-2 text-brand-coral transition hover:bg-brand-coral/20"
+                            className="self-end rounded-full bg-brand-coral/10 p-2 text-brand-coral transition hover:bg-brand-coral/20 sm:self-auto"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -216,7 +211,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 <div className="grid gap-4 grid-cols-1 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {recommendations.map((product) => (
                     <div key={product.id} className="group">
-                      <div className="aspect-square overflow-hidden rounded-2xl mb-4">
+                      <div className="relative aspect-square overflow-hidden rounded-2xl mb-4">
                         <Image
                           src={product.image || fallbackProductImage}
                           alt={product.name}
@@ -224,6 +219,11 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           height={300}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
+                        {product.isOutOfStock && (
+                          <span className="absolute left-3 top-3 rounded-md bg-red-600 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white">
+                            Out of Stock
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-heading text-lg text-brand-umber mb-2">
                         {product.name}
@@ -235,8 +235,8 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                         <span className="font-semibold text-brand-umber">
                           {formatPrice(product.price)}
                         </span>
-                        <Button size="sm" variant="outline" onClick={() => handleAddRecommendation(product)}>
-                          Add to Cart
+                        <Button size="sm" variant="outline" onClick={() => handleAddRecommendation(product)} disabled={product.isOutOfStock}>
+                          {product.isOutOfStock ? "Out of Stock" : "Add to Cart"}
                         </Button>
                       </div>
                     </div>

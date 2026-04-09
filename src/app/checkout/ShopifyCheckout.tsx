@@ -40,6 +40,7 @@ export default function ShopifyCheckout() {
   const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [showSummaryMobile, setShowSummaryMobile] = useState(false);
 
   useEffect(() => {
     if (cart.length === 0 && !orderPlaced) {
@@ -109,7 +110,7 @@ export default function ShopifyCheckout() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-3">
               <span className="caps-spacing text-xs text-brand-teal">Secure Checkout</span>
-              <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">
+              <h1 className="font-heading mobile-page-title text-brand-umber md:text-6xl">
                 Checkout
               </h1>
               <p className="max-w-2xl text-sm text-brand-umber/70">
@@ -122,10 +123,29 @@ export default function ShopifyCheckout() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="md:hidden">
+            <Button
+              variant="outline"
+              className="w-full border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5"
+              onClick={() => setShowSummaryMobile((prev) => !prev)}
+            >
+              {showSummaryMobile ? "Hide order summary" : "View order summary"}
+            </Button>
+            {showSummaryMobile && (
+              <div className="mt-3">
+                <OrderSummarySidebar
+                  appliedCoupon={appliedCoupon}
+                  onAppliedCouponChange={setAppliedCoupon}
+                  className="md:hidden"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-8 md:flex-row">
             <div className="flex-1">
               <CheckoutStepper currentStep={currentStep} />
-              <div className="rounded-[2.5rem] border border-brand-teal/20 bg-white p-8 md:p-10 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm min-h-[400px]">
+              <div className="min-h-[400px] rounded-[2.5rem] border border-brand-teal/20 bg-white p-5 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm sm:p-8 md:p-10">
                 {orderPlaced ? (
                   <div className="text-center py-16">
                     <h2 className="font-heading text-3xl text-brand-umber mb-4">Thank you for your order</h2>
@@ -177,13 +197,17 @@ export default function ShopifyCheckout() {
                         isSubmitting={placingOrder}
                       />
                     )}
-                    {error && <div className="text-red-500 mt-4">{error}</div>}
-                    <div className="flex justify-between mt-8">
+                    {error && (
+                      <div role="alert" aria-live="polite" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                        {error}
+                      </div>
+                    )}
+                    <div className="mt-8 flex justify-between">
                       <Button
                         variant="outline"
                         onClick={handlePrevStep}
                         disabled={orderPlaced}
-                        className="border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5"
+                        className="w-full border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5 sm:w-auto"
                       >
                         Back
                       </Button>
@@ -192,10 +216,12 @@ export default function ShopifyCheckout() {
                 )}
               </div>
             </div>
-            <OrderSummarySidebar
-              appliedCoupon={appliedCoupon}
-              onAppliedCouponChange={setAppliedCoupon}
-            />
+            <div className="hidden md:block">
+              <OrderSummarySidebar
+                appliedCoupon={appliedCoupon}
+                onAppliedCouponChange={setAppliedCoupon}
+              />
+            </div>
           </div>
         </div>
       </section>

@@ -11,11 +11,13 @@ export type AppliedCoupon = { code: string; discount: number; type: string };
 interface OrderSummarySidebarProps {
   appliedCoupon?: AppliedCoupon | null;
   onAppliedCouponChange?: (coupon: AppliedCoupon | null) => void;
+  className?: string;
 }
 
 export function OrderSummarySidebar({
   appliedCoupon = null,
   onAppliedCouponChange,
+  className = "",
 }: OrderSummarySidebarProps) {
   const { cart, getCartTotal, getCartItemCount } = useCart();
   const { formatPrice } = useCurrency();
@@ -67,7 +69,7 @@ export function OrderSummarySidebar({
   }
 
   return (
-    <aside className="w-full md:w-80 shrink-0 rounded-[2.5rem] border border-brand-teal/20 bg-white p-6 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm md:sticky md:top-24 md:self-start">
+    <aside className={`w-full md:w-80 shrink-0 rounded-[2.5rem] border border-brand-teal/20 bg-white p-5 sm:p-6 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm md:sticky md:top-24 md:self-start ${className}`}>
       <h3 className="caps-spacing text-xs text-brand-teal mb-4">Order Summary</h3>
       <ul className="mb-4 space-y-2 text-sm text-brand-umber">
         {cart.map(item => (

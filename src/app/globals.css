@@ -6,6 +6,7 @@
 @layer base {
   :root {
     --radius: 0.75rem;
+    --nav-clearance: clamp(6.25rem, 11vw, 9rem);
 
     --background: 38.4 50.3% 70.8%;
     --foreground: 5.3 29.8% 22.4%;
@@ -42,6 +43,7 @@
 
   body {
     min-height: 100vh;
+    overflow-x: hidden;
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family: var(--font-kumbh-sans), sans-serif;
@@ -117,6 +119,11 @@
     font-family: var(--font-kumbh-sans), sans-serif;
   }
 
+  .mobile-page-title {
+    font-size: clamp(1.8rem, 8vw, 3rem);
+    line-height: 1.1;
+  }
+
   .caps-spacing {
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -173,7 +180,7 @@
     display: inline-flex;
     align-items: center;
     gap: 1.5rem;
-    padding: 0 3rem;
+    padding: 0 1.25rem;
   }
 
   .pattern-divider::before,
@@ -236,7 +243,7 @@
   .grid-masonry {
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     grid-auto-rows: minmax(340px, auto);
-    gap: 2rem;
+    gap: 1.25rem;
   }
 
   .gradient-gold {
@@ -255,18 +262,11 @@
   }
 
   .nav-clearance {
-    padding-top: 6.5rem;
+    padding-top: var(--nav-clearance);
   }
 
-  @media (min-width: 640px) {
-    .nav-clearance {
-      padding-top: 8rem;
-    }
-  }
-
-  @media (min-width: 1024px) {
-    .nav-clearance {
-      padding-top: 9.5rem;
-    }
+  .floating-safe-offset {
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    right: calc(1rem + env(safe-area-inset-right));
   }
 }

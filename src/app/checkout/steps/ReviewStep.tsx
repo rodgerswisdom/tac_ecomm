@@ -11,6 +11,11 @@ const paymentLabel: Record<PaymentMethod, string> = {
   CARD: "Credit / Debit Card"
 };
 
+const deliveryLabel: Record<string, string> = {
+  standard: "Standard Delivery (3-5 days)",
+  pickup: "In-Store Pickup",
+};
+
 export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlaceOrder, isSubmitting }: ReviewStepProps) {
   const { cart, getCartTotal } = useCart();
   const { formatPrice } = useCurrency();
@@ -24,14 +29,17 @@ export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlace
       <h2 className="text-lg font-semibold mb-4">Review & Confirm</h2>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Shipping Info</h3>
-        <div className="text-sm text-muted-foreground">
-          {shipping.firstName} {shipping.lastName}, {shipping.address}, {shipping.city}, {shipping.state}, {shipping.zipCode}, {shipping.country}<br />
-          {shipping.email} {shipping.phone && <>| {shipping.phone}</>}
+        <div className="space-y-1 text-sm text-muted-foreground break-words">
+          <p>{shipping.firstName} {shipping.lastName}</p>
+          <p>{shipping.address}</p>
+          <p>{shipping.city}, {shipping.state} {shipping.zipCode}</p>
+          <p>{shipping.country}</p>
+          <p>{shipping.email} {shipping.phone && <>| {shipping.phone}</>}</p>
         </div>
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Delivery Method</h3>
-        <div className="text-sm text-muted-foreground">{delivery}</div>
+        <div className="text-sm text-muted-foreground">{deliveryLabel[delivery] ?? delivery}</div>
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Payment</h3>
