@@ -4,6 +4,7 @@ import "./globals.css";
 import { CartProvider } from "@/contexts/CartContext";
 import { CurrencyProvider } from "@/contexts/CurrencyContext";
 import { SessionProviderWrapper } from "@/components/providers/SessionProviderWrapper";
+import { KeverdProviderWrapper } from "@/components/providers/KeverdProviderWrapper";
 import { Toaster } from "sonner";
 import { WhatsAppWidget } from "@/components/WhatsAppWidget";
 
@@ -125,20 +126,22 @@ export default async function RootLayout({
         className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar bg-texture-linen`}
       >
         <SessionProviderWrapper>
-          <CartProvider>
-            <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
-              <NavbarCategoriesProvider categories={shopCategories}>
-                <div className="flex flex-col min-h-screen">
+          <KeverdProviderWrapper>
+            <CartProvider>
+              <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
+                <NavbarCategoriesProvider categories={shopCategories}>
+                  <div className="flex flex-col min-h-screen">
                     <main className="flex-grow">
-                        {isMaintenanceActive ? <MaintenanceMode /> : children}
+                      {isMaintenanceActive ? <MaintenanceMode /> : children}
                     </main>
                     {!isMaintenanceActive && <Footer />}
-                </div>
-                <Toaster position="bottom-center" richColors />
-                <WhatsAppWidget />
-              </NavbarCategoriesProvider>
-            </CurrencyProvider>
-          </CartProvider>
+                  </div>
+                  <Toaster position="bottom-center" richColors />
+                  <WhatsAppWidget />
+                </NavbarCategoriesProvider>
+              </CurrencyProvider>
+            </CartProvider>
+          </KeverdProviderWrapper>
         </SessionProviderWrapper>
       </body>
     </html>
