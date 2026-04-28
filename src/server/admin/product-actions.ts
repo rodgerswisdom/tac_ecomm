@@ -76,15 +76,29 @@ export async function createProductAction(
 
   const slug = await resolveProductSlug(parsed.data.name, proposedSlug)
 
-  const created = await prisma.product.create({
-    data: {
-      ...parsed.data,
-      shortDescription: parsed.data.shortDescription ?? null,
-      materials: [],
-      slug,
-      isDraft,
-    },
-  })
+  let created: { id: string; name: string }
+  try {
+    created = await prisma.product.create({
+      data: {
+        ...parsed.data,
+        shortDescription: parsed.data.shortDescription ?? null,
+        materials: [],
+        slug,
+        isDraft,
+      },
+      select: { id: true, name: true },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        status: "error",
+        message: "SKU already exists. Please use a unique SKU.",
+        fieldErrors: { sku: "SKU already exists. Please use a unique SKU." },
+        values: formValues,
+      }
+    }
+    throw error
+  }
 
   await prisma.productImage.createMany({
     data: mediaValidation.items.map((asset, index) => ({
@@ -132,13 +146,20 @@ export async function updateProductAction(formData: FormData) {
 
   const slug = await resolveProductSlug(parsed.data.name, undefined, parsed.data.id)
 
-  await prisma.product.update({
-    where: { id: parsed.data.id },
-    data: {
-      ...parsed.data,
-      slug,
-    },
-  })
+  try {
+    await prisma.product.update({
+      where: { id: parsed.data.id },
+      data: {
+        ...parsed.data,
+        slug,
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new Error("SKU already exists. Please use a unique SKU.")
+    }
+    throw error
+  }
 
   revalidateProductRoute(parsed.data.id)
 }
