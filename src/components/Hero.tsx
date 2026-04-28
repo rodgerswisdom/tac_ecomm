@@ -111,13 +111,14 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
     >
       <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
       <div className="absolute inset-0 bg-texture-linen opacity-35" />
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `url(${activeSlide.image})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+      <Image
+        src={activeSlide.image}
+        alt=""
+        fill
+        aria-hidden
+        sizes="100vw"
+        quality={35}
+        className="absolute inset-0 object-cover opacity-10"
       />
 
       {floatingParticles.map((particle, index) => (
@@ -298,13 +299,14 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   transition={{ duration: 0.8, ease: [0.25, 0.8, 0.25, 1] }}
                   className="relative aspect-[4/4.5] w-full overflow-hidden"
                 >
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${activeSlide.image})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
+                  <Image
+                    src={activeSlide.image}
+                    alt={activeSlide.title}
+                    fill
+                    sizes="(max-width: 640px) 320px, (max-width: 1024px) 420px, 520px"
+                    quality={70}
+                    priority={activeIndex === 0}
+                    className="object-cover"
                   />
                   <span className="sr-only">{activeSlide.title}</span>
 
@@ -346,14 +348,18 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                       : "border-brand-umber/20 hover:border-brand-umber/40"
                       }`}
                     aria-label={`Show slide ${index + 1}`}
-                    style={{
-                      backgroundImage: `url(${slide.image})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
+                        <Image
+                          src={slide.image}
+                          alt=""
+                          fill
+                          aria-hidden
+                          sizes="48px"
+                          quality={40}
+                          className="object-cover"
+                        />
                     <span
                       className={`absolute inset-0 bg-brand-umber/60 transition-opacity ${isActive ? "opacity-30" : "opacity-60"
                         }`}
