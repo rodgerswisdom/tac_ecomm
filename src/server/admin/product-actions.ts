@@ -176,6 +176,11 @@ export async function deleteProductAction(formData: FormData) {
   try {
     await prisma.product.delete({ where: { id: productId } })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      // Idempotent delete: product already removed (stale UI / double-submit).
+      revalidateProductRoute(productId)
+      return
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       throw new Error("Product cannot be deleted while linked to orders or cart items")
     }
@@ -292,7 +297,15 @@ export async function bulkDeleteProducts(
   if (ids.length === 0) return { success: true }
   try {
     for (const id of ids) {
-      await prisma.product.delete({ where: { id } })
+      try {
+        await prisma.product.delete({ where: { id } })
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+          // Skip missing rows so bulk actions stay resilient.
+          continue
+        }
+        throw error
+      }
     }
     revalidatePath("/admin/products")
     return { success: true }
