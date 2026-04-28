@@ -111,7 +111,7 @@ export default async function AnalyticsPage({ searchParams }: AnalyticsPageProps
         </Card>
       </div>
 
-      {/* Top Level KPIs — amounts in USD, display follows admin currency switcher */}
+      {/* Top Level KPIs — amounts in KSH, display follows admin currency switcher */}
       <AnalyticsKpiCards
         revenueTotal={analytics.revenueTotal ?? 0}
         averageOrderValue={analytics.averageOrderValue}

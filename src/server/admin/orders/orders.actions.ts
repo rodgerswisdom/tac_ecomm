@@ -174,7 +174,7 @@ export async function updateOrderStatusAction(
                 tax: order.tax,
                 shipping: order.shipping,
                 total: order.total,
-                currency: order.currency ?? "USD",
+                currency: order.currency ?? "KSH",
                 shippingAddress: {
                     name: customerName,
                     address: order.shippingAddress?.address1 ?? "",

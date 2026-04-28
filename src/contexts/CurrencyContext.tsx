@@ -19,7 +19,7 @@ import {
 type CurrencyContextType = {
   currency: CurrencyCode;
   setCurrency: (code: CurrencyCode) => void;
-  formatPrice: (amountUsd: number) => string;
+  formatPrice: (amountBase: number) => string;
 };
 
 const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined);
@@ -31,7 +31,7 @@ export function CurrencyProvider({
   children: ReactNode;
   initialRates?: { kes: number; eur: number };
 }) {
-  const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
+  const [currency, setCurrencyState] = useState<CurrencyCode>("KSH");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -49,12 +49,12 @@ export function CurrencyProvider({
   }, []);
 
   const formatPrice = useCallback(
-    (amountUsd: number) => formatInCurrency(amountUsd, currency),
+    (amountBase: number) => formatInCurrency(amountBase, currency),
     [currency]
   );
 
   const value: CurrencyContextType = {
-    currency: mounted ? currency : "USD",
+    currency: mounted ? currency : "KSH",
     setCurrency,
     formatPrice,
   };

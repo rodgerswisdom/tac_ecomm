@@ -48,6 +48,7 @@ export interface OrderEmailData {
   estimatedDelivery?: string
   couponCode?: string
   couponDiscount?: number
+  currency?: string
 }
 
 export class EmailService {
@@ -276,22 +277,22 @@ export class EmailService {
               ${data.items.map(item => `
                 <div class="item">
                   <span>${item.name} (Qty: ${item.quantity})</span>
-                  <span>$${(item.price * item.quantity).toFixed(2)}</span>
+                  <span>${this.formatOrderPrice(item.price * item.quantity, data.currency)}</span>
                 </div>
               `).join('')}
               <div class="item">
                 <span>Subtotal:</span>
-                <span>$${data.subtotal.toFixed(2)}</span>
+                <span>${this.formatOrderPrice(data.subtotal, data.currency)}</span>
               </div>
               ${'couponCode' in data && data.couponCode ? `
                 <div class="item">
                   <span>Discount (${data.couponCode}):</span>
-                    <span>-$${typeof data.couponDiscount === 'number' ? data.couponDiscount.toFixed(2) : '0.00'}</span>
+                    <span>-${this.formatOrderPrice(typeof data.couponDiscount === 'number' ? data.couponDiscount : 0, data.currency)}</span>
                 </div>
               ` : ''}
               <div class="item total">
                 <span>Total:</span>
-                <span>$${data.total.toFixed(2)}</span>
+                <span>${this.formatOrderPrice(data.total, data.currency)}</span>
               </div>
             </div>
             
@@ -339,10 +340,10 @@ export class EmailService {
       - Order Date: ${data.orderDate}
       
       Items:
-      ${data.items.map(item => `- ${item.name} (Qty: ${item.quantity}) - $${(item.price * item.quantity).toFixed(2)}`).join('\n')}
+      ${data.items.map(item => `- ${item.name} (Qty: ${item.quantity}) - ${this.formatOrderPrice(item.price * item.quantity, data.currency)}`).join('\n')}
       
-      Subtotal: $${data.subtotal.toFixed(2)}
-      Total: $${data.total.toFixed(2)}
+      Subtotal: ${this.formatOrderPrice(data.subtotal, data.currency)}
+      Total: ${this.formatOrderPrice(data.total, data.currency)}
       
       Shipping Address:
       ${data.shippingAddress.name}
@@ -534,9 +535,9 @@ export class EmailService {
               <p><strong>Order #:</strong> ${data.orderNumber}</p>
               <p><strong>Date:</strong> ${data.orderDate}</p>
               <h4>Items:</h4>
-              ${data.items.map((item) => `<div class="item"><span>${item.name} (x${item.quantity})</span><span>$${(item.price * item.quantity).toFixed(2)}</span></div>`).join('')}
-              <div class="item"><span>Subtotal:</span><span>$${data.subtotal.toFixed(2)}</span></div>
-              <div class="item total"><span>Total:</span><span>$${data.total.toFixed(2)}</span></div>
+              ${data.items.map((item) => `<div class="item"><span>${item.name} (x${item.quantity})</span><span>${this.formatOrderPrice(item.price * item.quantity, data.currency)}</span></div>`).join('')}
+              <div class="item"><span>Subtotal:</span><span>${this.formatOrderPrice(data.subtotal, data.currency)}</span></div>
+              <div class="item total"><span>Total:</span><span>${this.formatOrderPrice(data.total, data.currency)}</span></div>
             </div>
             <p>We will notify you when your order ships.</p>
           </div>
@@ -667,7 +668,7 @@ export class EmailService {
           <div class="content">
             <h2>Hello ${data.customerName},</h2>
             <p>Your refund for order ${data.orderNumber} has been processed.</p>
-            <p class="refund-amount">Refund amount: $${data.total.toFixed(2)}</p>
+            <p class="refund-amount">Refund amount: ${this.formatOrderPrice(data.total, data.currency)}</p>
             <p>The funds will appear in your original payment method within 5–10 business days, depending on your bank.</p>
             ${noteHtml}
             <p>If you have any questions, please contact our support team.</p>
@@ -680,7 +681,7 @@ export class EmailService {
       </body>
       </html>
     `
-    const text = `Order Refunded - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour refund for order ${data.orderNumber} has been processed. Refund amount: $${data.total.toFixed(2)}. The funds will appear in your original payment method within 5–10 business days.${noteText}\n\nIf you have any questions, please contact our support team.\n\nThank you for choosing TAC Accessories!`
+    const text = `Order Refunded - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour refund for order ${data.orderNumber} has been processed. Refund amount: ${this.formatOrderPrice(data.total, data.currency)}. The funds will appear in your original payment method within 5–10 business days.${noteText}\n\nIf you have any questions, please contact our support team.\n\nThank you for choosing TAC Accessories!`
     return { subject, html, text }
   }
 
@@ -910,6 +911,18 @@ export class EmailService {
     `
     const text = `Verify your email - TAC Accessories\n\nThanks for signing up! Use this code to verify your email: ${code}\n\nThis code expires in 15 minutes. If you didn't create an account, you can ignore this email.`
     return { subject, html, text }
+  }
+
+  
+  private formatOrderPrice(amount: number, currency?: string): string {
+    const c = (currency || 'KSH').toUpperCase()
+    if (c === 'KSH' || c === 'KES') {
+      return `KES ${Math.round(amount).toLocaleString()}`
+    }
+    if (c === 'EUR') {
+      return `€${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    }
+    return `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
 
   private htmlToText(html: string): string {

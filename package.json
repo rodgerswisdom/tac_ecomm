@@ -26,8 +26,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "admin:create": "tsx scripts/bootstrapAdmin.ts",
     "test:stock": "tsx scripts/test-stock.ts",
-    "postinstall": "echo 'Skipping prisma generate in postinstall'",
-    "prepare": "echo 'Skipping prisma generate in prepare'"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.0",
@@ -35,7 +34,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.2.2",
-    "@keverdjs/react": "^1.2.2",
+    "@keverdjs/agent": "^1.6.0",
+    "@keverdjs/react": "^1.6.0",
     "@paypal/react-paypal-js": "^8.9.2",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",

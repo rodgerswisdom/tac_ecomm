@@ -2,7 +2,7 @@
 
 import { DollarSign } from "lucide-react"
 import { useCurrency } from "@/contexts/CurrencyContext"
-import { convertToUsd } from "@/lib/currency"
+import { convertToBase } from "@/lib/currency"
 import type { CurrencyCode } from "@/lib/currency"
 import { useCountUp } from "@/hooks/useCountUp"
 import { StatsCard } from "@/components/admin/stats-card"

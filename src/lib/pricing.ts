@@ -14,16 +14,16 @@ export interface PriceAdjustment {
 
 // Currency exchange rates (mock data - in production, use real API)
 const EXCHANGE_RATES: Record<string, number> = {
-  USD: 1.0,
-  EUR: 0.85,
-  GBP: 0.73,
-  CAD: 1.35,
-  AUD: 1.52,
-  NGN: 460.0,
-  KES: 110.0,
-  ZAR: 18.5,
-  GHS: 6.2,
-  EGP: 31.0
+  KES: 1.0,
+  USD: 1 / 130,
+  EUR: 0.92 / 130,
+  GBP: 0.73 / 130,
+  CAD: 1.35 / 130,
+  AUD: 1.52 / 130,
+  NGN: 460.0 / 130,
+  ZAR: 18.5 / 130,
+  GHS: 6.2 / 130,
+  EGP: 31.0 / 130
 }
 
 // Regional pricing adjustments
@@ -184,7 +184,7 @@ export class DynamicPricing {
 }
 
 // Utility functions for easy use
-export function getDynamicPrice(basePrice: number, currency: string = 'USD'): {
+export function getDynamicPrice(basePrice: number, currency: string = 'KSH'): {
   price: number
   formattedPrice: string
   explanation: string
@@ -208,6 +208,6 @@ export function getDynamicPrice(basePrice: number, currency: string = 'USD'): {
 }
 
 // Hook for React components
-export function useDynamicPricing(basePrice: number, currency: string = 'USD') {
+export function useDynamicPricing(basePrice: number, currency: string = 'KSH') {
   return getDynamicPrice(basePrice, currency)
 }

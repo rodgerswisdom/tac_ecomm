@@ -108,7 +108,7 @@ model Product {
   slug             String           @unique
   description      String
   shortDescription String?
-  price            Float // Always USD
+  price            Float // Always KSH
   comparePrice     Float?
   sku              String           @unique
   stock            Int              @default(0)
@@ -234,7 +234,7 @@ model Order {
   tax               Float
   shipping          Float
   total             Float
-  currency          String        @default("USD")
+  currency          String        @default("KSH")
   paymentMethod     String?
   paymentStatus     PaymentStatus @default(PENDING)
   shippingMethod    String?
@@ -270,7 +270,7 @@ model OrderItem {
 model Payment {
   id              String        @id @default(cuid())
   amount          Float
-  currency        String        @default("USD")
+  currency        String        @default("KSH")
   method          PaymentMethod
   status          PaymentStatus @default(PENDING)
   transactionId   String?

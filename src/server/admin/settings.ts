@@ -37,7 +37,7 @@ const settingsSchema = z.object({
     facebookUrl: z.string().optional().or(z.literal("")),
     maintenanceMode: z.preprocess((val) => val === "true" || val === true, z.boolean()),
     autoSyncRates: z.preprocess((val) => val === "true" || val === true, z.boolean()),
-    defaultCurrency: z.string().length(3),
+    defaultCurrency: z.string().length(3).default("KSH"),
     usdToKesRate: z.coerce.number().positive(),
     usdToEurRate: z.coerce.number().positive(),
     taxRate: z.coerce.number().min(0),

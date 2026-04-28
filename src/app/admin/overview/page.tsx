@@ -158,7 +158,7 @@ export default async function OverviewPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-left pr-8 font-semibold">
-                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} />
+                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "KSH" ? undefined : order.currency} />
                   </td>
                 </tr>
               ))}
@@ -206,7 +206,7 @@ export default async function OverviewPage() {
                     </div>
                   </div>
                   <div className="shrink-0 text-base font-bold tabular-nums">
-                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} />
+                    <AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "KSH" ? undefined : order.currency} />
                   </div>
                 </div>
               </div>

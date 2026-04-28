@@ -55,8 +55,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   }
 
   const address = order.shippingAddress
-  // Order amounts (subtotal, total, line items) are always stored in USD. Payment amount can be in payment currency (e.g. KES).
-  const orderCurrency = order.currency === "USD" ? undefined : order.currency
+  // Order amounts (subtotal, total, line items) are stored in KSH. Payment amount can be in payment currency (e.g. KES).
+  const orderCurrency = order.currency === "KSH" ? undefined : order.currency
   const customerName = [address?.firstName, address?.lastName].filter(Boolean).join(" ") || order.user?.name || "Customer"
 
   return (
@@ -181,7 +181,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "USD" ? undefined : payment.currency} /></p>
+                        <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "KSH" ? undefined : payment.currency} /></p>
                       </div>
                     </div>
                   ))

@@ -18,7 +18,7 @@ export interface ShippingItem {
   sku: string
   quantity: number
   weight: number // in pounds
-  value: number // in USD
+  value: number // in KSH
   dimensions?: {
     length: number
     width: number
@@ -231,24 +231,24 @@ export class ShipEngineService {
       {
         service: 'Standard Shipping',
         carrier: 'UPS',
-        rate: 9.99,
-        currency: 'USD',
+        rate: 1299,
+        currency: 'KSH',
         estimatedDays: 5,
         serviceCode: 'ups_ground'
       },
       {
         service: 'Express Shipping',
         carrier: 'FedEx',
-        rate: 19.99,
-        currency: 'USD',
+        rate: 2599,
+        currency: 'KSH',
         estimatedDays: 2,
         serviceCode: 'fedex_2_day'
       },
       {
         service: 'Overnight Shipping',
         carrier: 'UPS',
-        rate: 39.99,
-        currency: 'USD',
+        rate: 5199,
+        currency: 'KSH',
         estimatedDays: 1,
         serviceCode: 'ups_next_day_air'
       }
@@ -265,13 +265,13 @@ export class ShipEngineService {
           {
             service_type: 'UPS Ground',
             carrier_friendly_name: 'UPS',
-            shipping_amount: { amount: '9.99', currency: 'USD' },
+            shipping_amount: { amount: '1299', currency: 'KSH' },
             service_code: 'ups_ground'
           },
           {
             service_type: 'FedEx 2-Day',
             carrier_friendly_name: 'FedEx',
-            shipping_amount: { amount: '19.99', currency: 'USD' },
+            shipping_amount: { amount: '2599', currency: 'KSH' },
             service_code: 'fedex_2_day'
           }
         ]
@@ -327,8 +327,8 @@ export class EasyPostService {
       {
         service: 'USPS Ground',
         carrier: 'USPS',
-        rate: 7.99,
-        currency: 'USD',
+        rate: 1039,
+        currency: 'KSH',
         estimatedDays: 7,
         serviceCode: 'usps_ground'
       }
@@ -383,8 +383,8 @@ export class ShippingService {
         {
           service: 'Standard Shipping',
           carrier: 'Standard',
-          rate: 9.99,
-          currency: 'USD',
+          rate: 1299,
+          currency: 'KSH',
           estimatedDays: 5,
           serviceCode: 'standard'
         }
@@ -434,7 +434,7 @@ export class ShippingService {
 
 // Utility functions
 export function calculateShippingCost(weight: number, distance: string = 'domestic'): number {
-  const baseRate = distance === 'domestic' ? 5.99 : 15.99
+  const baseRate = distance === 'domestic' ? 779 : 2079
   const weightRate = weight > 1 ? (weight - 1) * 2 : 0
   return baseRate + weightRate
 }

@@ -178,7 +178,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                           <span>{order.user?.email ?? "Not provided"}</span>
                         </p>
                       </td>
-                      <td className="px-4 py-3 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "USD" ? undefined : order.currency} /></td>
+                      <td className="px-4 py-3 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "KSH" ? undefined : order.currency} /></td>
                       <td className="px-4 py-3">
                         <span
                           className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium"

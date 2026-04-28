@@ -73,7 +73,7 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=tac_accessories
 APP_NAME=TAC Accessories
 APP_URL=https://your-domain.vercel.app
 ADMIN_EMAIL=admin@your-domain.com
-DEFAULT_CURRENCY=USD
+DEFAULT_CURRENCY=KSH
 ENABLE_DYNAMIC_PRICING=true
 ```
 

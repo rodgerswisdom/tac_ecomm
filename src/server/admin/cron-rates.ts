@@ -44,7 +44,7 @@ export async function syncExchangeRates() {
             }
         });
 
-        console.log(`Rates synced: USD=1, KES=${KES}, EUR=${EUR}`);
+        console.log(`Rates synced (USD base): KES=${KES}, EUR=${EUR} → KSH base: USD=${(1/KES).toFixed(6)}, EUR=${(EUR/KES).toFixed(6)}`);
         revalidatePath('/admin/settings');
         revalidatePath('/'); // Global update
 
