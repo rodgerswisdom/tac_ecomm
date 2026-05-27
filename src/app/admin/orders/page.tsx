@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
-import { CheckCircle, Clock, HelpCircle, Mail, Search, XCircle, Truck } from "lucide-react"
+import { CheckCircle, Clock, HelpCircle, Mail, Phone, Search, XCircle, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -176,6 +176,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                         <p className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Mail className="h-3 w-3" />
                           <span>{order.user?.email ?? "Not provided"}</span>
+                        </p>
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          <span>{order.shippingAddress?.phone ?? "Not provided"}</span>
                         </p>
                       </td>
                       <td className="px-4 py-3 "><AdminFormattedPrice amount={order.total} amountCurrency={order.currency === "KSH" ? undefined : order.currency} /></td>

@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
 import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
+import { EmailService, getEmailConfig } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   if (!passesCsrfProtection(req)) {
@@ -248,6 +249,51 @@ export async function POST(req: NextRequest) {
   })
 
   let redirectUrl: string | undefined
+  const opsEmails = [
+    "info@tacaccessories.co.ke",
+    "peter@tacaccessories.co.ke",
+    "mary@tacaccessories.co.ke",
+  ]
+  const sendOpsNotification = async () => {
+    const emailService = new EmailService(getEmailConfig())
+    const subject = `New order received: ${order.orderNumber}`
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2 style="margin: 0 0 12px 0;">New order received</h2>
+        <p style="margin: 0 0 12px 0;"><strong>Order #:</strong> ${order.orderNumber}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Customer:</strong> ${firstNameTrim} ${lastNameTrim}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Email:</strong> ${emailTrim}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Phone:</strong> ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Total:</strong> KES ${Math.round(total).toLocaleString()}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${normalizedPaymentMethod ?? "Not specified"}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+        <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
+        <p style="margin: 0;">
+          ${firstNameTrim} ${lastNameTrim}<br />
+          ${addressTrim}<br />
+          ${cityTrim}, ${stateTrim} ${zipCodeTrim}<br />
+          ${countryTrim}
+        </p>
+      </div>
+    `
+    const text =
+      `New order received\n\n` +
+      `Order #: ${order.orderNumber}\n` +
+      `Customer: ${firstNameTrim} ${lastNameTrim}\n` +
+      `Email: ${emailTrim}\n` +
+      `Phone: ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}\n` +
+      `Total: KES ${Math.round(total).toLocaleString()}\n` +
+      `Payment method: ${normalizedPaymentMethod ?? "Not specified"}\n\n` +
+      `Shipping:\n` +
+      `${firstNameTrim} ${lastNameTrim}\n` +
+      `${addressTrim}\n` +
+      `${cityTrim}, ${stateTrim} ${zipCodeTrim}\n` +
+      `${countryTrim}\n`
+
+    await Promise.all(
+      opsEmails.map((to) => emailService.sendEmail({ to, subject, html, text }))
+    )
+  }
 
   if (normalizedPaymentMethod === PaymentMethod.PESAPAL) {
     const paymentService = new PaymentService(getPaymentConfig())
@@ -293,6 +339,8 @@ export async function POST(req: NextRequest) {
       })
 
       redirectUrl = paymentResponse.redirectUrl
+      // Notify ops only once payment initialization succeeded (avoid false alarms on failed redirects).
+      await sendOpsNotification()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Pesapal payment failed'
       console.error('Pesapal payment initialization failed', error)
@@ -309,6 +357,10 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       )
     }
+  }
+  // Non-pesapal: order is created and ready immediately.
+  if (normalizedPaymentMethod !== PaymentMethod.PESAPAL) {
+    await sendOpsNotification()
   }
 
   // Stock is decremented only when payment is confirmed:
