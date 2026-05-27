@@ -11,6 +11,7 @@ import { AutoSubmitSelect } from "@/app/admin/products/AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
 import { formatPrice } from "@/lib/utils"
+import { CopyToClipboardButton } from "@/components/admin/CopyToClipboardButton"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -252,6 +253,21 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer</p>
                                   <p className="font-bold text-slate-900">{order.user?.name ?? 'Guest'}</p>
                                   <p className="text-xs text-slate-500">{order.user?.email}</p>
+                                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                                    <span className="font-semibold text-slate-600">Phone:</span>
+                                    <a
+                                      href={order.shippingAddress?.phone ? `tel:${order.shippingAddress.phone}` : undefined}
+                                      className={order.shippingAddress?.phone ? "underline underline-offset-4" : "text-slate-400"}
+                                    >
+                                      {order.shippingAddress?.phone ?? "Not provided"}
+                                    </a>
+                                    {order.shippingAddress?.phone ? (
+                                      <CopyToClipboardButton
+                                        value={order.shippingAddress.phone}
+                                        label="Copy phone number"
+                                      />
+                                    ) : null}
+                                  </div>
                                 </div>
                                 <div className="text-right">
                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Payment Method</p>
