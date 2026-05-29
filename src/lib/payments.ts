@@ -1,4 +1,4 @@
-// Payment integration utilities for PayPal and Pesapal
+// Payment integration utilities for PayPal and Tuma (M-Pesa STK push)
 
 export interface PaymentConfig {
   paypal: {
@@ -6,11 +6,10 @@ export interface PaymentConfig {
     clientSecret: string
     mode: 'sandbox' | 'live'
   }
-  pesapal: {
-    consumerKey: string
-    consumerSecret: string
-    environment: 'sandbox' | 'production'
-    notificationId?: string
+  tuma: {
+    email: string
+    apiKey: string
+    baseUrl: string
   }
 }
 
@@ -43,6 +42,10 @@ export interface PaymentResponse {
   redirectUrl?: string
   error?: string
   transactionId?: string
+  /** Customer-facing message from the payment gateway (e.g. STK push sent). */
+  message?: string
+  merchantRequestId?: string
+  checkoutRequestId?: string
 }
 
 export interface PaymentVerification {
@@ -204,254 +207,104 @@ export class PayPalPayment {
   }
 }
 
-// Pesapal Integration
-export class PesapalPayment {
-  private config: PaymentConfig['pesapal']
+/** Normalize Kenyan mobile numbers to 254XXXXXXXXX for Tuma/M-Pesa. */
+export function normalizeKenyaPhone(phone: string): string | null {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.startsWith('254') && digits.length === 12) return digits
+  if (digits.startsWith('0') && digits.length === 10) return `254${digits.slice(1)}`
+  if (digits.length === 9 && /^[17]/.test(digits)) return `254${digits}`
+  return null
+}
+
+// Tuma Integration (M-Pesa STK push)
+export class TumaPayment {
+  private config: PaymentConfig['tuma']
   private tokenCache?: { token: string; expiresAt: number }
 
-  constructor(config: PaymentConfig['pesapal']) {
+  constructor(config: PaymentConfig['tuma']) {
     this.config = config
   }
 
   async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
     try {
       this.assertConfig()
+      const phone = request.customerPhone ? normalizeKenyaPhone(request.customerPhone) : null
+      if (!phone) {
+        throw new Error('A valid Kenyan M-Pesa phone number is required (e.g. 0712345678 or 254712345678)')
+      }
+
       const token = await this.getAccessToken()
-      const [firstName, ...rest] = request.customerName.trim().split(' ')
-      const lastName = rest.join(' ') || firstName
-      const notificationId = this.resolveNotificationId()
-      // Pesapal: id max 50 chars, alphanumeric and - _ . : only; state max 3 chars
-      const merchantId = String(request.orderId)
-        .replace(/[^a-zA-Z0-9\-_.:]/g, '-')
-        .slice(0, 50) || 'order'
-      const state = (request.billingAddress?.state ?? '').trim().slice(0, 3)
-      const payload = {
-        id: merchantId,
-        currency: request.currency,
-        amount: Number(request.amount.toFixed(2)),
-        description: (request.description || 'Order').slice(0, 100),
-        callback_url: request.returnUrl,
-        notification_id: notificationId,
-        cancellation_url: request.cancelUrl,
-        billing_address: {
-          email_address: request.customerEmail,
-          phone_number: request.customerPhone ?? '',
-          country_code: (request.billingAddress?.countryCode ?? '').slice(0, 2),
-          first_name: firstName,
-          middle_name: '',
-          last_name: lastName,
-          line_1: (request.billingAddress?.line1 ?? '').slice(0, 255),
-          line_2: (request.billingAddress?.line2 ?? '').slice(0, 255),
-          city: (request.billingAddress?.city ?? '').slice(0, 255),
-          state,
-          zip_code: String(request.billingAddress?.postalCode ?? '').slice(0, 20)
+      const response = await this.authenticatedRequest<Record<string, unknown>>('/payment/stk-push', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
+        body: JSON.stringify({
+          amount: Number(request.amount.toFixed(2)),
+          phone,
+          callback_url: request.returnUrl,
+          description: (request.description || `Order ${request.orderId}`).slice(0, 100)
+        })
+      })
+
+      if (response.success === false) {
+        const message = typeof response.message === 'string' ? response.message : 'Tuma STK push failed'
+        throw new Error(message)
       }
 
-      const response = await this.authenticatedRequest<Record<string, unknown>>(
-        '/Transactions/SubmitOrderRequest',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        }
-      )
+      const data = (response.data && typeof response.data === 'object'
+        ? response.data
+        : {}) as Record<string, unknown>
 
-      const { orderTrackingId, redirectUrl, statusMessage } = this.normalizeOrderResponse(response)
-      if (!orderTrackingId || !redirectUrl) {
-        throw new Error(statusMessage || 'Pesapal did not return a redirect URL')
+      const merchantRequestId =
+        typeof data.merchant_request_id === 'string' ? data.merchant_request_id : undefined
+      const checkoutRequestId =
+        typeof data.checkout_request_id === 'string' ? data.checkout_request_id : undefined
+
+      if (!checkoutRequestId) {
+        throw new Error('Tuma did not return a checkout request id')
       }
+
+      const message =
+        typeof response.message === 'string'
+          ? response.message
+          : typeof data.customer_message === 'string'
+            ? data.customer_message
+            : 'Payment request sent. Complete payment on your phone.'
 
       return {
         success: true,
-        paymentId: orderTrackingId,
-        redirectUrl
+        paymentId: checkoutRequestId,
+        transactionId: checkoutRequestId,
+        merchantRequestId,
+        checkoutRequestId,
+        message
       }
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Pesapal payment creation failed'
+        error: error instanceof Error ? error.message : 'Tuma payment creation failed'
       }
     }
   }
 
-  async verifyPayment(orderTrackingId: string, options?: { merchantReference?: string }): Promise<PaymentVerification> {
-    try {
-      this.assertConfig()
-      const token = await this.getAccessToken()
-      const params = new URLSearchParams({ orderTrackingId })
-      if (options?.merchantReference) {
-        params.set('merchantReference', options.merchantReference)
-      }
-      const response = await this.authenticatedRequest<Record<string, unknown>>(`/Transactions/GetTransactionStatus?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
-
-      const statusInfo = this.normalizeStatusResponse(response)
-
-      return {
-        success: statusInfo.status === 'completed',
-        status: statusInfo.status,
-        transactionId: statusInfo.transactionId,
-        amount: statusInfo.amount,
-        currency: statusInfo.currency,
-        error: statusInfo.error
-      }
-    } catch (error) {
-      return {
-        success: false,
-        status: 'failed',
-        error: error instanceof Error ? error.message : 'Payment verification failed'
-      }
+  async verifyPayment(): Promise<PaymentVerification> {
+    // Tuma confirms payments via webhook callback; there is no status poll endpoint in the API.
+    return {
+      success: false,
+      status: 'pending',
+      error: 'Tuma payment status is updated via callback only'
     }
   }
 
   private assertConfig() {
     const missing: string[] = []
-    if (!this.config.consumerKey?.trim()) missing.push('PESAPAL_CONSUMER_KEY')
-    if (!this.config.consumerSecret?.trim()) missing.push('PESAPAL_CONSUMER_SECRET')
-    if (!this.config.environment?.trim()) missing.push('PESAPAL_ENVIRONMENT')
-    const notificationId = this.resolveNotificationId()
-    if (!notificationId) {
-      missing.push('PESAPAL_NOTIFICATION_ID (register an IPN URL in Pesapal dashboard first)')
-    }
+    if (!this.config.email?.trim()) missing.push('TUMA_API_EMAIL')
+    if (!this.config.apiKey?.trim()) missing.push('TUMA_API_KEY')
+    if (!this.config.baseUrl?.trim()) missing.push('TUMA_API_BASE_URL')
     if (missing.length) {
-      throw new Error(`Missing Pesapal configuration: ${missing.join(', ')}`)
-    }
-  }
-
-  private resolveNotificationId(): string | undefined {
-    const value = this.config.notificationId?.trim()
-    if (!value) return undefined
-    if (value.startsWith('http')) {
-      console.warn('PESAPAL_NOTIFICATION_ID should be the Pesapal IPN ID, not the URL. Ignoring URL value.')
-      return undefined
-    }
-    return value
-  }
-
-  private normalizeOrderResponse(raw: Record<string, unknown>) {
-    // Pesapal may return top-level or nested under data/payload
-    const data = this.getNestedValue(raw, ['data']) as Record<string, unknown> | undefined
-    const payload = this.getNestedValue(raw, ['payload']) as Record<string, unknown> | undefined
-    const sources: Record<string, unknown>[] = [raw]
-    if (data && typeof data === 'object') sources.push(data)
-    if (payload && typeof payload === 'object') sources.push(payload)
-
-    let redirectUrl: string | undefined
-    let orderTrackingId: string | undefined
-    let statusMessage: string | undefined
-
-    for (const src of sources) {
-      const rRaw =
-        this.getNestedValue(src, ['redirect_url']) ?? this.getNestedValue(src, ['redirectUrl'])
-      const tRaw =
-        this.getNestedValue(src, ['order_tracking_id']) ?? this.getNestedValue(src, ['orderTrackingId'])
-      const r = typeof rRaw === 'string' && rRaw.trim() ? rRaw : rRaw != null ? String(rRaw) : undefined
-      const t = typeof tRaw === 'string' && tRaw.trim() ? tRaw : tRaw != null ? String(tRaw) : undefined
-      const m =
-        this.getNestedString(src, ['message']) ??
-        this.getNestedString(src, ['status_description']) ??
-        this.getNestedString(src, ['statusDescription'])
-      const err = this.getNestedValue(src, ['error'])
-      if (err != null && err !== '' && !m) {
-        if (typeof err === 'string') {
-          statusMessage = err
-        } else if (typeof err === 'object' && err !== null && 'message' in err) {
-          const msg = (err as { message?: string }).message
-          const code = (err as { code?: string }).code
-          statusMessage =
-            typeof msg === 'string' && msg.trim()
-              ? (code ? `${msg} (${code})` : msg)
-              : undefined
-        } else {
-          statusMessage = String(err)
-        }
-      }
-      if (m) statusMessage = m
-      if (r != null && String(r).trim()) redirectUrl = String(r).trim()
-      if (t != null && String(t).trim()) orderTrackingId = String(t).trim()
-      if (redirectUrl && orderTrackingId) break
-    }
-
-    if ((!redirectUrl || !orderTrackingId) && process.env.NODE_ENV === 'development') {
-      console.warn('Pesapal SubmitOrderRequest response (missing redirect/tracking):', JSON.stringify(raw, null, 2))
-    }
-
-    return { redirectUrl, orderTrackingId, statusMessage }
-  }
-
-  private normalizeStatusResponse(raw: Record<string, unknown>) {
-    const data = this.getNestedValue(raw, ['data']) as Record<string, unknown> | undefined
-    const payload = this.getNestedValue(raw, ['payload']) as Record<string, unknown> | undefined
-    const sources: Record<string, unknown>[] = [raw]
-    if (data && typeof data === 'object') sources.push(data)
-    if (payload && typeof payload === 'object') sources.push(payload)
-
-    let gatewayStatus = 'PENDING'
-    let statusCode: number | undefined
-    let transactionId: string | undefined
-    let amount: number | undefined
-    let currency: string | undefined
-    let error: string | undefined
-
-    for (const src of sources) {
-      const s = src as Record<string, unknown>
-      if (!gatewayStatus || gatewayStatus === 'PENDING') {
-        const g = this.getNestedString(s, ['payment_status']) ?? this.getNestedString(s, ['status'])
-        if (g) gatewayStatus = g.toUpperCase()
-      }
-      if (statusCode === undefined) statusCode = this.getNestedNumber(s, ['status_code'])
-      if (!transactionId) {
-        transactionId =
-          this.getNestedString(s, ['confirmation_code']) ??
-          this.getNestedString(s, ['payment_method']) ??
-          this.getNestedString(s, ['reference'])
-      }
-      if (amount === undefined) amount = this.getNestedNumber(s, ['amount'])
-      if (!currency) currency = this.getNestedString(s, ['currency'])
-      if (!error && (statusCode === 2 || statusCode === 3 || gatewayStatus === 'FAILED' || gatewayStatus === 'REVERSED')) {
-        error = this.getNestedString(s, ['status_description']) ?? this.getNestedString(s, ['payment_status_description'])
-      }
-    }
-
-    const statusMap: Record<string, PaymentVerification['status']> = {
-      COMPLETED: 'completed',
-      PAID: 'completed',
-      AUTHORIZED: 'completed',
-      PROCESSING: 'pending',
-      PENDING: 'pending',
-      FAILED: 'failed',
-      CANCELLED: 'cancelled',
-      INVALID: 'failed',
-      REVERSED: 'failed'
-    }
-
-    const statusFromCode = this.mapStatusCode(statusCode)
-    const status = statusFromCode ?? statusMap[gatewayStatus] ?? 'pending'
-
-    return { status, transactionId, amount, currency, error }
-  }
-
-  private mapStatusCode(code?: number): PaymentVerification['status'] | undefined {
-    if (code === undefined || code === null) return undefined
-    switch (code) {
-      case 1:
-        return 'completed'
-      case 0:
-        return 'pending'
-      case 2:
-        return 'failed'
-      case 3:
-        return 'failed'
-      default:
-        return undefined
+      throw new Error(`Missing Tuma configuration: ${missing.join(', ')}`)
     }
   }
 
@@ -461,174 +314,87 @@ export class PesapalPayment {
       return this.tokenCache.token
     }
 
-    const response = await fetch(`${this.getBaseUrl()}/Auth/RequestToken`, {
+    const response = await fetch(`${this.config.baseUrl}/auth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json'
       },
       body: JSON.stringify({
-        consumer_key: this.config.consumerKey,
-        consumer_secret: this.config.consumerSecret
+        email: this.config.email,
+        api_key: this.config.apiKey
       })
     })
 
     if (!response.ok) {
       const message = await response.text()
-      throw new Error(`Unable to authenticate with Pesapal: ${message}`)
+      throw new Error(`Unable to authenticate with Tuma: ${message}`)
     }
 
-    const raw = await response.json()
-    const token = this.extractTokenValue(raw)
+    const raw = (await response.json()) as Record<string, unknown>
+    if (raw.success === false) {
+      throw new Error(typeof raw.message === 'string' ? raw.message : 'Tuma authentication failed')
+    }
+
+    const token = typeof raw.token === 'string' ? raw.token : undefined
     if (!token) {
-      const errorMessage = this.extractErrorMessage(raw)
-      if (errorMessage) {
-        throw new Error(`Pesapal authentication failed: ${errorMessage}`)
-      }
-      throw new Error('Pesapal authentication response did not include a token')
+      throw new Error('Tuma authentication response did not include a token')
     }
 
-    const expiresAt = this.resolveExpiry(raw, now)
-    this.tokenCache = { token, expiresAt }
+    const expiresIn =
+      typeof raw.expires_in === 'number' && Number.isFinite(raw.expires_in) ? raw.expires_in : 86_400
+    this.tokenCache = { token, expiresAt: now + expiresIn * 1000 }
     return token
   }
 
-  private getBaseUrl() {
-    return this.config.environment === 'sandbox'
-      ? 'https://cybqa.pesapal.com/pesapalv3/api'
-      : 'https://pay.pesapal.com/v3/api'
-  }
-
-  private extractTokenValue(raw: unknown): string | undefined {
-    if (!raw || typeof raw !== 'object') return undefined
-    const data = raw as Record<string, unknown>
-    return (
-      this.getNestedString(data, ['token']) ??
-      this.getNestedString(data, ['access_token']) ??
-      this.getNestedString(data, ['accessToken']) ??
-      this.getNestedString(data, ['data', 'token']) ??
-      this.getNestedString(data, ['payload', 'token']) ??
-      this.getNestedString(data, ['response_data', 'token'])
-    )
-  }
-
-  private resolveExpiry(raw: unknown, fallbackStart: number): number {
-    if (raw && typeof raw === 'object') {
-      const data = raw as Record<string, unknown>
-      const iso =
-        this.getNestedString(data, ['expiry']) ??
-        this.getNestedString(data, ['expiryDate']) ??
-        this.getNestedString(data, ['expires_at']) ??
-        this.getNestedString(data, ['data', 'expiry']) ??
-        this.getNestedString(data, ['data', 'expiryDate'])
-
-      if (iso) {
-        const parsed = Date.parse(iso)
-        if (!Number.isNaN(parsed)) {
-          return parsed
-        }
-      }
-
-      const expiresInSeconds =
-        this.getNestedNumber(data, ['expires_in']) ??
-        this.getNestedNumber(data, ['expiresIn'])
-
-      if (typeof expiresInSeconds === 'number') {
-        return fallbackStart + expiresInSeconds * 1000
-      }
-    }
-
-    return fallbackStart + 50 * 60 * 1000
-  }
-
-  private getNestedString(source: Record<string, unknown>, path: string[]): string | undefined {
-    const value = this.getNestedValue(source, path)
-    return typeof value === 'string' && value.trim().length > 0 ? value : undefined
-  }
-
-  private getNestedNumber(source: Record<string, unknown>, path: string[]): number | undefined {
-    const value = this.getNestedValue(source, path)
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-  }
-
-  private getNestedValue(source: Record<string, unknown>, path: string[]): unknown {
-    let current: unknown = source
-    for (const key of path) {
-      if (!current || typeof current !== 'object' || !(key in current)) {
-        return undefined
-      }
-      current = (current as Record<string, unknown>)[key]
-    }
-    return current
-  }
-
-  private extractErrorMessage(raw: unknown): string | undefined {
-    if (!raw || typeof raw !== 'object') return undefined
-    const data = raw as Record<string, unknown>
-    const directError = this.getNestedString(data, ['error'])
-    if (directError) return directError
-    const nestedMessage =
-      this.getNestedString(data, ['error', 'message']) ??
-      this.getNestedString(data, ['errors', 'message']) ??
-      this.getNestedString(data, ['payload', 'error', 'message']) ??
-      this.getNestedString(data, ['statusDescription']) ??
-      this.getNestedString(data, ['status_description']) ??
-      this.getNestedString(data, ['message'])
-    if (nestedMessage) {
-      const code =
-        this.getNestedString(data, ['error', 'code']) ??
-        this.getNestedString(data, ['payload', 'error', 'code'])
-      return code ? `${nestedMessage} (${code})` : nestedMessage
-    }
-    const status = this.getNestedString(data, ['status'])
-    if (status) return status
-    return undefined
-  }
-
   private async authenticatedRequest<T>(path: string, init: RequestInit): Promise<T> {
-    const url = `${this.getBaseUrl()}${path}`
+    const url = `${this.config.baseUrl.replace(/\/$/, '')}${path}`
     const headers = new Headers(init.headers)
     if (!headers.has('Accept')) {
       headers.set('Accept', 'application/json')
     }
     const response = await fetch(url, { ...init, headers })
 
+    const body = await response.json().catch(() => ({}))
     if (!response.ok) {
-      const message = await response.text()
-      throw new Error(`Pesapal request failed: ${message || response.status}`)
+      const message =
+        body && typeof body === 'object' && 'message' in body && typeof (body as { message: unknown }).message === 'string'
+          ? (body as { message: string }).message
+          : response.statusText
+      throw new Error(`Tuma request failed: ${message || response.status}`)
     }
 
-    return (await response.json()) as T
+    return body as T
   }
 }
 
 // Main Payment Service
 export class PaymentService {
   private paypal: PayPalPayment
-  private pesapal: PesapalPayment
+  private tuma: TumaPayment
 
   constructor(config: PaymentConfig) {
     this.paypal = new PayPalPayment(config.paypal)
-    this.pesapal = new PesapalPayment(config.pesapal)
+    this.tuma = new TumaPayment(config.tuma)
   }
 
-  async createPayment(method: 'paypal' | 'pesapal', request: PaymentRequest): Promise<PaymentResponse> {
+  async createPayment(method: 'paypal' | 'tuma', request: PaymentRequest): Promise<PaymentResponse> {
     switch (method) {
       case 'paypal':
         return this.paypal.createPayment(request)
-      case 'pesapal':
-        return this.pesapal.createPayment(request)
+      case 'tuma':
+        return this.tuma.createPayment(request)
       default:
         throw new Error('Unsupported payment method')
     }
   }
 
-  async verifyPayment(method: 'paypal' | 'pesapal', paymentId: string, additionalData?: PaymentVerificationOptions): Promise<PaymentVerification> {
+  async verifyPayment(method: 'paypal' | 'tuma', paymentId: string, additionalData?: PaymentVerificationOptions): Promise<PaymentVerification> {
     switch (method) {
       case 'paypal':
         return this.paypal.verifyPayment(paymentId)
-      case 'pesapal':
-        return this.pesapal.verifyPayment(paymentId, { merchantReference: additionalData?.merchantReference })
+      case 'tuma':
+        return this.tuma.verifyPayment()
       default:
         throw new Error('Unsupported payment method')
     }
@@ -643,11 +409,10 @@ export function getPaymentConfig(): PaymentConfig {
       clientSecret: process.env.PAYPAL_CLIENT_SECRET || '',
       mode: (process.env.PAYPAL_MODE as 'sandbox' | 'live') || 'sandbox'
     },
-    pesapal: {
-      consumerKey: process.env.PESAPAL_CONSUMER_KEY || '',
-      consumerSecret: process.env.PESAPAL_CONSUMER_SECRET || '',
-      environment: (process.env.PESAPAL_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
-      notificationId: process.env.PESAPAL_NOTIFICATION_ID
+    tuma: {
+      email: process.env.TUMA_API_EMAIL || '',
+      apiKey: process.env.TUMA_API_KEY || '',
+      baseUrl: process.env.TUMA_API_BASE_URL || 'https://api.tuma.co.ke'
     }
   }
 }
@@ -658,14 +423,14 @@ export function usePayment() {
   const paymentService = new PaymentService(config)
 
   const processPayment = async (
-    method: 'paypal' | 'pesapal',
+    method: 'paypal' | 'tuma',
     request: PaymentRequest
   ): Promise<PaymentResponse> => {
     return paymentService.createPayment(method, request)
   }
 
   const verifyPayment = async (
-    method: 'paypal' | 'pesapal',
+    method: 'paypal' | 'tuma',
     paymentId: string,
     additionalData?: PaymentVerificationOptions
   ): Promise<PaymentVerification> => {

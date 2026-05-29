@@ -15,7 +15,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 ### Payment Integration
 
 - **PayPal** - Secure PayPal payments
-- **Pesapal** - Mobile money payments for African markets
+- **Tuma M-Pesa** - STK push mobile money (settles to your business bank)
 - **Credit/Debit Cards** - Traditional card payments
 
 ### Dynamic Pricing
@@ -71,7 +71,7 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 ### Integrations
 
 - **PayPal SDK** - Payment processing
-- **Pesapal API** - Mobile money payments
+- **Tuma API** - M-Pesa STK push payments
 - **ShipEngine API** - Shipping and logistics
 - **Resend** - Transactional emails
 - **Cloudinary** - Image optimization and storage
@@ -122,11 +122,9 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    # Payment Gateways
    PAYPAL_CLIENT_ID="your-paypal-client-id"
    PAYPAL_CLIENT_SECRET="your-paypal-client-secret"
-   PESAPAL_CONSUMER_KEY="your-pesapal-consumer-key"
-   PESAPAL_CONSUMER_SECRET="your-pesapal-consumer-secret"
-   PESAPAL_ENVIRONMENT="sandbox" # or "production"
-   # IPN ID returned after registering https://your-app.com/api/pesapal/notification in the Pesapal portal
-   PESAPAL_NOTIFICATION_ID="your-pesapal-ipn-id"
+   TUMA_API_EMAIL="your-business@example.com"
+   TUMA_API_KEY="your-tuma-api-key"
+   TUMA_API_BASE_URL="https://api.tuma.co.ke"
    
    # Shipping APIs
    SHIPENGINE_API_KEY="your-shipengine-api-key"
@@ -233,11 +231,10 @@ tac_ecomm/
 
 1. Set up a PostgreSQL database (e.g., Supabase, Railway, or AWS RDS)
 2. Configure environment variables for production
-3. Set up payment gateway accounts (PayPal, Pesapal)
-   - In Pesapal, register an IPN listener pointing to `https://your-domain.com/api/pesapal/notification` and use the returned IPN ID for `PESAPAL_NOTIFICATION_ID`.
-   - For full instructions on setting up Pesapal, including obtaining an access token and registering your IPN listener, see [Pesapal Setup Guide](docs/pesapal-setup.md).
-
-   - Use live consumer key/secret and set `PESAPAL_ENVIRONMENT="production"` for production traffic.
+3. Set up payment gateway accounts (PayPal, Tuma)
+   - Add `TUMA_API_EMAIL` and `TUMA_API_KEY` from your Tuma business dashboard.
+   - Ensure `APP_URL` is your public site URL so Tuma can reach `/api/payment/tuma/callback`.
+   - See [Tuma Setup Guide](docs/tuma-setup.md).
 4. Configure shipping APIs (ShipEngine, EasyPost)
 5. Set up email service (Resend)
 6. Configure image storage (Cloudinary)

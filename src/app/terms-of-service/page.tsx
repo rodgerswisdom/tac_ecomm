@@ -81,7 +81,7 @@ export default function TermsOfServicePage() {
             <section className="space-y-4">
               <h2 className="text-2xl font-bold luxury-heading">4. PAYMENTS</h2>
               <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
-                <li>Payments are processed securely through third-party providers, including PesaPal.</li>
+                <li>Payments are processed securely through third-party providers, including Tuma (M-Pesa).</li>
                 <li>By submitting payment information, you represent that you are authorized to use the selected payment method.</li>
                 <li>You agree to pay all charges incurred, including applicable taxes, shipping fees, and duties where relevant.</li>
               </ul>

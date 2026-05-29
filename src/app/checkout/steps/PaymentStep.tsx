@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const paymentMethods: Array<{ id: PaymentMethod; label: string }> = [
-  { id: "PESAPAL", label: "Pesapal" },
+  { id: "TUMA", label: "M-Pesa" },
   { id: "PAYPAL", label: "PayPal" },
   { id: "CARD", label: "Credit / Debit Card" }
 ];
@@ -79,7 +79,7 @@ export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => vo
   );
 }
 
-export type PaymentMethod = "PESAPAL" | "PAYPAL" | "CARD";
+export type PaymentMethod = "TUMA" | "PESAPAL" | "PAYPAL" | "CARD";
 export type PaymentFormData = {
   method: PaymentMethod;
   card?: {

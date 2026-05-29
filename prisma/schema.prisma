@@ -391,6 +391,7 @@ enum PaymentStatus {
 enum PaymentMethod {
   PAYPAL
   PESAPAL
+  TUMA
   CREDIT_CARD
   BANK_TRANSFER
 }

@@ -6,7 +6,8 @@ import type { PaymentMethod } from "./PaymentStep";
 import type { AppliedCoupon } from "../OrderSummarySidebar";
 
 const paymentLabel: Record<PaymentMethod, string> = {
-  PESAPAL: "M-Pesa / Pesapal",
+  TUMA: "M-Pesa",
+  PESAPAL: "M-Pesa",
   PAYPAL: "PayPal",
   CARD: "Credit / Debit Card"
 };
