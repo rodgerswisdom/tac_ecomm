@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getOrderDetail } from "@/server/admin/orders";
 import { PrintButton } from "./PrintButton";
+import { getStoreContactDetails } from "@/lib/store-contact";
 
 const dateFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -30,8 +31,11 @@ export default async function OrderInvoicePage({
   });
 
   const storeName = (settings?.storeName as string | undefined) || "Tac Accessories";
-  const storeEmail = (settings?.salesEmail as string | undefined) || (settings?.supportEmail as string | undefined) || "";
-  const storePhone = (settings?.whatsappNumber as string | undefined) || "";
+  const { email: storeEmail, phone: storePhone } = getStoreContactDetails({
+    salesEmail: settings?.salesEmail as string | undefined,
+    supportEmail: settings?.supportEmail as string | undefined,
+    whatsappNumber: settings?.whatsappNumber as string | undefined,
+  });
   const storeAddress = (settings?.address as string | undefined) || "";
 
   const billToName =

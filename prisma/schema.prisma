@@ -436,9 +436,9 @@ model Settings {
   id                String   @id @default("singleton")
   storeName         String   @default("Tac Accessories")
   storeTagline      String   @default("The African Gallery Experience")
-  supportEmail      String   @default("support@tacaccessories.com")
-  salesEmail        String   @default("sales@tacaccessories.com")
-  whatsappNumber    String   @default("254700000000")
+  supportEmail      String   @default("info@tacaccessories.co.ke")
+  salesEmail        String   @default("info@tacaccessories.co.ke")
+  whatsappNumber    String   @default("254704800866")
   address           String   @default("Nairobi, Kenya")
   instagramUrl      String?
   facebookUrl       String?
