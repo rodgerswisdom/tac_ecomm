@@ -92,7 +92,7 @@ export class SEOService {
       offers: {
         '@type': 'Offer',
         price: product.price,
-        priceCurrency: product.currency || 'USD',
+        priceCurrency: product.currency || 'KSH',
         availability: `https://schema.org/${product.availability || 'InStock'}`,
         condition: `https://schema.org/${product.condition || 'NewCondition'}`,
         seller: {

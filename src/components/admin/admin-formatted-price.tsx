@@ -1,7 +1,7 @@
 "use client"
 
 import type { CurrencyCode } from "@/lib/currency"
-import { convertToUsd } from "@/lib/currency"
+import { convertToBase } from "@/lib/currency"
 import { useCurrency } from "@/contexts/CurrencyContext"
 
 const CURRENCY_ALIAS: Record<string, CurrencyCode> = {
@@ -19,7 +19,7 @@ function toCurrencyCode(s: string | null | undefined): CurrencyCode | undefined 
 
 /**
  * Renders a price in the admin-selected currency.
- * - When amountCurrency is omitted, amount is treated as USD (e.g. product prices).
+ * - When amountCurrency is omitted, amount is treated as KSH (e.g. product prices).
  * - When amountCurrency is set, amount is in that currency (e.g. order total in KES) and is converted for display.
  */
 export function AdminFormattedPrice({
@@ -32,6 +32,6 @@ export function AdminFormattedPrice({
 }) {
   const { formatPrice } = useCurrency()
   const code = toCurrencyCode(amountCurrency)
-  const amountUsd = code ? convertToUsd(amount, code) : amount
-  return <>{formatPrice(amountUsd)}</>
+  const amountBase = code ? convertToBase(amount, code) : amount
+  return <>{formatPrice(amountBase)}</>
 }

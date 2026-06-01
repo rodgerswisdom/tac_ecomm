@@ -197,14 +197,14 @@ export function GlobalSettingsForm({
 
                             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
                                 <div className="space-y-3">
-                                    <Label htmlFor="usdToKesRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">USD → KES</Label>
+                                    <Label htmlFor="usdToKesRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">USD-based KES rate</Label>
                                     <div className="relative group">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-blue-600/30 group-focus-within:text-blue-600 transition-colors">KES</span>
                                         <Input id="usdToKesRate" name="usdToKesRate" type="number" step="0.01" defaultValue={initialData.usdToKesRate} className="pl-12 rounded-xl border-[#2d3b34]/10 h-12 text-lg font-medium" />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <Label htmlFor="usdToEurRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">USD → EUR</Label>
+                                    <Label htmlFor="usdToEurRate" className="text-xs font-bold uppercase tracking-widest text-muted-foreground">USD-based EUR rate</Label>
                                     <div className="relative group">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600/30 group-focus-within:text-emerald-600 transition-colors">EUR</span>
                                         <Input id="usdToEurRate" name="usdToEurRate" type="number" step="0.001" defaultValue={initialData.usdToEurRate} className="pl-12 rounded-xl border-[#2d3b34]/10 h-12 text-lg font-medium" />
@@ -580,7 +580,7 @@ function CurationItem({
                 <div>
                     <h4 className="font-semibold text-[#2d3b34] text-sm">{product.name}</h4>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                        {product.sku} • {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(product.price)}
+                        {product.sku} • {`KES ${Math.round(product.price).toLocaleString()}`}
                     </p>
                 </div>
             </div>

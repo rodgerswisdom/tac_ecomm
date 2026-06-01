@@ -76,15 +76,29 @@ export async function createProductAction(
 
   const slug = await resolveProductSlug(parsed.data.name, proposedSlug)
 
-  const created = await prisma.product.create({
-    data: {
-      ...parsed.data,
-      shortDescription: parsed.data.shortDescription ?? null,
-      materials: [],
-      slug,
-      isDraft,
-    },
-  })
+  let created: { id: string; name: string }
+  try {
+    created = await prisma.product.create({
+      data: {
+        ...parsed.data,
+        shortDescription: parsed.data.shortDescription ?? null,
+        materials: [],
+        slug,
+        isDraft,
+      },
+      select: { id: true, name: true },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        status: "error",
+        message: "SKU already exists. Please use a unique SKU.",
+        fieldErrors: { sku: "SKU already exists. Please use a unique SKU." },
+        values: formValues,
+      }
+    }
+    throw error
+  }
 
   await prisma.productImage.createMany({
     data: mediaValidation.items.map((asset, index) => ({
@@ -132,13 +146,20 @@ export async function updateProductAction(formData: FormData) {
 
   const slug = await resolveProductSlug(parsed.data.name, undefined, parsed.data.id)
 
-  await prisma.product.update({
-    where: { id: parsed.data.id },
-    data: {
-      ...parsed.data,
-      slug,
-    },
-  })
+  try {
+    await prisma.product.update({
+      where: { id: parsed.data.id },
+      data: {
+        ...parsed.data,
+        slug,
+      },
+    })
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new Error("SKU already exists. Please use a unique SKU.")
+    }
+    throw error
+  }
 
   revalidateProductRoute(parsed.data.id)
 }
@@ -155,6 +176,11 @@ export async function deleteProductAction(formData: FormData) {
   try {
     await prisma.product.delete({ where: { id: productId } })
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      // Idempotent delete: product already removed (stale UI / double-submit).
+      revalidateProductRoute(productId)
+      return
+    }
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
       throw new Error("Product cannot be deleted while linked to orders or cart items")
     }
@@ -271,7 +297,15 @@ export async function bulkDeleteProducts(
   if (ids.length === 0) return { success: true }
   try {
     for (const id of ids) {
-      await prisma.product.delete({ where: { id } })
+      try {
+        await prisma.product.delete({ where: { id } })
+      } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+          // Skip missing rows so bulk actions stay resilient.
+          continue
+        }
+        throw error
+      }
     }
     revalidatePath("/admin/products")
     return { success: true }

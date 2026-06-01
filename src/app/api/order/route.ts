@@ -3,8 +3,9 @@ import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/c
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { PaymentService, getPaymentConfig } from '@/lib/payments'
-import { convertFromUsd, CurrencyCode } from '@/lib/currency'
+import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
+import { EmailService, getEmailConfig } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   if (!passesCsrfProtection(req)) {
@@ -113,11 +114,11 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in USD (product prices are USD).
+  // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in KSH (product prices are KSH).
   const shipping = 0
   const tax = 0
 
-  let couponDiscountUsd = 0
+  let couponDiscountKsh = 0
   let appliedCoupon: { id: string; code: string } | null = null
   const couponCodeRaw = typeof couponCode === 'string' ? couponCode.trim() : ''
   if (couponCodeRaw) {
@@ -142,29 +143,29 @@ export async function POST(req: NextRequest) {
     }
     if (coupon.minAmount != null && subtotal < coupon.minAmount) {
       return NextResponse.json({
-        error: `Minimum order amount for this coupon is $${coupon.minAmount.toFixed(2)}`
+        error: `Minimum order amount for this coupon is KES ${Math.round(coupon.minAmount).toLocaleString()}`
       }, { status: 400 })
     }
     if (coupon.type === CouponType.PERCENTAGE) {
-      couponDiscountUsd = subtotal * (coupon.value / 100)
+      couponDiscountKsh = subtotal * (coupon.value / 100)
     } else if (coupon.type === CouponType.FIXED_AMOUNT) {
-      couponDiscountUsd = Math.min(coupon.value, subtotal)
+      couponDiscountKsh = Math.min(coupon.value, subtotal)
     }
-    couponDiscountUsd = Math.max(0, Math.min(couponDiscountUsd, subtotal))
+    couponDiscountKsh = Math.max(0, Math.min(couponDiscountKsh, subtotal))
     appliedCoupon = { id: coupon.id, code: coupon.code }
   }
 
-  const total = Math.max(0, subtotal - couponDiscountUsd)
-  const orderCurrency = 'USD' as const
-  const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'USD').toUpperCase()
-  // For Pesapal we may charge in local currency (e.g. KES); convert order total (USD) to that currency for the gateway.
+  const total = Math.max(0, subtotal - couponDiscountKsh)
+  const orderCurrency = 'KSH' as const
+  const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
+  // For Pesapal we charge in KES (same as KSH base). For PayPal, convert KSH to USD.
   const payCurrencyCode: CurrencyCode = defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KSH' : defaultPaymentCurrency === 'EUR' ? 'EUR' : 'USD'
-  const paymentAmount = payCurrencyCode === 'USD' ? total : Math.round(convertFromUsd(total, payCurrencyCode))
+  const paymentAmount = payCurrencyCode === 'KSH' ? total : Math.round(convertFromBase(total, payCurrencyCode))
   const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
   // Log order totals and payment amount so checkout display matches Pesapal (amount in KES).
-  console.info('[order] subtotal (USD):', subtotal, 'couponDiscount (USD):', couponDiscountUsd, 'total (USD):', total, '→ payment:', paymentAmount, paymentCurrency, appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)')
+  console.info('[order] subtotal (KSH):', subtotal, 'couponDiscount (KSH):', couponDiscountKsh, 'total (KSH):', total, '→ payment:', paymentAmount, paymentCurrency, appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)')
 
   // Optionally: validate coupon here (not implemented)
 
@@ -248,6 +249,51 @@ export async function POST(req: NextRequest) {
   })
 
   let redirectUrl: string | undefined
+  const opsEmails = [
+    "info@tacaccessories.co.ke",
+    "peter@tacaccessories.co.ke",
+    "mary@tacaccessories.co.ke",
+  ]
+  const sendOpsNotification = async () => {
+    const emailService = new EmailService(getEmailConfig())
+    const subject = `New order received: ${order.orderNumber}`
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2 style="margin: 0 0 12px 0;">New order received</h2>
+        <p style="margin: 0 0 12px 0;"><strong>Order #:</strong> ${order.orderNumber}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Customer:</strong> ${firstNameTrim} ${lastNameTrim}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Email:</strong> ${emailTrim}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Phone:</strong> ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Total:</strong> KES ${Math.round(total).toLocaleString()}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${normalizedPaymentMethod ?? "Not specified"}</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+        <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
+        <p style="margin: 0;">
+          ${firstNameTrim} ${lastNameTrim}<br />
+          ${addressTrim}<br />
+          ${cityTrim}, ${stateTrim} ${zipCodeTrim}<br />
+          ${countryTrim}
+        </p>
+      </div>
+    `
+    const text =
+      `New order received\n\n` +
+      `Order #: ${order.orderNumber}\n` +
+      `Customer: ${firstNameTrim} ${lastNameTrim}\n` +
+      `Email: ${emailTrim}\n` +
+      `Phone: ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}\n` +
+      `Total: KES ${Math.round(total).toLocaleString()}\n` +
+      `Payment method: ${normalizedPaymentMethod ?? "Not specified"}\n\n` +
+      `Shipping:\n` +
+      `${firstNameTrim} ${lastNameTrim}\n` +
+      `${addressTrim}\n` +
+      `${cityTrim}, ${stateTrim} ${zipCodeTrim}\n` +
+      `${countryTrim}\n`
+
+    await Promise.all(
+      opsEmails.map((to) => emailService.sendEmail({ to, subject, html, text }))
+    )
+  }
 
   if (normalizedPaymentMethod === PaymentMethod.PESAPAL) {
     const paymentService = new PaymentService(getPaymentConfig())
@@ -293,6 +339,8 @@ export async function POST(req: NextRequest) {
       })
 
       redirectUrl = paymentResponse.redirectUrl
+      // Notify ops only once payment initialization succeeded (avoid false alarms on failed redirects).
+      await sendOpsNotification()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Pesapal payment failed'
       console.error('Pesapal payment initialization failed', error)
@@ -309,6 +357,10 @@ export async function POST(req: NextRequest) {
         { status: 502 }
       )
     }
+  }
+  // Non-pesapal: order is created and ready immediately.
+  if (normalizedPaymentMethod !== PaymentMethod.PESAPAL) {
+    await sendOpsNotification()
   }
 
   // Stock is decremented only when payment is confirmed:

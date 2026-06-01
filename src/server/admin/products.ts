@@ -10,7 +10,7 @@ export const productInputSchema = z
         name: z.string().min(2, "Name is required"),
         description: z.string().min(10, "Description is required"),
         shortDescription: z.string().max(240).optional().nullable(),
-        price: z.coerce.number().positive(), // Product prices are always stored in USD
+        price: z.coerce.number().positive(), // Product prices are always stored in KSH
         comparePrice: z.coerce.number().positive().optional().nullable(),
         stock: z.coerce.number().int().nonnegative(),
         sku: z.string().min(1, "SKU is required"),

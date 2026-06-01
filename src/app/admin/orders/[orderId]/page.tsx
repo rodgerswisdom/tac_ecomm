@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { OrderStatus, PaymentStatus } from "@prisma/client"
+import { FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AdminPageHeader } from "@/components/admin/page-header"
@@ -55,8 +56,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   }
 
   const address = order.shippingAddress
-  // Order amounts (subtotal, total, line items) are always stored in USD. Payment amount can be in payment currency (e.g. KES).
-  const orderCurrency = order.currency === "USD" ? undefined : order.currency
+  // Order amounts (subtotal, total, line items) are stored in KSH. Payment amount can be in payment currency (e.g. KES).
+  const orderCurrency = order.currency === "KSH" ? undefined : order.currency
   const customerName = [address?.firstName, address?.lastName].filter(Boolean).join(" ") || order.user?.name || "Customer"
 
   return (
@@ -78,7 +79,13 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               label={order.paymentStatus.replace(/_/g, " ")}
               variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
             />
-            <Button asChild variant="ghost" size="sm" className="ml-auto border border-border">
+            <Button asChild size="sm" variant="outline" className="ml-auto border border-border bg-white">
+              <Link href={`/admin/orders/${order.id}/invoice`} target="_blank" rel="noopener noreferrer">
+                <FileText className="mr-2 h-4 w-4" />
+                Generate invoice
+              </Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="border border-border">
               <Link href="/admin/orders">Back to orders</Link>
             </Button>
           </div>
@@ -181,7 +188,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Amount</p>
-                        <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "USD" ? undefined : payment.currency} /></p>
+                        <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "KSH" ? undefined : payment.currency} /></p>
                       </div>
                     </div>
                   ))

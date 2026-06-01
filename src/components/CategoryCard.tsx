@@ -29,7 +29,8 @@ const CategoryCardComponent = ({ category }: CategoryCardProps) => {
             src={category.image}
             alt={category.name}
             fill
-            sizes="(max-width: 768px) 50vw, 16rem"
+            sizes="(max-width: 640px) 160px, 192px"
+            quality={65}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             priority={false}
           />

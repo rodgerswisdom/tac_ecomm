@@ -68,6 +68,7 @@ export async function sendPaidOrderConfirmedEmail(orderId: string): Promise<bool
     tax: order.tax,
     shipping: order.shipping,
     total: order.total,
+    currency: "KSH",
     shippingAddress: {
       name: `${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`.trim(),
       address: order.shippingAddress.address1,

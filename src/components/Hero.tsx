@@ -111,13 +111,14 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
     >
       <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-white/20 to-transparent" />
       <div className="absolute inset-0 bg-texture-linen opacity-35" />
-      <div
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `url(${activeSlide.image})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+      <Image
+        src={activeSlide.image}
+        alt=""
+        fill
+        aria-hidden
+        sizes="100vw"
+        quality={35}
+        className="absolute inset-0 object-cover opacity-10"
       />
 
       {floatingParticles.map((particle, index) => (
@@ -290,37 +291,44 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
             <div className="group relative overflow-hidden rounded-[3rem] border border-brand-teal/20 bg-brand-beige/60 shadow-[0_30px_70px_rgba(74,43,40,0.18)]">
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-umber/30 via-transparent to-transparent mix-blend-multiply z-10" />
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeSlide.id}
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.8, ease: [0.25, 0.8, 0.25, 1] }}
-                  className="relative aspect-[4/4.5] w-full overflow-hidden"
+                <Link
+                  href={activeSlide.cta.href}
+                  aria-label={`Open ${activeSlide.title}`}
+                  className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/60"
                 >
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage: `url(${activeSlide.image})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
-                  />
-                  <span className="sr-only">{activeSlide.title}</span>
+                  <motion.div
+                    key={activeSlide.id}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.8, ease: [0.25, 0.8, 0.25, 1] }}
+                    className="relative aspect-[4/4.5] w-full overflow-hidden cursor-pointer"
+                  >
+                    <Image
+                      src={activeSlide.image}
+                      alt={activeSlide.title}
+                      fill
+                      sizes="(max-width: 640px) 320px, (max-width: 1024px) 420px, 520px"
+                      quality={70}
+                      priority={activeIndex === 0}
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                    />
+                    <span className="sr-only">{activeSlide.title}</span>
 
-                  {activeSlide.badge && (
-                    <div className="absolute top-6 left-6 z-20">
-                      <span className="inline-flex items-center gap-2 rounded-full bg-brand-coral px-4 py-2 text-xs font-semibold text-white shadow-lg">
-                        <Sparkles className="h-3 w-3" />
-                        {activeSlide.badge}
-                      </span>
-                    </div>
-                  )}
+                    {activeSlide.badge && (
+                      <div className="absolute top-6 left-6 z-20">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-brand-coral px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                          <Sparkles className="h-3 w-3" />
+                          {activeSlide.badge}
+                        </span>
+                      </div>
+                    )}
 
-                  {activeSlide.type === "product" && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  )}
-                </motion.div>
+                    {activeSlide.type === "product" && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    )}
+                  </motion.div>
+                </Link>
               </AnimatePresence>
 
               <div className="absolute left-6 bottom-6 flex items-center gap-3 rounded-full bg-white/85 px-5 py-3 shadow-[0_18px_45px_rgba(74,43,40,0.18)] backdrop-blur z-20">
@@ -346,14 +354,18 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                       : "border-brand-umber/20 hover:border-brand-umber/40"
                       }`}
                     aria-label={`Show slide ${index + 1}`}
-                    style={{
-                      backgroundImage: `url(${slide.image})`,
-                      backgroundSize: "cover",
-                      backgroundPosition: "center",
-                    }}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
+                        <Image
+                          src={slide.image}
+                          alt=""
+                          fill
+                          aria-hidden
+                          sizes="48px"
+                          quality={40}
+                          className="object-cover"
+                        />
                     <span
                       className={`absolute inset-0 bg-brand-umber/60 transition-opacity ${isActive ? "opacity-30" : "opacity-60"
                         }`}

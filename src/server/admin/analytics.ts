@@ -1,6 +1,6 @@
 import { PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
-import { convertToUsd } from "@/lib/currency"
+import { convertToBase } from "@/lib/currency"
 import type { CurrencyCode } from "@/lib/currency"
 
 const PAYMENT_CURRENCY_TO_CODE: Record<string, CurrencyCode> = {
@@ -10,23 +10,23 @@ const PAYMENT_CURRENCY_TO_CODE: Record<string, CurrencyCode> = {
     EUR: "EUR",
 }
 
-/** Default currency for payments with missing or wrong currency (e.g. legacy KES stored as USD). */
-const DEFAULT_PAYMENT_CURRENCY = (process.env.DEFAULT_CURRENCY || "USD").toUpperCase()
+/** Default currency for payments with missing or wrong currency (e.g. legacy data). */
+const DEFAULT_PAYMENT_CURRENCY = (process.env.DEFAULT_CURRENCY || "KSH").toUpperCase()
 const STORE_IS_KES = DEFAULT_PAYMENT_CURRENCY === "KES" || DEFAULT_PAYMENT_CURRENCY === "KSH"
 
 /**
- * Convert payment amount to USD for revenue. When store default is KES, payments stored as "USD"
+ * Convert payment amount to KSH for revenue. When store default is KES, payments stored in foreign currency
  * are often legacy mistakes (amount was actually KES). Amounts in [1, 2000) are treated as KES.
  */
-function paymentAmountToUsd(amount: number, currency: string | null): number {
+function paymentAmountToKsh(amount: number, currency: string | null): number {
     const raw = (currency || "").trim().toUpperCase()
     let code = raw ? PAYMENT_CURRENCY_TO_CODE[raw] : undefined
     if (!code && STORE_IS_KES) code = "KSH"
-    if (!code) code = DEFAULT_PAYMENT_CURRENCY === "EUR" ? "EUR" : "USD"
-    if (code === "USD" && STORE_IS_KES && amount >= 1 && amount < 2000) {
-        return convertToUsd(amount, "KSH")
+    if (!code) code = DEFAULT_PAYMENT_CURRENCY === "EUR" ? "EUR" : "KSH"
+    if (code === "KSH") {
+        return amount
     }
-    return code !== "USD" ? convertToUsd(amount, code) : amount
+    return convertToBase(amount, code)
 }
 
 function startOfDay(date: Date) {
@@ -150,16 +150,16 @@ export async function getOverviewMetrics() {
     for (const payment of paymentsLast30) {
         const key = formatDayKey(payment.createdAt)
         const bucket = revenueTrendMap.get(key)
-        const amountUsd = paymentAmountToUsd(payment.amount, payment.currency)
+        const amountKsh = paymentAmountToKsh(payment.amount, payment.currency)
         if (bucket) {
-            bucket.revenue += amountUsd
+            bucket.revenue += amountKsh
             bucket.orders += 1
         }
     }
 
-    const totalRevenueLifetime = allCompletedPayments.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
-    const currentRevenue30 = paymentsLast30.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
-    const prevRevenue30 = paymentsPrev30.reduce((sum, p) => sum + paymentAmountToUsd(p.amount, p.currency), 0)
+    const totalRevenueLifetime = allCompletedPayments.reduce((sum, p) => sum + paymentAmountToKsh(p.amount, p.currency), 0)
+    const currentRevenue30 = paymentsLast30.reduce((sum, p) => sum + paymentAmountToKsh(p.amount, p.currency), 0)
+    const prevRevenue30 = paymentsPrev30.reduce((sum, p) => sum + paymentAmountToKsh(p.amount, p.currency), 0)
 
     const revenueGrowth = pctChange(currentRevenue30, prevRevenue30)
     const orderGrowth = pctChange(currentOrdersWindow, prevOrdersWindow)
@@ -253,22 +253,22 @@ export async function getDetailedAnalytics(days = 90) {
         ])
 
     // Build customer stats in JS to handle multi-currency totals correctly
-    const customerStatsMap = new Map<string, { userId: string; count: number; totalUsd: number }>()
+    const customerStatsMap = new Map<string, { userId: string; count: number; totalKsh: number }>()
     for (const o of allPaidOrders) {
         let stats = customerStatsMap.get(o.userId)
         if (!stats) {
-            stats = { userId: o.userId, count: 0, totalUsd: 0 }
+            stats = { userId: o.userId, count: 0, totalKsh: 0 }
             customerStatsMap.set(o.userId, stats)
         }
         stats.count++
-        const code = o.currency ? (PAYMENT_CURRENCY_TO_CODE[o.currency.toUpperCase()] || (STORE_IS_KES ? "KSH" : "USD")) : "USD"
-        stats.totalUsd += code === "USD" ? o.total : convertToUsd(o.total, code as any)
+        const code = o.currency ? (PAYMENT_CURRENCY_TO_CODE[o.currency.toUpperCase()] || (STORE_IS_KES ? "KSH" : "KSH")) : "KSH"
+        stats.totalKsh += code === "KSH" ? o.total : convertToBase(o.total, code as any)
     }
 
     const customerStats = Array.from(customerStatsMap.values()).map(c => ({
         userId: c.userId,
         _count: { _all: c.count },
-        _sum: { total: c.totalUsd }
+        _sum: { total: c.totalKsh }
     }))
 
     const revenueTrendMap = new Map<
@@ -290,7 +290,7 @@ export async function getDetailedAnalytics(days = 90) {
 
     for (const order of orders) {
         const paidAmountUsd = order.payments.reduce(
-            (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
+            (sum, p) => sum + paymentAmountToKsh(p.amount, p.currency),
             0
         )
 
@@ -309,7 +309,7 @@ export async function getDetailedAnalytics(days = 90) {
         : 0
 
     const previousRevenue = previousPayments.reduce(
-        (sum, p) => sum + paymentAmountToUsd(p.amount, p.currency),
+        (sum, p) => sum + paymentAmountToKsh(p.amount, p.currency),
         0
     )
     const revenueGrowth = previousRevenue > 0
