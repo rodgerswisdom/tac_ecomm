@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Filter, ChevronDown } from "lucide-react";
+import { Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export interface FilterState {
@@ -12,11 +12,18 @@ export interface FilterState {
   sortBy: string;
 }
 
+export interface CategoryOption {
+  slug: string;
+  name: string;
+}
+
 interface ProductFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
   availableMaterials: string[];
   availableOrigins: string[];
+  categories: CategoryOption[];
+  collections: CategoryOption[];
   resultsCount: number;
   totalCount: number;
 }
@@ -26,6 +33,8 @@ export function ProductFilters({
   onFiltersChange,
   availableMaterials,
   availableOrigins,
+  categories,
+  collections,
   resultsCount,
   totalCount,
 }: ProductFiltersProps) {
@@ -38,24 +47,17 @@ export function ProductFilters({
     { label: "Over KES 60,000", value: [60000, Infinity] as [number, number] },
   ];
 
-  const categories = [
+  const categoryOptions = [
     { value: "all", label: "All Categories" },
-    { value: "necklaces", label: "Necklaces" },
-    { value: "rings", label: "Rings" },
-    { value: "bracelets", label: "Bracelets" },
-    { value: "earrings", label: "Earrings" },
-    { value: "sets", label: "Sets" },
+    ...categories.map((category) => ({ value: category.slug, label: category.name })),
   ];
 
-  const sortOptions = [
-    { value: "featured", label: "Featured" },
-    { value: "price-low", label: "Price: Low to High" },
-    { value: "price-high", label: "Price: High to Low" },
-    { value: "newest", label: "Newest Arrivals" },
-    { value: "rating", label: "Highest Rated" },
-  ];
+  const collectionOptions = collections.map((collection) => ({
+    value: collection.slug,
+    label: collection.name,
+  }));
 
-  const updateFilter = (key: keyof FilterState, value: any) => {
+  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
     onFiltersChange({ ...filters, [key]: value });
   };
 
@@ -89,15 +91,19 @@ export function ProductFilters({
     filters.materials.length > 0 ||
     filters.origin.length > 0;
 
-  const FilterContent = () => (
+  const filterContent = (
     <div className="space-y-6">
+      <div className="text-xs uppercase tracking-wide text-brand-umber/60">
+        Showing {resultsCount} of {totalCount} products
+      </div>
+
       {/* Category Filter */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-umber">
-          Category
+          Categories
         </h3>
         <div className="space-y-2">
-          {categories.map((cat) => (
+          {categoryOptions.map((cat) => (
             <label
               key={cat.value}
               className="flex cursor-pointer items-center gap-2 text-sm text-brand-umber/80 hover:text-brand-umber"
@@ -115,6 +121,37 @@ export function ProductFilters({
           ))}
         </div>
       </div>
+
+      {collectionOptions.length > 0 && (
+        <div className="rounded-xl border border-brand-teal/15 bg-brand-teal/5 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-umber">
+              Collections
+            </h3>
+            <span className="rounded-full border border-brand-teal/20 bg-white px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-teal">
+              Curated
+            </span>
+          </div>
+          <div className="space-y-2">
+            {collectionOptions.map((collection) => (
+              <label
+                key={collection.value}
+                className="flex cursor-pointer items-center gap-2 text-sm text-brand-umber/80 hover:text-brand-umber"
+              >
+                <input
+                  type="radio"
+                  name="category"
+                  value={collection.value}
+                  checked={filters.category === collection.value}
+                  onChange={(e) => updateFilter("category", e.target.value)}
+                  className="h-4 w-4 border-brand-teal text-brand-teal focus:ring-brand-teal"
+                />
+                <span>{collection.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Price Range Filter */}
       <div>
@@ -246,7 +283,7 @@ export function ProductFilters({
         </Button>
         {isMobileFiltersOpen && (
           <div className="mt-4 rounded-lg border border-brand-teal/20 bg-white p-4">
-            <FilterContent />
+              {filterContent}
           </div>
         )}
       </div>
@@ -267,7 +304,7 @@ export function ProductFilters({
               </button>
             )}
           </div>
-          <FilterContent />
+          {filterContent}
         </div>
       </div>
     </>

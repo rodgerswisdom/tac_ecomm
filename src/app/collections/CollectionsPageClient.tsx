@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 import { Navbar } from "@/components/Navbar";
@@ -10,14 +10,29 @@ import { ActiveFilterChips } from "@/components/ActiveFilterChips";
 import { QuickViewModal } from "@/components/QuickViewModal";
 import { ProductComparison } from "@/components/ProductComparison";
 import { ProductCardData } from "@/types/product";
+import type { CategoryOption } from "@/components/ProductFilters";
 
 const PRODUCTS_PER_PAGE = 12;
 
-interface CollectionsPageClientProps {
-  initialProducts: ProductCardData[];
+function matchesCollection(product: ProductCardData, categorySlug: string) {
+  if (categorySlug === "matching-sets") {
+    return product.productType === "MATCHING_SET";
+  }
+
+  if (categorySlug === "corporate-gifts") {
+    return Boolean(product.isCorporateGift);
+  }
+
+  return product.category === categorySlug;
 }
 
-export function CollectionsPageClient({ initialProducts }: CollectionsPageClientProps) {
+interface CollectionsPageClientProps {
+  initialProducts: ProductCardData[];
+  categories: CategoryOption[];
+  collections: CategoryOption[];
+}
+
+export function CollectionsPageClient({ initialProducts, categories, collections }: CollectionsPageClientProps) {
   const allProducts = useMemo(() => initialProducts, [initialProducts]);
 
   const [filters, setFilters] = useState<FilterState>({
@@ -51,26 +66,16 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
     return Array.from(origins).sort();
   }, [allProducts]);
 
+  const handleFiltersChange = useCallback((nextFilters: FilterState) => {
+    setFilters(nextFilters);
+    setDisplayedCount(PRODUCTS_PER_PAGE);
+  }, []);
+
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = allProducts;
 
     if (filters.category !== "all") {
-      filtered = filtered.filter((product) => {
-        switch (filters.category) {
-          case "necklaces":
-            return product.category === "necklaces";
-          case "rings":
-            return product.category === "rings";
-          case "bracelets":
-            return product.category === "bracelets";
-          case "earrings":
-            return product.category === "earrings";
-          case "sets":
-            return product.productType === "matching-sets" || product.isCorporateGift;
-          default:
-            return true;
-        }
-      });
+      filtered = filtered.filter((product) => matchesCollection(product, filters.category));
     }
 
     if (filters.priceRange) {
@@ -122,10 +127,6 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
     return sorted;
   }, [allProducts, filters]);
 
-  useEffect(() => {
-    setDisplayedCount(PRODUCTS_PER_PAGE);
-  }, [filters]);
-
   const displayedProducts = useMemo(
     () => filteredAndSortedProducts.slice(0, displayedCount),
     [filteredAndSortedProducts, displayedCount]
@@ -173,22 +174,42 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
     [allProducts, selectedProducts]
   );
 
-  const handleRemoveFilter = useCallback(
-    (type: keyof FilterState, value?: any) => {
-      setFilters((prev) => {
-        const newFilters = { ...prev };
-        if (type === "materials" || type === "origin") {
-          (newFilters[type] as string[]) = value || [];
-        } else {
-          (newFilters[type] as any) = value;
-        }
-        return newFilters;
-      });
-    },
-    []
-  );
+  const handleRemoveFilter = useCallback((type: keyof FilterState, value?: FilterState[keyof FilterState]) => {
+    setFilters((prev) => {
+      if (type === "materials" || type === "origin") {
+        setDisplayedCount(PRODUCTS_PER_PAGE);
+        return {
+          ...prev,
+          [type]: (value ?? []) as string[],
+        };
+      }
+
+      if (type === "priceRange") {
+        setDisplayedCount(PRODUCTS_PER_PAGE);
+        return {
+          ...prev,
+          priceRange: (value ?? null) as [number, number] | null,
+        };
+      }
+
+      if (type === "category") {
+        setDisplayedCount(PRODUCTS_PER_PAGE);
+        return {
+          ...prev,
+          category: (value ?? "all") as string,
+        };
+      }
+
+      setDisplayedCount(PRODUCTS_PER_PAGE);
+      return {
+        ...prev,
+        sortBy: (value ?? prev.sortBy) as string,
+      };
+    });
+  }, []);
 
   const handleClearAllFilters = useCallback(() => {
+    setDisplayedCount(PRODUCTS_PER_PAGE);
     setFilters({
       category: "all",
       priceRange: null,
@@ -227,9 +248,11 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
             <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
               <ProductFilters
                 filters={filters}
-                onFiltersChange={setFilters}
+                onFiltersChange={handleFiltersChange}
                 availableMaterials={availableMaterials}
                 availableOrigins={availableOrigins}
+                categories={categories}
+                collections={collections}
                 resultsCount={filteredAndSortedProducts.length}
                 totalCount={allProducts.length}
               />
@@ -246,9 +269,10 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
                 <div className="w-full sm:w-48">
                   <select
                     value={filters.sortBy}
-                    onChange={(e) =>
-                      setFilters((prev) => ({ ...prev, sortBy: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setDisplayedCount(PRODUCTS_PER_PAGE);
+                      setFilters((prev) => ({ ...prev, sortBy: e.target.value }));
+                    }}
                     className="w-full rounded-lg border border-brand-teal/20 bg-white px-4 py-2 text-sm text-brand-umber focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/20"
                   >
                     <option value="price-low">Price: Low to High</option>
@@ -261,6 +285,8 @@ export function CollectionsPageClient({ initialProducts }: CollectionsPageClient
 
               <ActiveFilterChips
                 filters={filters}
+                categories={categories}
+                collections={collections}
                 onRemoveFilter={handleRemoveFilter}
                 onClearAll={handleClearAllFilters}
               />

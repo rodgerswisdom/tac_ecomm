@@ -2,28 +2,33 @@
 
 import { X } from "lucide-react";
 import { FilterState } from "./ProductFilters";
+import type { CategoryOption } from "./ProductFilters";
 
 interface ActiveFilterChipsProps {
   filters: FilterState;
-  onRemoveFilter: (type: keyof FilterState, value?: any) => void;
+  categories: CategoryOption[];
+  collections: CategoryOption[];
+  onRemoveFilter: <K extends keyof FilterState>(type: K, value?: FilterState[K]) => void;
   onClearAll: () => void;
 }
 
 export function ActiveFilterChips({
   filters,
+  categories,
+  collections,
   onRemoveFilter,
   onClearAll,
 }: ActiveFilterChipsProps) {
-  const activeFilters: Array<{ label: string; type: keyof FilterState; value?: any }> = [];
+  const categoryLabels = new Map(
+    [...categories, ...collections].map((option) => [option.slug, option.name])
+  );
+  const activeFilters: Array<{
+    label: string;
+    type: keyof FilterState;
+    value?: FilterState[keyof FilterState];
+  }> = [];
 
   if (filters.category !== "all") {
-    const categoryLabels: Record<string, string> = {
-      necklaces: "Necklaces",
-      rings: "Rings",
-      bracelets: "Bracelets",
-      earrings: "Earrings",
-      sets: "Sets",
-    };
     activeFilters.push({
       label: categoryLabels[filters.category] || filters.category,
       type: "category",
