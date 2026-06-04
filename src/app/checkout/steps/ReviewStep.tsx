@@ -44,7 +44,15 @@ export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlace
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Payment</h3>
-        <div className="text-sm text-muted-foreground">{paymentLabel[payment.method]}</div>
+        <div className="text-sm text-muted-foreground">
+          {paymentLabel[payment.method]}
+          {(payment.method === "TUMA" || payment.method === "PESAPAL") && shipping.phone ? (
+            <p className="mt-2 text-brand-umber/80">
+              You will receive an M-Pesa STK push on <strong>{shipping.phone}</strong> after placing
+              the order. Enter your PIN on your phone to pay.
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Cart Items</h3>
@@ -74,7 +82,7 @@ export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlace
       </div>
       <div className="flex justify-end">
         <Button type="button" onClick={onPlaceOrder} disabled={isSubmitting}>
-          {isSubmitting ? "Processing..." : "Place Order"}
+          {isSubmitting ? "Sending M-Pesa request…" : "Pay with M-Pesa"}
         </Button>
       </div>
     </div>

@@ -207,6 +207,27 @@ export class PayPalPayment {
   }
 }
 
+/** Tuma returns the JWT at `data.token` (not top-level `token`). */
+function extractTumaAuthToken(raw: Record<string, unknown>): string | undefined {
+  if (typeof raw.token === 'string' && raw.token.trim()) {
+    return raw.token.trim()
+  }
+  if (typeof raw.access_token === 'string' && raw.access_token.trim()) {
+    return raw.access_token.trim()
+  }
+  const data = raw.data
+  if (data && typeof data === 'object') {
+    const nested = data as Record<string, unknown>
+    if (typeof nested.token === 'string' && nested.token.trim()) {
+      return nested.token.trim()
+    }
+    if (typeof nested.access_token === 'string' && nested.access_token.trim()) {
+      return nested.access_token.trim()
+    }
+  }
+  return undefined
+}
+
 /** Normalize Kenyan mobile numbers to 254XXXXXXXXX for Tuma/M-Pesa. */
 export function normalizeKenyaPhone(phone: string): string | null {
   const digits = phone.replace(/\D/g, '')
@@ -253,9 +274,15 @@ export class TumaPayment {
         throw new Error(message)
       }
 
+      if (process.env.NODE_ENV === 'development') {
+        console.info('[tuma/stk-push] response:', JSON.stringify(response))
+      }
+
       const data = (response.data && typeof response.data === 'object'
         ? response.data
-        : {}) as Record<string, unknown>
+        : response && typeof response === 'object' && 'checkout_request_id' in response
+          ? response
+          : {}) as Record<string, unknown>
 
       const merchantRequestId =
         typeof data.merchant_request_id === 'string' ? data.merchant_request_id : undefined
@@ -336,13 +363,23 @@ export class TumaPayment {
       throw new Error(typeof raw.message === 'string' ? raw.message : 'Tuma authentication failed')
     }
 
-    const token = typeof raw.token === 'string' ? raw.token : undefined
+    const token = extractTumaAuthToken(raw)
     if (!token) {
-      throw new Error('Tuma authentication response did not include a token')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[tuma/auth] Unexpected auth response shape:', JSON.stringify(raw))
+      }
+      const hint =
+        typeof raw.message === 'string' && raw.message.trim()
+          ? raw.message
+          : 'Tuma authentication response did not include a token'
+      throw new Error(hint)
     }
 
+    const data = raw.data && typeof raw.data === 'object' ? (raw.data as Record<string, unknown>) : raw
     const expiresIn =
-      typeof raw.expires_in === 'number' && Number.isFinite(raw.expires_in) ? raw.expires_in : 86_400
+      (typeof raw.expires_in === 'number' && Number.isFinite(raw.expires_in) ? raw.expires_in : undefined) ??
+      (typeof data.expires_in === 'number' && Number.isFinite(data.expires_in) ? data.expires_in : undefined) ??
+      86_400
     this.tokenCache = { token, expiresAt: now + expiresIn * 1000 }
     return token
   }

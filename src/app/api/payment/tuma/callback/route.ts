@@ -7,7 +7,7 @@ type TumaCallbackPayload = {
   status?: string
   merchant_request_id?: string
   checkout_request_id?: string
-  result_code?: number
+  result_code?: number | string
   result_desc?: string
   failure_reason?: string
   mpesa_receipt_number?: string
@@ -25,6 +25,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
+  if (process.env.NODE_ENV === 'development') {
+    console.info('[tuma/callback]', { orderId, body })
+  }
+
   const checkoutRequestId = body.checkout_request_id?.trim()
   const merchantRequestId = body.merchant_request_id?.trim()
 
@@ -35,7 +39,7 @@ export async function POST(req: NextRequest) {
   const order = orderId
     ? await prisma.order.findUnique({
         where: { id: orderId },
-        select: { id: true }
+        select: { id: true, paymentStatus: true }
       })
     : await prisma.order.findFirst({
         where: {
@@ -51,15 +55,24 @@ export async function POST(req: NextRequest) {
             }
           }
         },
-        select: { id: true }
+        select: { id: true, paymentStatus: true }
       })
 
   if (!order) {
+    console.error('[tuma/callback] Order not found', { orderId, checkoutRequestId, merchantRequestId })
     return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   }
 
   const gatewayStatus = mapTumaStatus(body)
-  const transactionId = checkoutRequestId || merchantRequestId || 'unknown'
+  const transactionId =
+    checkoutRequestId ||
+    merchantRequestId ||
+    (typeof body.mpesa_receipt_number === 'string' ? body.mpesa_receipt_number : 'unknown')
+
+  // Idempotent: already completed and callback says completed again
+  if (order.paymentStatus === 'COMPLETED' && gatewayStatus === 'completed') {
+    return NextResponse.json({ success: true, status: gatewayStatus, duplicate: true })
+  }
 
   try {
     await applyPaymentUpdate({
@@ -80,10 +93,15 @@ export async function POST(req: NextRequest) {
 }
 
 function mapTumaStatus(body: TumaCallbackPayload): GatewayPaymentStatus {
-  if (body.result_code === 0 || body.status === 'completed') {
+  const resultCode =
+    body.result_code === 0 ||
+    body.result_code === '0' ||
+    Number(body.result_code) === 0
+
+  if (resultCode || body.status === 'completed') {
     return 'completed'
   }
-  if (body.status === 'failed' || (body.result_code != null && body.result_code !== 0)) {
+  if (body.status === 'failed' || (body.result_code != null && !resultCode)) {
     return 'failed'
   }
   return 'pending'

@@ -3,6 +3,7 @@ import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/c
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { PaymentService, getPaymentConfig, normalizeKenyaPhone } from '@/lib/payments'
+import { buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
 import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
@@ -315,8 +316,7 @@ export async function POST(req: NextRequest) {
 
     const paymentService = new PaymentService(getPaymentConfig())
     const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
-    const callbackUrl = new URL('/api/payment/tuma/callback', baseUrl)
-    callbackUrl.searchParams.set('orderId', order.id)
+    const callbackUrl = buildTumaPaymentCallbackUrl(order.id, req.nextUrl.origin)
 
     try {
       const paymentResponse = await paymentService.createPayment('tuma', {
@@ -327,7 +327,7 @@ export async function POST(req: NextRequest) {
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
         customerPhone: mpesaPhone,
         description: `Order ${order.orderNumber}`,
-        returnUrl: callbackUrl.toString(),
+        returnUrl: callbackUrl,
         cancelUrl: `${baseUrl}/checkout`,
         billingAddress: {
           line1: addressTrim,
@@ -342,30 +342,35 @@ export async function POST(req: NextRequest) {
         throw new Error(paymentResponse.error || 'Tuma did not accept the STK push request')
       }
 
-      await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          amount: paymentAmount,
-          currency: 'KES',
-          method: PaymentMethod.TUMA,
-          status: PaymentStatus.PENDING,
-          transactionId: paymentResponse.paymentId,
-          gatewayResponse: JSON.stringify({
-            merchantRequestId: paymentResponse.merchantRequestId,
-            checkoutRequestId: paymentResponse.checkoutRequestId,
-            message: paymentResponse.message
-          })
-        }
-      })
-
-      const thankYou = new URL('/checkout/thank-you', baseUrl)
-      thankYou.searchParams.set('orderId', order.id)
-      thankYou.searchParams.set('trackingId', paymentResponse.paymentId)
-      thankYou.searchParams.set('status', 'pending')
+      const paymentWait = new URL('/checkout/payment', baseUrl)
+      paymentWait.searchParams.set('orderId', order.id)
       if (paymentResponse.message) {
-        thankYou.searchParams.set('message', paymentResponse.message)
+        paymentWait.searchParams.set('message', paymentResponse.message)
       }
-      thankYouUrl = thankYou.toString()
+      thankYouUrl = paymentWait.toString()
+
+      try {
+        await prisma.payment.create({
+          data: {
+            orderId: order.id,
+            amount: paymentAmount,
+            currency: 'KES',
+            method: PaymentMethod.TUMA,
+            status: PaymentStatus.PENDING,
+            transactionId: paymentResponse.paymentId,
+            gatewayResponse: JSON.stringify({
+              merchantRequestId: paymentResponse.merchantRequestId,
+              checkoutRequestId: paymentResponse.checkoutRequestId,
+              message: paymentResponse.message
+            })
+          }
+        })
+      } catch (paymentRecordError) {
+        console.error(
+          'STK push sent but failed to save Payment row (run: npx prisma migrate deploy):',
+          paymentRecordError
+        )
+      }
 
       await sendOpsNotification()
     } catch (error) {
