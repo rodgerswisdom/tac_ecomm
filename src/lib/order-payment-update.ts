@@ -1,58 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { PaymentService, PaymentVerification, getPaymentConfig } from '@/lib/payments'
 import { decrementStock, restoreStock } from '@/lib/stock'
 import { deriveOrderStatus } from '@/lib/order-status'
 import { sendPaidOrderConfirmedEmail } from '@/lib/order-email'
 
-async function handleNotification(req: NextRequest) {
-  const url = new URL(req.url)
-  const search = url.searchParams
+export type GatewayPaymentStatus = 'completed' | 'pending' | 'failed' | 'cancelled'
 
-  let orderTrackingId =
-    search.get('OrderTrackingId') ||
-    search.get('orderTrackingId') ||
-    search.get('order_tracking_id') ||
-    search.get('pesapal_transaction_tracking_id') ||
-    undefined
+export type ApplyPaymentUpdateInput = {
+  orderId: string
+  method: PaymentMethod
+  gatewayStatus: GatewayPaymentStatus
+  transactionId: string
+  amount?: number
+  currency?: string
+  gatewayResponse: unknown
+}
 
-  let merchantReference =
-    search.get('OrderMerchantReference') ||
-    search.get('merchantReference') ||
-    search.get('merchant_reference') ||
-    undefined
-
-  // Some IPN calls send the payload in the body instead of query params
-  if (!orderTrackingId || !merchantReference) {
-    try {
-      const body = await req.json()
-      if (!orderTrackingId) {
-        orderTrackingId =
-          body?.OrderTrackingId ||
-          body?.orderTrackingId ||
-          body?.order_tracking_id ||
-          body?.pesapal_transaction_tracking_id
-      }
-      if (!merchantReference) {
-        merchantReference =
-          body?.OrderMerchantReference ||
-          body?.merchantReference ||
-          body?.merchant_reference
-      }
-    } catch {
-      // Ignore body parse errors; we only care about query params
-    }
-  }
-
-  if (!orderTrackingId) {
-    return NextResponse.json({ error: 'Missing orderTrackingId' }, { status: 400 })
-  }
-
-  const order = await prisma.order.findFirst({
-    where: merchantReference
-      ? { orderNumber: merchantReference }
-      : { payments: { some: { transactionId: orderTrackingId, method: PaymentMethod.PESAPAL } } },
+export async function applyPaymentUpdate(input: ApplyPaymentUpdateInput): Promise<{
+  paymentStatus: PaymentStatus
+  orderStatus: OrderStatus
+  emailSent: boolean
+}> {
+  const order = await prisma.order.findUnique({
+    where: { id: input.orderId },
     select: {
       id: true,
       userId: true,
@@ -60,7 +30,6 @@ async function handleNotification(req: NextRequest) {
       status: true,
       paymentStatus: true,
       total: true,
-      currency: true,
       items: {
         select: {
           productId: true,
@@ -69,50 +38,48 @@ async function handleNotification(req: NextRequest) {
         }
       },
       payments: {
-        where: { method: PaymentMethod.PESAPAL },
+        where: { method: input.method },
         orderBy: { createdAt: 'desc' },
         take: 1,
-        select: { id: true, currency: true }
+        select: { id: true }
       }
     }
   })
 
   if (!order) {
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    throw new Error('Order not found')
   }
 
-  const paymentService = new PaymentService(getPaymentConfig())
-  const verification = await paymentService.verifyPayment('pesapal', orderTrackingId, {
-    merchantReference: merchantReference ?? order.orderNumber
-  })
-
-  const paymentStatus = mapPaymentStatus(verification.status)
+  const paymentStatus = mapGatewayStatus(input.gatewayStatus)
   const nextOrderStatus = deriveOrderStatus(paymentStatus, order.status)
   const existingPayment = order.payments[0]
-  const paymentCurrency = 'KES'
+  const paymentCurrency = input.currency ?? 'KES'
   let shouldSendPaidEmail = false
+
   await prisma.$transaction(async (tx) => {
+    const gatewayResponseJson = JSON.stringify(input.gatewayResponse)
+
     if (existingPayment) {
       await tx.payment.update({
         where: { id: existingPayment.id },
         data: {
           status: paymentStatus,
-          transactionId: verification.transactionId ?? orderTrackingId,
-          amount: verification.amount ?? order.total,
+          transactionId: input.transactionId,
+          amount: input.amount ?? order.total,
           currency: paymentCurrency,
-          gatewayResponse: JSON.stringify(verification)
+          gatewayResponse: gatewayResponseJson
         }
       })
     } else {
       await tx.payment.create({
         data: {
           orderId: order.id,
-          method: PaymentMethod.PESAPAL,
+          method: input.method,
           status: paymentStatus,
-          transactionId: verification.transactionId ?? orderTrackingId,
-          amount: verification.amount ?? order.total,
+          transactionId: input.transactionId,
+          amount: input.amount ?? order.total,
           currency: paymentCurrency,
-          gatewayResponse: JSON.stringify(verification)
+          gatewayResponse: gatewayResponseJson
         }
       })
     }
@@ -178,7 +145,6 @@ async function handleNotification(req: NextRequest) {
         where: { id: order.id },
         data: { paymentStatus }
       })
-      return
     }
   })
 
@@ -190,18 +156,14 @@ async function handleNotification(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ success: true, status: verification.status })
+  return {
+    paymentStatus,
+    orderStatus: nextOrderStatus,
+    emailSent: shouldSendPaidEmail
+  }
 }
 
-export async function POST(req: NextRequest) {
-  return handleNotification(req)
-}
-
-export async function GET(req: NextRequest) {
-  return handleNotification(req)
-}
-
-function mapPaymentStatus(status: PaymentVerification['status']): PaymentStatus {
+function mapGatewayStatus(status: GatewayPaymentStatus): PaymentStatus {
   switch (status) {
     case 'completed':
       return PaymentStatus.COMPLETED
@@ -213,4 +175,3 @@ function mapPaymentStatus(status: PaymentVerification['status']): PaymentStatus 
       return PaymentStatus.FAILED
   }
 }
-

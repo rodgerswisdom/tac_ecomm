@@ -32,7 +32,7 @@ export default function ShopifyCheckout() {
       .finally(() => setShippingLoading(false));
   }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
-  const defaultPayment = { method: "PESAPAL" as const };
+  const defaultPayment = { method: "TUMA" as const };
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
   const appliedCouponRef = useRef(appliedCoupon);
   appliedCouponRef.current = appliedCoupon;
@@ -70,7 +70,7 @@ export default function ShopifyCheckout() {
     try {
       const body: Record<string, unknown> = {
         ...shipping,
-        paymentMethod: "PESAPAL",
+        paymentMethod: "TUMA",
         shippingMethod: delivery,
         cartItems: cart,
       };
@@ -88,9 +88,9 @@ export default function ShopifyCheckout() {
         setError(data.error || "Failed to place order. Please try again.");
         return;
       }
-      if (data.redirectUrl) {
+      if (data.thankYouUrl || data.redirectUrl) {
         setPlacingOrder(false);
-        window.location.href = data.redirectUrl;
+        window.location.href = data.thankYouUrl || data.redirectUrl;
         return;
       }
       setOrderPlaced(true);

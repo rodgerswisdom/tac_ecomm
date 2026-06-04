@@ -46,10 +46,9 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 PAYPAL_CLIENT_ID=your-paypal-client-id
 PAYPAL_CLIENT_SECRET=your-paypal-client-secret
 PAYPAL_MODE=live
-PESAPAL_CONSUMER_KEY=your-pesapal-consumer-key
-PESAPAL_CONSUMER_SECRET=your-pesapal-consumer-secret
-PESAPAL_ENVIRONMENT=production
-PESAPAL_NOTIFICATION_ID=your-pesapal-notification-id
+TUMA_API_EMAIL=your-business@example.com
+TUMA_API_KEY=your-tuma-api-key
+TUMA_API_BASE_URL=https://api.tuma.co.ke
 ```
 
 ### Email Service

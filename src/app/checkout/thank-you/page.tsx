@@ -16,7 +16,7 @@ const statusCopy: Record<StatusKind, { title: string; body: string; tone: "succe
   },
   pending: {
     title: "Payment pending",
-    body: "We are waiting for Pesapal to confirm your payment. You will receive an email as soon as it clears.",
+    body: "Check your phone to approve the M-Pesa STK push. You will receive an email as soon as payment clears.",
     tone: "pending"
   },
   cancelled: {
