@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Filter } from "lucide-react";
 
 import { Navbar } from "@/components/Navbar";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { SortDropdown } from "@/components/ui/custom-dropdown";
@@ -106,6 +107,13 @@ export const CollectionPageClient = ({
     { label: `Shop ${collection.name}`, href: "#collection-products" },
   ];
 
+  // Generate breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: "/" },
+    { name: "Collections", url: "/collections" },
+    { name: collection.name, url: `/collections/${collection.slug}` },
+  ];
+
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
@@ -125,13 +133,10 @@ export const CollectionPageClient = ({
         <div className="relative z-10">
           <div className="gallery-container flex flex-col gap-8 py-24 sm:py-28 md:py-32">
             <div className="flex flex-wrap items-center gap-3 text-sm text-brand-beige/80">
-              <Link
-                href="/collections"
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-brand-beige/70 transition-colors hover:text-brand-beige"
-              >
-                <ArrowLeft className="h-3 w-3" />
-                Back to Shop
-              </Link>
+              <Breadcrumb
+                items={breadcrumbItems}
+                className="text-brand-beige/70 [&_a]:text-brand-beige/90 [&_a:hover]:text-brand-beige [&_span]:text-brand-beige/70 [&_svg]:text-brand-beige/50"
+              />
               <span className="text-xs uppercase tracking-[0.3em] text-brand-beige/50">
                 {collection.featuredRegions.join(" • ")}
               </span>

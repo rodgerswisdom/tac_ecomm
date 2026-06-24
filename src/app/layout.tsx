@@ -7,6 +7,7 @@ import { SessionProviderWrapper } from "@/components/providers/SessionProviderWr
 import { KeverdProviderWrapper } from "@/components/providers/KeverdProviderWrapper";
 import { Toaster } from "sonner";
 import { WhatsAppWidget } from "@/components/WhatsAppWidget";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const cormorantGaramond = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -26,12 +27,12 @@ export const metadata: Metadata = {
   title: "Tac Accessories — The African Gallery Experience",
   description:
     "Walk through a sunlit atelier of Maasai shukas, bronze jewelry, and heritage crafts. Tac Accessories blends African modernism with luxury minimalism.",
-  icons: {
-    icon: [],
-    apple: [],
-    shortcut: [],
-  },
-  metadataBase: new URL("https://tacaccessories.com"),
+  // icons: {
+  //   icon: [],
+  //   apple: [],
+  //   shortcut: [],
+  // },
+  metadataBase: new URL("https://www.tacaccessories.co.ke"),
   alternates: {
     canonical: "/",
   },
@@ -39,7 +40,7 @@ export const metadata: Metadata = {
     title: "Tac Accessories — The African Gallery Experience",
     description:
       "A luxurious African art eCommerce destination celebrating heritage craftsmanship through contemporary design.",
-    url: "https://tacaccessories.com",
+    url: "https://www.tacaccessories.co.ke",
     siteName: "Tac Accessories",
     images: [
       {
@@ -120,6 +121,7 @@ export default async function RootLayout({
   const pathname = headersList.get("x-pathname") || "";
   const isAdmin = session?.user?.role === "ADMIN";
   const isMaintenanceActive = settings.maintenanceMode && !isAdmin && !pathname.startsWith('/admin') && !pathname.startsWith('/auth');
+  
   return (
     <html lang="en">
       <body
@@ -143,6 +145,9 @@ export default async function RootLayout({
             </CartProvider>
           </KeverdProviderWrapper>
         </SessionProviderWrapper>
+
+        {/* Injects GA4 tracking optimally into the layout */}
+        <GoogleAnalytics gaId="G-78BBBTQSVB" />
       </body>
     </html>
   );
