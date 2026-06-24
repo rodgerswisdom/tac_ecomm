@@ -147,7 +147,9 @@ export default async function RootLayout({
         </SessionProviderWrapper>
 
         {/* Injects GA4 tracking optimally into the layout */}
-        <GoogleAnalytics gaId="G-78BBBTQSVB" />
+        {process.env.NODE_ENV === 'production' && process.env.GOOGLE_ANALYTICS_ID && (
+          <GoogleAnalytics gaId={process.env.GOOGLE_ANALYTICS_ID} />
+        )}
       </body>
     </html>
   );

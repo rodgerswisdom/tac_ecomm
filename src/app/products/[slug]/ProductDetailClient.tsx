@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
@@ -13,6 +14,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
 import { ProductCardData } from "@/types/product";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
+import { trackViewItem } from "@/lib/analytics";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
@@ -26,6 +28,18 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
+
+  // Track product view when component mounts
+  useEffect(() => {
+    trackViewItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
+      slug: product.slug,
+    });
+  }, [product.id, product.name, product.price, product.originalPrice, product.category, product.slug]);
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;

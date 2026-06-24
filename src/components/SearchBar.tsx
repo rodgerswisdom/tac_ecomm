@@ -9,6 +9,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { trackSearch } from "@/lib/analytics";
 
 const SEARCH_LIMIT = 6;
 
@@ -43,7 +44,11 @@ export function SearchBar() {
           throw new Error("Failed to search products");
         }
         const data = await response.json();
-        setResults(Array.isArray(data.products) ? data.products : []);
+        const products = Array.isArray(data.products) ? data.products : [];
+        setResults(products);
+        
+        // Track search event with results count
+        trackSearch(query, products.length);
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           setResults([]);
