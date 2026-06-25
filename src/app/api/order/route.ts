@@ -3,7 +3,7 @@ import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/c
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { PaymentService, getPaymentConfig, normalizeKenyaPhone } from '@/lib/payments'
-import { buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
+import { assertProductionCallbackUrl, buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
 import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
@@ -317,6 +317,23 @@ export async function POST(req: NextRequest) {
     const paymentService = new PaymentService(getPaymentConfig())
     const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
     const callbackUrl = buildTumaPaymentCallbackUrl(order.id, req.nextUrl.origin)
+    const callbackCheck = assertProductionCallbackUrl(callbackUrl)
+    if (!callbackCheck.ok) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.FAILED
+        }
+      })
+      return NextResponse.json({ error: callbackCheck.message }, { status: 400 })
+    }
+
+    console.info('[tuma/stk-push] initiating', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      callback_url: callbackUrl
+    })
 
     try {
       const paymentResponse = await paymentService.createPayment('tuma', {
@@ -361,7 +378,8 @@ export async function POST(req: NextRequest) {
             gatewayResponse: JSON.stringify({
               merchantRequestId: paymentResponse.merchantRequestId,
               checkoutRequestId: paymentResponse.checkoutRequestId,
-              message: paymentResponse.message
+              message: paymentResponse.message,
+              callback_url: callbackUrl
             })
           }
         })

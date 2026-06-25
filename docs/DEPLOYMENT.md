@@ -35,7 +35,7 @@ Add these environment variables to your Vercel project:
 ```sh
 DATABASE_URL=postgresql://username:password@host:5432/database?schema=public
 NEXTAUTH_SECRET=your-production-secret-key-here
-NEXTAUTH_URL=https://your-domain.vercel.app
+NEXTAUTH_URL=https://www.tacaccessories.co.ke
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
@@ -70,11 +70,14 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=tac_accessories
 
 ```sh
 APP_NAME=TAC Accessories
-APP_URL=https://your-domain.vercel.app
+APP_URL=https://www.tacaccessories.co.ke
+NEXTAUTH_URL=https://www.tacaccessories.co.ke
 ADMIN_EMAIL=admin@your-domain.com
 DEFAULT_CURRENCY=KSH
 ENABLE_DYNAMIC_PRICING=true
 ```
+
+**M-Pesa (Tuma) callbacks:** `APP_URL` and `NEXTAUTH_URL` must be the exact public HTTPS origin (e.g. `https://www.tacaccessories.co.ke`, no trailing slash). Tuma POSTs to `{APP_URL}/api/payment/tuma/callback?orderId=...`. If these point at localhost or the wrong host, customers can pay on their phone but the site will stay on “Payment pending”. Redeploy after changing env vars. See [tuma-setup.md](./tuma-setup.md).
 
 ### Optional
 

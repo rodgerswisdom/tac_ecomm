@@ -49,3 +49,45 @@ export function getTumaCallbackWarning(origin: string): string | null {
     'to your ngrok (or similar) HTTPS URL so Tuma can reach your callback endpoint.'
   )
 }
+
+export type CallbackUrlValidationResult =
+  | { ok: true; origin: string }
+  | { ok: false; message: string }
+
+/** Ensure Tuma can reach the callback URL (HTTPS in production; tunnel for localhost). */
+export function assertProductionCallbackUrl(
+  callbackUrl: string,
+  options?: { isProduction?: boolean }
+): CallbackUrlValidationResult {
+  const isProduction = options?.isProduction ?? process.env.NODE_ENV === 'production'
+
+  let parsed: URL
+  try {
+    parsed = new URL(callbackUrl)
+  } catch {
+    return { ok: false, message: 'Invalid payment callback URL configuration.' }
+  }
+
+  const origin = parsed.origin
+
+  if (isLocalCallbackOrigin(origin)) {
+    if (!process.env.TUMA_CALLBACK_PUBLIC_URL?.trim()) {
+      return {
+        ok: false,
+        message:
+          'M-Pesa callbacks cannot reach localhost. Set TUMA_CALLBACK_PUBLIC_URL to a public HTTPS URL (e.g. ngrok) or deploy with a public APP_URL.',
+      }
+    }
+    return { ok: true, origin: getTumaCallbackPublicOrigin() }
+  }
+
+  if (isProduction && parsed.protocol !== 'https:') {
+    return {
+      ok: false,
+      message:
+        'APP_URL must use HTTPS in production so Tuma can send payment callbacks securely.',
+    }
+  }
+
+  return { ok: true, origin }
+}

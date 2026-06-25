@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/contexts/CartContext";
 
 type PaymentStatusWatcherClientProps = {
   enabled: boolean;
   orderId?: string;
+  orderNumber?: string;
   trackingId?: string;
 };
 
 export function PaymentStatusWatcherClient({
   enabled,
   orderId,
+  orderNumber,
   trackingId,
 }: PaymentStatusWatcherClientProps) {
+  const router = useRouter();
   const { clearCart } = useCart();
 
   useEffect(() => {
@@ -37,12 +41,15 @@ export function PaymentStatusWatcherClient({
         if (!res.ok) return;
 
         const data = await res.json();
-        if (
-          data?.paymentStatus === "COMPLETED" ||
-          data?.payment?.status === "COMPLETED"
-        ) {
+        if (data?.isComplete || data?.paymentStatus === "COMPLETED") {
           clearCart();
-          window.location.reload();
+          const thankYou = new URL("/checkout/thank-you", window.location.origin);
+          thankYou.searchParams.set("orderId", orderId);
+          thankYou.searchParams.set("status", "success");
+          if (data.orderNumber ?? orderNumber) {
+            thankYou.searchParams.set("orderNumber", data.orderNumber ?? orderNumber ?? "");
+          }
+          router.replace(`${thankYou.pathname}${thankYou.search}`);
           return;
         }
       } catch {
@@ -50,16 +57,16 @@ export function PaymentStatusWatcherClient({
       }
 
       if (!cancelled) {
-        setTimeout(poll, 4000);
+        setTimeout(poll, 1500);
       }
     };
 
-    const timer = setTimeout(poll, 4000);
+    const timer = setTimeout(poll, 1500);
     return () => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [enabled, orderId, trackingId, clearCart]);
+  }, [enabled, orderId, orderNumber, trackingId, clearCart, router]);
 
   return null;
 }

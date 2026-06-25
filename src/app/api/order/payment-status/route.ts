@@ -8,7 +8,12 @@ function formatKes(amount: number) {
 
 function parseGatewayMeta(gatewayResponse: string | null | undefined) {
   if (!gatewayResponse?.trim()) {
-    return { stkMessage: null as string | null, failureReason: null as string | null };
+    return {
+      stkMessage: null as string | null,
+      failureReason: null as string | null,
+      mpesaReceiptNumber: null as string | null,
+      confirmedAt: null as string | null,
+    };
   }
   try {
     const parsed = JSON.parse(gatewayResponse) as Record<string, unknown>;
@@ -19,9 +24,20 @@ function parseGatewayMeta(gatewayResponse: string | null | undefined) {
         : typeof parsed.result_desc === "string"
           ? parsed.result_desc
           : null;
-    return { stkMessage, failureReason };
+    const mpesaReceiptNumber =
+      typeof parsed.mpesa_receipt_number === "string"
+        ? parsed.mpesa_receipt_number
+        : null;
+    const confirmedAt =
+      typeof parsed.timestamp === "string" ? parsed.timestamp : null;
+    return { stkMessage, failureReason, mpesaReceiptNumber, confirmedAt };
   } catch {
-    return { stkMessage: null, failureReason: null };
+    return {
+      stkMessage: null,
+      failureReason: null,
+      mpesaReceiptNumber: null,
+      confirmedAt: null,
+    };
   }
 }
 
@@ -40,7 +56,9 @@ export async function GET(request: Request) {
       orderNumber: true,
       status: true,
       paymentStatus: true,
+      paymentMethod: true,
       total: true,
+      updatedAt: true,
       payments: {
         where: {
           method: { in: [PaymentMethod.TUMA, PaymentMethod.PESAPAL] },
@@ -53,6 +71,7 @@ export async function GET(request: Request) {
           transactionId: true,
           currency: true,
           gatewayResponse: true,
+          updatedAt: true,
         },
       },
     },
@@ -63,7 +82,8 @@ export async function GET(request: Request) {
   }
 
   const payment = order.payments[0] ?? null;
-  const { stkMessage, failureReason } = parseGatewayMeta(payment?.gatewayResponse);
+  const { stkMessage, failureReason, mpesaReceiptNumber, confirmedAt } =
+    parseGatewayMeta(payment?.gatewayResponse);
   const paymentStatus = order.paymentStatus;
   const isComplete = paymentStatus === PaymentStatus.COMPLETED;
   const isFailed =
@@ -74,9 +94,14 @@ export async function GET(request: Request) {
     paymentStatus,
     orderStatus: order.status,
     orderNumber: order.orderNumber,
+    paymentMethod: order.paymentMethod,
     totalFormatted: formatKes(order.total),
     stkMessage,
     failureReason,
+    mpesaReceiptNumber: isComplete ? mpesaReceiptNumber : null,
+    confirmedAt: isComplete
+      ? confirmedAt ?? payment?.updatedAt?.toISOString() ?? order.updatedAt.toISOString()
+      : null,
     isComplete,
     isFailed,
     isPending,

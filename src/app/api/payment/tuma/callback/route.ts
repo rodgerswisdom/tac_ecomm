@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PaymentMethod } from '@prisma/client'
+import { PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { applyPaymentUpdate, type GatewayPaymentStatus } from '@/lib/order-payment-update'
 
@@ -25,12 +25,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  if (process.env.NODE_ENV === 'development') {
-    console.info('[tuma/callback]', { orderId, body })
-  }
-
   const checkoutRequestId = body.checkout_request_id?.trim()
   const merchantRequestId = body.merchant_request_id?.trim()
+
+  console.info('[tuma/callback] received', {
+    orderId,
+    checkout_request_id: checkoutRequestId,
+    merchant_request_id: merchantRequestId,
+    result_code: body.result_code,
+    status: body.status,
+    mpesa_receipt_number: body.mpesa_receipt_number
+  })
 
   if (!orderId && !checkoutRequestId && !merchantRequestId) {
     return NextResponse.json({ error: 'Missing order or transaction identifiers' }, { status: 400 })
@@ -60,7 +65,8 @@ export async function POST(req: NextRequest) {
 
   if (!order) {
     console.error('[tuma/callback] Order not found', { orderId, checkoutRequestId, merchantRequestId })
-    return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    // Acknowledge so Tuma does not retry indefinitely for unknown orders
+    return NextResponse.json({ success: false, error: 'Order not found' }, { status: 200 })
   }
 
   const gatewayStatus = mapTumaStatus(body)
@@ -69,8 +75,7 @@ export async function POST(req: NextRequest) {
     merchantRequestId ||
     (typeof body.mpesa_receipt_number === 'string' ? body.mpesa_receipt_number : 'unknown')
 
-  // Idempotent: already completed and callback says completed again
-  if (order.paymentStatus === 'COMPLETED' && gatewayStatus === 'completed') {
+  if (order.paymentStatus === PaymentStatus.COMPLETED && gatewayStatus === 'completed') {
     return NextResponse.json({ success: true, status: gatewayStatus, duplicate: true })
   }
 
@@ -85,9 +90,15 @@ export async function POST(req: NextRequest) {
       gatewayResponse: body
     })
   } catch (error) {
-    console.error('Tuma callback processing failed:', error)
-    return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
+    console.error('[tuma/callback] processing failed:', error)
+    return NextResponse.json({ success: false, error: 'Failed to update order' }, { status: 200 })
   }
+
+  console.info('[tuma/callback] applied', {
+    orderId: order.id,
+    gatewayStatus,
+    transactionId
+  })
 
   return NextResponse.json({ success: true, status: gatewayStatus })
 }
