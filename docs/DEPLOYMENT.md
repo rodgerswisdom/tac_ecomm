@@ -35,7 +35,7 @@ Add these environment variables to your Vercel project:
 ```sh
 DATABASE_URL=postgresql://username:password@host:5432/database?schema=public
 NEXTAUTH_SECRET=your-production-secret-key-here
-NEXTAUTH_URL=https://your-domain.vercel.app
+NEXTAUTH_URL=https://www.tacaccessories.co.ke
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
@@ -46,10 +46,9 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 PAYPAL_CLIENT_ID=your-paypal-client-id
 PAYPAL_CLIENT_SECRET=your-paypal-client-secret
 PAYPAL_MODE=live
-PESAPAL_CONSUMER_KEY=your-pesapal-consumer-key
-PESAPAL_CONSUMER_SECRET=your-pesapal-consumer-secret
-PESAPAL_ENVIRONMENT=production
-PESAPAL_NOTIFICATION_ID=your-pesapal-notification-id
+TUMA_API_EMAIL=your-business@example.com
+TUMA_API_KEY=your-tuma-api-key
+TUMA_API_BASE_URL=https://api.tuma.co.ke
 ```
 
 ### Email Service
@@ -71,11 +70,14 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=tac_accessories
 
 ```sh
 APP_NAME=TAC Accessories
-APP_URL=https://your-domain.vercel.app
+APP_URL=https://www.tacaccessories.co.ke
+NEXTAUTH_URL=https://www.tacaccessories.co.ke
 ADMIN_EMAIL=admin@your-domain.com
 DEFAULT_CURRENCY=KSH
 ENABLE_DYNAMIC_PRICING=true
 ```
+
+**M-Pesa (Tuma) callbacks:** `APP_URL` and `NEXTAUTH_URL` must be the exact public HTTPS origin (e.g. `https://www.tacaccessories.co.ke`, no trailing slash). Tuma POSTs to `{APP_URL}/api/payment/tuma/callback?orderId=...`. If these point at localhost or the wrong host, customers can pay on their phone but the site will stay on “Payment pending”. Redeploy after changing env vars. See [tuma-setup.md](./tuma-setup.md).
 
 ### Optional
 

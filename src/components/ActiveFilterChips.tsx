@@ -22,15 +22,17 @@ export function ActiveFilterChips({
   const categoryLabels = new Map(
     [...categories, ...collections].map((option) => [option.slug, option.name])
   );
-  const activeFilters: Array<{
-    label: string;
-    type: keyof FilterState;
-    value?: FilterState[keyof FilterState];
-  }> = [];
+  type ActiveFilter =
+    | { label: string; type: "category"; value: FilterState["category"] }
+    | { label: string; type: "priceRange"; value: FilterState["priceRange"] }
+    | { label: string; type: "materials"; value: string }
+    | { label: string; type: "origin"; value: string };
+
+  const activeFilters: ActiveFilter[] = [];
 
   if (filters.category !== "all") {
     activeFilters.push({
-      label: categoryLabels[filters.category] || filters.category,
+      label: categoryLabels.get(filters.category) ?? filters.category,
       type: "category",
       value: "all",
     });
@@ -62,11 +64,15 @@ export function ActiveFilterChips({
         <button
           key={index}
           onClick={() => {
-            if (filter.type === "materials" || filter.type === "origin") {
-              const current = filters[filter.type] as string[];
+            if (filter.type === "materials") {
               onRemoveFilter(
-                filter.type,
-                current.filter((v) => v !== filter.value)
+                "materials",
+                filters.materials.filter((v) => v !== filter.value)
+              );
+            } else if (filter.type === "origin") {
+              onRemoveFilter(
+                "origin",
+                filters.origin.filter((v) => v !== filter.value)
               );
             } else {
               onRemoveFilter(filter.type, filter.value);

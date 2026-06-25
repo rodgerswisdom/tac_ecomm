@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { PaymentService, getPaymentConfig } from '@/lib/payments'
+import { PaymentService, getPaymentConfig, normalizeKenyaPhone } from '@/lib/payments'
+import { assertProductionCallbackUrl, buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
 import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
@@ -158,13 +159,13 @@ export async function POST(req: NextRequest) {
   const total = Math.max(0, subtotal - couponDiscountKsh)
   const orderCurrency = 'KSH' as const
   const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
-  // For Pesapal we charge in KES (same as KSH base). For PayPal, convert KSH to USD.
+  // For Tuma M-Pesa we charge in KES (same as KSH base). For PayPal, convert KSH to USD.
   const payCurrencyCode: CurrencyCode = defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KSH' : defaultPaymentCurrency === 'EUR' ? 'EUR' : 'USD'
   const paymentAmount = payCurrencyCode === 'KSH' ? total : Math.round(convertFromBase(total, payCurrencyCode))
   const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
-  // Log order totals and payment amount so checkout display matches Pesapal (amount in KES).
+  // Log order totals and payment amount so checkout display matches Tuma (amount in KES).
   console.info('[order] subtotal (KSH):', subtotal, 'couponDiscount (KSH):', couponDiscountKsh, 'total (KSH):', total, '→ payment:', paymentAmount, paymentCurrency, appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)')
 
   // Optionally: validate coupon here (not implemented)
@@ -249,6 +250,7 @@ export async function POST(req: NextRequest) {
   })
 
   let redirectUrl: string | undefined
+  let thankYouUrl: string | undefined
   const opsEmails = [
     "info@tacaccessories.co.ke",
     "peter@tacaccessories.co.ke",
@@ -295,23 +297,54 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (normalizedPaymentMethod === PaymentMethod.PESAPAL) {
+  if (normalizedPaymentMethod === PaymentMethod.TUMA) {
+    const phoneRaw = phone != null ? String(phone).trim() : ''
+    const mpesaPhone = phoneRaw ? normalizeKenyaPhone(phoneRaw) : null
+    if (!mpesaPhone) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.FAILED
+        }
+      })
+      return NextResponse.json(
+        { error: 'A valid Kenyan M-Pesa phone number is required (e.g. 0712345678).' },
+        { status: 400 }
+      )
+    }
+
     const paymentService = new PaymentService(getPaymentConfig())
     const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
-    const callbackUrl = new URL('/api/payment/pesapal/callback', baseUrl)
-    callbackUrl.searchParams.set('orderId', order.id)
-    callbackUrl.searchParams.set('merchantReference', order.orderNumber)
+    const callbackUrl = buildTumaPaymentCallbackUrl(order.id, req.nextUrl.origin)
+    const callbackCheck = assertProductionCallbackUrl(callbackUrl)
+    if (!callbackCheck.ok) {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          paymentStatus: PaymentStatus.FAILED
+        }
+      })
+      return NextResponse.json({ error: callbackCheck.message }, { status: 400 })
+    }
+
+    console.info('[tuma/stk-push] initiating', {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      callback_url: callbackUrl
+    })
 
     try {
-      const paymentResponse = await paymentService.createPayment('pesapal', {
+      const paymentResponse = await paymentService.createPayment('tuma', {
         amount: paymentAmount,
         currency: paymentCurrency,
         orderId: order.orderNumber,
         customerEmail: user.email,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
-        customerPhone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : undefined,
+        customerPhone: mpesaPhone,
         description: `Order ${order.orderNumber}`,
-        returnUrl: callbackUrl.toString(),
+        returnUrl: callbackUrl,
         cancelUrl: `${baseUrl}/checkout`,
         billingAddress: {
           line1: addressTrim,
@@ -322,28 +355,45 @@ export async function POST(req: NextRequest) {
         }
       })
 
-      if (!paymentResponse.success || !paymentResponse.redirectUrl || !paymentResponse.paymentId) {
-        throw new Error(paymentResponse.error || 'Pesapal did not return a redirect URL')
+      if (!paymentResponse.success || !paymentResponse.paymentId) {
+        throw new Error(paymentResponse.error || 'Tuma did not accept the STK push request')
       }
 
-      await prisma.payment.create({
-        data: {
-          orderId: order.id,
-          amount: paymentAmount,
-          currency: 'KES',
-          method: PaymentMethod.PESAPAL,
-          status: PaymentStatus.PENDING,
-          transactionId: paymentResponse.paymentId,
-          gatewayResponse: JSON.stringify({ redirectUrl: paymentResponse.redirectUrl })
-        }
-      })
+      const paymentWait = new URL('/checkout/payment', baseUrl)
+      paymentWait.searchParams.set('orderId', order.id)
+      if (paymentResponse.message) {
+        paymentWait.searchParams.set('message', paymentResponse.message)
+      }
+      thankYouUrl = paymentWait.toString()
 
-      redirectUrl = paymentResponse.redirectUrl
-      // Notify ops only once payment initialization succeeded (avoid false alarms on failed redirects).
+      try {
+        await prisma.payment.create({
+          data: {
+            orderId: order.id,
+            amount: paymentAmount,
+            currency: 'KES',
+            method: PaymentMethod.TUMA,
+            status: PaymentStatus.PENDING,
+            transactionId: paymentResponse.paymentId,
+            gatewayResponse: JSON.stringify({
+              merchantRequestId: paymentResponse.merchantRequestId,
+              checkoutRequestId: paymentResponse.checkoutRequestId,
+              message: paymentResponse.message,
+              callback_url: callbackUrl
+            })
+          }
+        })
+      } catch (paymentRecordError) {
+        console.error(
+          'STK push sent but failed to save Payment row (run: npx prisma migrate deploy):',
+          paymentRecordError
+        )
+      }
+
       await sendOpsNotification()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Pesapal payment failed'
-      console.error('Pesapal payment initialization failed', error)
+      const message = error instanceof Error ? error.message : 'Tuma payment failed'
+      console.error('Tuma payment initialization failed', error)
       await prisma.order.update({
         where: { id: order.id },
         data: {
@@ -353,18 +403,18 @@ export async function POST(req: NextRequest) {
       })
 
       return NextResponse.json(
-        { error: message || 'Failed to initiate Pesapal payment. Please try again.' },
+        { error: message || 'Failed to initiate M-Pesa payment. Please try again.' },
         { status: 502 }
       )
     }
   }
-  // Non-pesapal: order is created and ready immediately.
-  if (normalizedPaymentMethod !== PaymentMethod.PESAPAL) {
+  // Non-Tuma: order is created and ready immediately.
+  if (normalizedPaymentMethod !== PaymentMethod.TUMA) {
     await sendOpsNotification()
   }
 
   // Stock is decremented only when payment is confirmed:
-  // - Pesapal: callback/IPN handlers
+  // - Tuma: webhook callback handler
   // - Other methods: admin transition to CONFIRMED
 
   if (appliedCoupon) {
@@ -381,14 +431,16 @@ export async function POST(req: NextRequest) {
     success: true,
     orderId: order.id,
     orderNumber: order.orderNumber,
-    redirectUrl
+    redirectUrl,
+    thankYouUrl
   })
 }
 
 const methodMap: Record<string, PaymentMethod> = {
   PAYPAL: PaymentMethod.PAYPAL,
-  PESAPAL: PaymentMethod.PESAPAL,
-  MPESA: PaymentMethod.PESAPAL,
+  TUMA: PaymentMethod.TUMA,
+  PESAPAL: PaymentMethod.TUMA,
+  MPESA: PaymentMethod.TUMA,
   CREDIT_CARD: PaymentMethod.CREDIT_CARD,
   CARD: PaymentMethod.CREDIT_CARD,
   BANK_TRANSFER: PaymentMethod.BANK_TRANSFER

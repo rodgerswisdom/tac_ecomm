@@ -111,8 +111,8 @@ jobs:
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
         PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
-        PESAPAL_CONSUMER_KEY: ${{ secrets.PESAPAL_CONSUMER_KEY }}
-        PESAPAL_CONSUMER_SECRET: ${{ secrets.PESAPAL_CONSUMER_SECRET }}
+        TUMA_API_EMAIL: ${{ secrets.TUMA_API_EMAIL }}
+        TUMA_API_KEY: ${{ secrets.TUMA_API_KEY }}
         SHIPENGINE_API_KEY: ${{ secrets.SHIPENGINE_API_KEY }}
         EASYPOST_API_KEY: ${{ secrets.EASYPOST_API_KEY }}
         RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -158,8 +158,8 @@ jobs:
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
         PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
-        PESAPAL_CONSUMER_KEY: ${{ secrets.PESAPAL_CONSUMER_KEY }}
-        PESAPAL_CONSUMER_SECRET: ${{ secrets.PESAPAL_CONSUMER_SECRET }}
+        TUMA_API_EMAIL: ${{ secrets.TUMA_API_EMAIL }}
+        TUMA_API_KEY: ${{ secrets.TUMA_API_KEY }}
         SHIPENGINE_API_KEY: ${{ secrets.SHIPENGINE_API_KEY }}
         EASYPOST_API_KEY: ${{ secrets.EASYPOST_API_KEY }}
         RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}

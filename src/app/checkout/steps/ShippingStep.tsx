@@ -45,8 +45,8 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email || !form.address || !form.city || !form.state || !form.zipCode) {
-      setError("Please fill in all required fields.");
+    if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.address || !form.city || !form.state || !form.zipCode) {
+      setError("Please fill in all required fields, including your M-Pesa phone number.");
       return;
     }
     setError("");
@@ -97,7 +97,7 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
               <label htmlFor="phone" className="text-xs font-medium uppercase tracking-[0.12em] text-brand-umber/70">
                 Phone Number
               </label>
-              <Input id="phone" name="phone" placeholder="Phone Number" value={form.phone} onChange={handleChange} className={controlClassName} disabled={loading} autoComplete="tel" />
+              <Input id="phone" name="phone" type="tel" placeholder="0712345678" value={form.phone} onChange={handleChange} required className={controlClassName} disabled={loading} autoComplete="tel" />
             </div>
           </div>
         </section>
