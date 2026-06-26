@@ -130,14 +130,11 @@ export class ZohoClient {
         accessToken: data.access_token,
         refreshToken: data.refresh_token || refreshToken,
         expiresAt,
-        scope: data.scope,
-        tokenType: data.token_type,
       },
       update: {
         accessToken: data.access_token,
         refreshToken: data.refresh_token || refreshToken,
         expiresAt,
-        scope: data.scope,
       },
     })
 
@@ -161,14 +158,11 @@ export class ZohoClient {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token!,
         expiresAt,
-        scope: tokens.scope,
-        tokenType: tokens.token_type,
       },
       update: {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token!,
         expiresAt,
-        scope: tokens.scope,
       },
     })
 
@@ -180,8 +174,12 @@ export class ZohoClient {
    * Classify error as retryable or fatal
    */
   private classifyError(status: number, errorData: unknown): ZohoApiError {
-    const message = errorData?.message || 'Unknown error'
-    const code = errorData?.code || status
+    const errorObj = (errorData && typeof errorData === 'object' ? errorData : {}) as {
+      message?: string
+      code?: number
+    }
+    const message = errorObj.message || 'Unknown error'
+    const code = errorObj.code || status
 
     // Retryable errors
     const retryableStatuses = [408, 429, 500, 502, 503, 504]

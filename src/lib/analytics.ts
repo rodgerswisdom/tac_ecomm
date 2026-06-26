@@ -66,7 +66,7 @@ export const trackEvent = (eventName: string, params?: Record<string, any>): voi
   }
 
   try {
-    sendGAEvent('event', eventName, params);
+    sendGAEvent('event', eventName, params ?? {});
   } catch (error) {
     console.error('Error tracking event:', error);
   }

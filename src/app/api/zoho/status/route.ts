@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { zohoSyncQueue, zohoClient, getEntitySyncStatus, getPendingSyncCount } from '@/lib/zoho'
 import { prisma } from '@/lib/prisma'
 import type { EntityType } from '@/lib/zoho'
@@ -16,7 +15,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     // Check if user is authenticated and is admin
-    const session = await getServerSession(authOptions)
+    const session = await auth()
     
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json(

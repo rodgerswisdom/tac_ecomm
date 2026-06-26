@@ -18,7 +18,11 @@ export async function recordZohoPayment(paymentId: string): Promise<string> {
   const payment = await prisma.payment.findUnique({
     where: { id: paymentId },
     include: {
-      order: true,
+      order: {
+        include: {
+          user: true,
+        },
+      },
     },
   })
 

@@ -442,14 +442,18 @@ model ZohoSyncLog {
   status       String   // "pending", "success", "failed"
   priority     Int      @default(5)
   retryCount   Int      @default(0)
+  maxRetries   Int      @default(5)
   errorMessage String?  @db.Text
+  errorCode    String?
   requestData  Json?
   responseData Json?
+  scheduledFor DateTime @default(now())
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@index([entityType, entityId])
   @@index([status, priority])
+  @@index([status, scheduledFor])
 }
 
 model ZohoToken {
@@ -462,15 +466,17 @@ model ZohoToken {
 }
 
 model ZohoSyncStats {
-  id              String   @id @default("singleton")
-  totalSynced     Int      @default(0)
-  totalFailed     Int      @default(0)
+  id              String    @id @default("singleton")
+  totalSynced     Int       @default(0)
+  totalFailed     Int       @default(0)
   lastSyncAt      DateTime?
-  productsSynced  Int      @default(0)
-  ordersSynced    Int      @default(0)
-  paymentsSynced  Int      @default(0)
-  customersSynced Int      @default(0)
-  updatedAt       DateTime @updatedAt
+  lastSuccessAt   DateTime?
+  lastFailureAt   DateTime?
+  productsSynced  Int       @default(0)
+  ordersSynced    Int       @default(0)
+  paymentsSynced  Int       @default(0)
+  customersSynced Int       @default(0)
+  updatedAt       DateTime  @updatedAt
 }
 
 enum UserRole {

@@ -7,8 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { ZohoSyncLogWithDetails } from "@/server/admin/zoho"
-import type { ZohoSyncStatus, ZohoEntityType } from "@prisma/client"
+import type { ZohoSyncLogWithDetails, ZohoSyncStatus, ZohoEntityType } from "@/server/admin/zoho"
 import { cn } from "@/lib/utils"
 
 interface ZohoLogsClientProps {

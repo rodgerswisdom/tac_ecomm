@@ -7,11 +7,10 @@
 // COMMON TYPES
 // ============================================
 
-export interface ZohoResponse<T> {
+export type ZohoResponse<T> = {
   code: number
   message: string
-  [key: string]: T | number | string
-}
+} & T
 
 export interface ZohoPaginatedResponse<T> {
   code: number

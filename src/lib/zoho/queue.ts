@@ -211,7 +211,6 @@ export class ZohoSyncQueue {
       where: { id: logId },
       data: {
         status: 'processing',
-        processedAt: new Date(),
       },
     })
 

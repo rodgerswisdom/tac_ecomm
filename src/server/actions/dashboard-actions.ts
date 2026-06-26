@@ -186,7 +186,7 @@ export async function getFilteredOrders(
             product: {
               select: {
                 name: true,
-                images: true,
+                images: { select: { url: true }, orderBy: { order: 'asc' } },
               },
             },
           },
@@ -202,6 +202,12 @@ export async function getFilteredOrders(
     const orderListItems: OrderListItem[] = orders.map((order) => ({
       ...order,
       itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      items: order.items.map((item) => ({
+        quantity: item.quantity,
+        product: item.product
+          ? { name: item.product.name, images: item.product.images.map((i) => i.url) }
+          : null,
+      })),
     }))
 
     return {
@@ -243,7 +249,7 @@ export async function getOrderByNumber(
                 id: true,
                 name: true,
                 slug: true,
-                images: true,
+                images: { select: { url: true }, orderBy: { order: 'asc' } },
               },
             },
           },
@@ -274,7 +280,7 @@ export async function getOrderByNumber(
       shippingAddress: {
         firstName: order.shippingAddress.firstName,
         lastName: order.shippingAddress.lastName,
-        address: order.shippingAddress.address,
+        address: order.shippingAddress.address1,
         city: order.shippingAddress.city,
         state: order.shippingAddress.state,
         postalCode: order.shippingAddress.postalCode,
@@ -285,7 +291,14 @@ export async function getOrderByNumber(
         id: item.id,
         quantity: item.quantity,
         price: item.price,
-        product: item.product,
+        product: item.product
+          ? {
+              id: item.product.id,
+              name: item.product.name,
+              slug: item.product.slug,
+              images: item.product.images.map((i) => i.url),
+            }
+          : null,
       })),
     }
   } catch (error) {
@@ -322,7 +335,7 @@ export async function getRecentOrders(): Promise<OrderListItem[]> {
             product: {
               select: {
                 name: true,
-                images: true,
+                images: { select: { url: true }, orderBy: { order: 'asc' } },
               },
             },
           },
@@ -337,6 +350,12 @@ export async function getRecentOrders(): Promise<OrderListItem[]> {
     return orders.map((order) => ({
       ...order,
       itemCount: order.items.reduce((sum, item) => sum + item.quantity, 0),
+      items: order.items.map((item) => ({
+        quantity: item.quantity,
+        product: item.product
+          ? { name: item.product.name, images: item.product.images.map((i) => i.url) }
+          : null,
+      })),
     }))
   } catch (error) {
     console.error("Error fetching recent orders:", error)

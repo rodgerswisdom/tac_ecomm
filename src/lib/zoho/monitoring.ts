@@ -272,7 +272,7 @@ export async function getSyncMetrics(timeRange: "1h" | "24h" | "7d" = "24h") {
       status: true,
       entityType: true,
       updatedAt: true,
-      attempts: true,
+      retryCount: true,
     },
   })
 
@@ -284,11 +284,11 @@ export async function getSyncMetrics(timeRange: "1h" | "24h" | "7d" = "24h") {
 
   // Average attempts before success
   const successfulWithAttempts = logs.filter(
-    (l) => l.status === "SYNCED" && l.attempts > 0
+    (l) => l.status === "SYNCED" && l.retryCount > 0
   )
   const avgAttempts =
     successfulWithAttempts.length > 0
-      ? successfulWithAttempts.reduce((sum, l) => sum + l.attempts, 0) /
+      ? successfulWithAttempts.reduce((sum, l) => sum + l.retryCount, 0) /
         successfulWithAttempts.length
       : 0
 

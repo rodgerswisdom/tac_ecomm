@@ -117,9 +117,8 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           id: true,
           total: true,
           tax: true,
-          shippingCost: true,
+          shipping: true,
           currency: true,
-          couponCode: true,
           items: {
             select: {
               id: true,
@@ -156,7 +155,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           orderId={orderData.id}
           orderTotal={orderData.total}
           orderTax={orderData.tax}
-          orderShipping={orderData.shippingCost}
+          orderShipping={orderData.shipping}
           orderCurrency={orderData.currency}
           orderItems={orderData.items.map((item: any) => ({
             id: item.productId,
@@ -165,7 +164,6 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
             quantity: item.quantity,
             category: item.product?.category,
           }))}
-          couponCode={orderData.couponCode}
         />
       )}
       <Navbar />

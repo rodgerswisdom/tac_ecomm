@@ -2,7 +2,11 @@
 
 import { requireAdmin } from "./auth"
 import { prisma } from "@/lib/prisma"
-import type { ZohoSyncStatus, ZohoEntityType } from "@prisma/client"
+
+export type ZohoSyncStatus = "PENDING" | "SYNCED" | "FAILED" | "RETRYING"
+export type ZohoEntityType = "PRODUCT" | "CUSTOMER" | "ORDER" | "INVOICE" | "PAYMENT"
+
+const MAX_SYNC_ATTEMPTS = 5
 
 export type ZohoSyncLogWithDetails = {
   id: string
@@ -123,7 +127,17 @@ export async function getZohoSyncLogs(params: {
       }
 
       return {
-        ...log,
+        id: log.id,
+        entityType: log.entityType as ZohoEntityType,
+        entityId: log.entityId,
+        status: log.status as ZohoSyncStatus,
+        priority: log.priority,
+        attempts: log.retryCount,
+        maxAttempts: MAX_SYNC_ATTEMPTS,
+        error: log.errorMessage,
+        createdAt: log.createdAt,
+        updatedAt: log.updatedAt,
+        processedAt: null,
         entityDetails,
       }
     })
@@ -221,9 +235,8 @@ export async function retryFailedSync(logId: string) {
     where: { id: logId },
     data: {
       status: "PENDING",
-      attempts: 0, // Reset attempts for manual retry
-      error: null,
-      processedAt: null,
+      retryCount: 0,
+      errorMessage: null,
     },
   })
 
@@ -242,9 +255,8 @@ export async function retryAllFailedSyncs(entityType?: ZohoEntityType) {
     where,
     data: {
       status: "PENDING",
-      attempts: 0,
-      error: null,
-      processedAt: null,
+      retryCount: 0,
+      errorMessage: null,
     },
   })
 

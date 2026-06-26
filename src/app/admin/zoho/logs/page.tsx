@@ -3,7 +3,7 @@ import { AdminPageHeader } from "@/components/admin/page-header"
 import { ZohoLogsClient } from "./ZohoLogsClient"
 import { getZohoSyncLogs } from "@/server/admin/zoho"
 import { Card, CardContent } from "@/components/ui/card"
-import type { ZohoSyncStatus, ZohoEntityType } from "@prisma/client"
+import type { ZohoSyncStatus, ZohoEntityType } from "@/server/admin/zoho"
 
 export const metadata = {
   title: "Zoho Sync Logs | Admin",

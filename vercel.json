@@ -46,15 +46,15 @@
   "crons": [
     {
       "path": "/api/cron/zoho-sync",
-      "schedule": "*/15 * * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/api/cron/zoho-stock-sync",
-      "schedule": "0 * * * *"
+      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/cron/zoho-monitor",
-      "schedule": "0,30 * * * *"
+      "schedule": "0 4 * * *"
     }
   ]
 }
