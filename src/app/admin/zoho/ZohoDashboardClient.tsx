@@ -41,13 +41,19 @@ export function ZohoDashboardClient({
     try {
       const response = await fetch("/api/zoho/sync", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
       })
+      const data = await response.json()
       if (response.ok) {
-        alert("Sync triggered successfully. Check the sync logs for progress.")
+        if (data.skipped) {
+          alert(data.message)
+        } else {
+          const { processed = 0, succeeded = 0, failed = 0, remaining = 0 } = data.stats ?? {}
+          alert(`Queue processed: ${processed} items — ${succeeded} synced, ${failed} failed, ${remaining} remaining.`)
+        }
         router.refresh()
       } else {
-        const error = await response.json()
-        alert(`Sync failed: ${error.error || "Unknown error"}`)
+        alert(`Sync failed: ${data.error || "Unknown error"}`)
       }
     } catch (error) {
       alert("Failed to trigger sync")

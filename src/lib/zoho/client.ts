@@ -223,8 +223,9 @@ export class ZohoClient {
         body: data ? JSON.stringify(data) : undefined,
       })
 
-      // Parse response
-      const responseData = await response.json()
+      // Parse response — guard against empty bodies (e.g. 204, rate-limit responses)
+      const responseText = await response.text()
+      const responseData = responseText.trim() ? JSON.parse(responseText) : {}
 
       // Check for errors
       if (!response.ok) {

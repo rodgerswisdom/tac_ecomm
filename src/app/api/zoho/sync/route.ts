@@ -13,6 +13,7 @@ import {
   queuePaymentRecording,
   queueCompleteOrderFlow,
   batchQueueProducts,
+  zohoSyncQueue,
 } from '@/lib/zoho'
 import type { EntityType, SyncAction } from '@/lib/zoho'
 
@@ -40,16 +41,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    const body: SyncRequest = await request.json()
+    // Parse request body — an empty body means "process the pending queue now"
+    let body: Partial<SyncRequest> = {}
+    const contentLength = request.headers.get('content-length')
+    const hasBody = contentLength !== null ? Number(contentLength) > 0 : false
+    if (hasBody) {
+      try {
+        body = await request.json()
+      } catch {
+        return NextResponse.json(
+          { error: 'Invalid JSON in request body' },
+          { status: 400 }
+        )
+      }
+    }
+
     const { entityType, entityId, entityIds, action = 'create', includeInvoice, includePayment } = body
 
-    // Validate input
+    // No entity specified → process the pending queue immediately (manual trigger)
     if (!entityType) {
-      return NextResponse.json(
-        { error: 'entityType is required' },
-        { status: 400 }
-      )
+      if (process.env.ZOHO_SYNC_ENABLED !== 'true') {
+        return NextResponse.json({ skipped: true, message: 'Zoho sync is disabled (ZOHO_SYNC_ENABLED != true)' })
+      }
+      const stats = await zohoSyncQueue.processQueue(20)
+      return NextResponse.json({ triggered: true, stats })
     }
 
     if (!entityId && !entityIds) {
