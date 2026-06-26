@@ -11,17 +11,18 @@ export const metadata = {
 }
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     page?: string
     status?: string
     entityType?: string
-  }
+  }>
 }
 
 async function ZohoLogsLoader({ searchParams }: PageProps) {
-  const page = parseInt(searchParams.page || "1", 10)
-  const status = searchParams.status as ZohoSyncStatus | undefined
-  const entityType = searchParams.entityType as ZohoEntityType | undefined
+  const params = await searchParams
+  const page = parseInt(params.page || "1", 10)
+  const status = params.status as ZohoSyncStatus | undefined
+  const entityType = params.entityType as ZohoEntityType | undefined
 
   const logsData = await getZohoSyncLogs({
     page,

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, ExternalLink, Trash2, RotateCcw } from "lucide-react"
+import { RefreshCw, CheckCircle, XCircle, Clock, AlertCircle, ExternalLink, Trash2, RotateCcw, Package, Users, ShoppingCart } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { SimpleBarChart } from "@/components/admin/trend-chart"
 import type { ZohoStatsData } from "@/server/admin/zoho"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { syncAllExistingProducts, syncAllExistingCustomers, syncAllExistingOrders } from "@/server/admin/zoho"
 
 type ConnectionStatus = {
   connected: boolean
@@ -29,6 +30,7 @@ export function ZohoDashboardClient({
   const router = useRouter()
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
+  const [syncProgress, setSyncProgress] = useState<string>("")
 
   const handleRefresh = () => {
     setIsRefreshing(true)
@@ -38,25 +40,63 @@ export function ZohoDashboardClient({
 
   const handleManualSync = async () => {
     setIsSyncing(true)
+    setSyncProgress("Initializing sync pipeline...")
+    
+    let processing = true
+    let totalProcessed = 0
+    let totalSucceeded = 0
+    let totalFailed = 0
+
     try {
-      const response = await fetch("/api/zoho/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      })
-      const data = await response.json()
-      if (response.ok) {
-        if (data.skipped) {
-          alert(data.message)
-        } else {
-          const { processed = 0, succeeded = 0, failed = 0, remaining = 0 } = data.stats ?? {}
-          alert(`Queue processed: ${processed} items — ${succeeded} synced, ${failed} failed, ${remaining} remaining.`)
+      while (processing) {
+        // Hit the API to process a small, safe chunk of 5 items
+        const response = await fetch("/api/zoho/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        })
+        
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({ error: response.statusText }))
+          throw new Error(data.error || "Network connection dropped mid-transit.")
         }
+        
+        const data = await response.json()
+        
+        if (data.skipped) {
+          setSyncProgress(`Skipped: ${data.message}`)
+          processing = false
+          break
+        }
+
+        const { processed = 0, succeeded = 0, failed = 0, remaining = 0 } = data.stats ?? {}
+        
+        totalProcessed += processed
+        totalSucceeded += succeeded
+        totalFailed += failed
+
+        // Update the progress string to show real-time changes
+        setSyncProgress(
+          `Syncing: Processed ${totalProcessed} items (${totalSucceeded} success, ${totalFailed} failed). ${remaining} items remaining in queue...`
+        )
+
+        // Refresh the page data router in the background so dashboard cards visually update
         router.refresh()
-      } else {
-        alert(`Sync failed: ${data.error || "Unknown error"}`)
+
+        // If there are no items left in the queue, break out of the loop safely
+        if (remaining === 0 || processed === 0) {
+          processing = false
+          setSyncProgress(`🎉 Sync pipeline clear! Completed ${totalProcessed} entries securely.`)
+          alert(`Queue processing complete!\nTotal items run: ${totalProcessed}\n✅ Succeeded: ${totalSucceeded}\n❌ Failed: ${totalFailed}`)
+        }
+
+        // Optional: Add a 300ms pause on the client side to avoid hammering your own database too fast
+        await new Promise((resolve) => setTimeout(resolve, 300))
       }
     } catch (error) {
-      alert("Failed to trigger sync")
+      const errorMessage = error instanceof Error ? error.message : "Unknown error"
+      setSyncProgress(`Pipeline halted: ${errorMessage}`)
+      alert(`Sync interrupted: ${errorMessage}`)
+      console.error("Streaming sync error:", error)
     } finally {
       setIsSyncing(false)
     }
@@ -64,6 +104,57 @@ export function ZohoDashboardClient({
 
   const handleAuthenticate = () => {
     window.location.href = "/api/zoho/auth"
+  }
+
+  const handleBulkSyncProducts = async () => {
+    if (!confirm("This will queue all unsynced products for sync. Continue?")) return
+    
+    setIsSyncing(true)
+    try {
+      const result = await syncAllExistingProducts()
+      if (result.success) {
+        alert(`✅ ${result.message}\n\nThe sync queue will process these automatically.`)
+        router.refresh()
+      }
+    } catch (error) {
+      alert("Failed to queue products for sync")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const handleBulkSyncCustomers = async () => {
+    if (!confirm("This will queue all unsynced customers for sync. Continue?")) return
+    
+    setIsSyncing(true)
+    try {
+      const result = await syncAllExistingCustomers()
+      if (result.success) {
+        alert(`✅ ${result.message}`)
+        router.refresh()
+      }
+    } catch (error) {
+      alert("Failed to queue customers for sync")
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
+  const handleBulkSyncOrders = async () => {
+    if (!confirm("This will queue all unsynced orders for sync. Continue?")) return
+    
+    setIsSyncing(true)
+    try {
+      const result = await syncAllExistingOrders()
+      if (result.success) {
+        alert(`✅ ${result.message}`)
+        router.refresh()
+      }
+    } catch (error) {
+      alert("Failed to queue orders for sync")
+    } finally {
+      setIsSyncing(false)
+    }
   }
 
   // Prepare chart data
@@ -268,26 +359,71 @@ export function ZohoDashboardClient({
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleManualSync}
-              disabled={isSyncing || !connectionStatus.connected}
-            >
-              <RefreshCw className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")} />
-              Trigger Manual Sync
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/admin/zoho/logs")}
-            >
-              View Sync Logs
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => router.push("/admin/zoho/settings")}
-            >
-              Sync Settings
-            </Button>
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-2">General Actions</h4>
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-3">
+                  <Button
+                    onClick={handleManualSync}
+                    disabled={isSyncing || !connectionStatus.connected}
+                  >
+                    <RefreshCw className={cn("h-4 w-4 mr-2", isSyncing && "animate-spin")} />
+                    {isSyncing ? "Syncing Pipeline..." : "Process Queue Now"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/admin/zoho/logs")}
+                  >
+                    View Sync Logs
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push("/admin/zoho/settings")}
+                  >
+                    Sync Settings
+                  </Button>
+                </div>
+                {syncProgress && (
+                  <p className="text-xs font-mono text-muted-foreground bg-slate-50 p-2 rounded border border-slate-100 mt-1">
+                    {syncProgress}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-sm font-medium mb-2">Bulk Sync Existing Data</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Queue all existing unsynced items for synchronization to Zoho Books
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleBulkSyncProducts}
+                  disabled={isSyncing || !connectionStatus.connected}
+                  variant="secondary"
+                >
+                  <Package className="h-4 w-4 mr-2" />
+                  Sync All Products
+                </Button>
+                <Button
+                  onClick={handleBulkSyncCustomers}
+                  disabled={isSyncing || !connectionStatus.connected}
+                  variant="secondary"
+                >
+                  <Users className="h-4 w-4 mr-2" />
+                  Sync All Customers
+                </Button>
+                <Button
+                  onClick={handleBulkSyncOrders}
+                  disabled={isSyncing || !connectionStatus.connected}
+                  variant="secondary"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Sync All Orders
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>

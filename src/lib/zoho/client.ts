@@ -234,7 +234,6 @@ export class ZohoClient {
         // Retry if error is retryable and we haven't exceeded max retries
         if (error.isRetryable && retryCount < MAX_RETRIES) {
           const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount)
-          console.log(`Retrying Zoho API request after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`)
           await new Promise(resolve => setTimeout(resolve, delay))
           return this.requestWithRetry<T>(method, endpoint, data, retryCount + 1)
         }
@@ -251,7 +250,6 @@ export class ZohoClient {
 
       // For network errors, retry
       const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount)
-      console.log(`Network error, retrying after ${delay}ms (attempt ${retryCount + 1}/${MAX_RETRIES})`)
       await new Promise(resolve => setTimeout(resolve, delay))
       return this.requestWithRetry<T>(method, endpoint, data, retryCount + 1)
     }

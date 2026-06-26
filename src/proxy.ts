@@ -4,6 +4,11 @@ import { authConfig } from "./lib/auth.config"
 const { auth } = NextAuth(authConfig)
 
 export default auth((req) => {
+  // Skip auth check for Zoho OAuth callback (handles its own auth)
+  if (req.nextUrl.pathname === '/api/zoho/callback') {
+    return
+  }
+
   const isAdminRoute = req.nextUrl.pathname.startsWith('/admin')
   const isLoggedIn = !!req.auth
   const role = req.auth?.user?.role
@@ -25,5 +30,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/api/zoho/:path*"],
 }

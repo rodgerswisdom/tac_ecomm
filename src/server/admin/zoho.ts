@@ -56,9 +56,26 @@ export async function getZohoSyncLogs(params: {
   const { page = 1, limit = 20, status, entityType } = params
   const skip = (page - 1) * limit
 
+  // Map uppercase status to lowercase for database query
+  const statusMap: Record<string, string> = {
+    'PENDING': 'pending',
+    'SYNCED': 'success',
+    'FAILED': 'failed',
+    'RETRYING': 'retrying',
+  }
+
+  // Map uppercase entity type to lowercase for database query
+  const entityTypeMap: Record<string, string> = {
+    'PRODUCT': 'product',
+    'CUSTOMER': 'customer',
+    'ORDER': 'order',
+    'INVOICE': 'invoice',
+    'PAYMENT': 'payment',
+  }
+
   const where = {
-    ...(status && { status }),
-    ...(entityType && { entityType }),
+    ...(status && { status: statusMap[status] || status.toLowerCase() }),
+    ...(entityType && { entityType: entityTypeMap[entityType] || entityType.toLowerCase() }),
   }
 
   const [logs, total] = await Promise.all([
@@ -155,24 +172,29 @@ export async function getZohoSyncLogs(params: {
 export async function getZohoStats(): Promise<ZohoStatsData> {
   await requireAdmin()
 
-  // Get overall counts
+  // Get overall counts (database uses lowercase status values)
   const [totalSynced, totalPending, totalFailed, totalRetrying] = await Promise.all([
-    prisma.zohoSyncLog.count({ where: { status: "SYNCED" } }),
-    prisma.zohoSyncLog.count({ where: { status: "PENDING" } }),
-    prisma.zohoSyncLog.count({ where: { status: "FAILED" } }),
-    prisma.zohoSyncLog.count({ where: { status: "RETRYING" } }),
+    prisma.zohoSyncLog.count({ where: { status: "success" } }),
+    prisma.zohoSyncLog.count({ where: { status: "pending" } }),
+    prisma.zohoSyncLog.count({ where: { status: "failed" } }),
+    prisma.zohoSyncLog.count({ where: { status: "retrying" } }),
   ])
 
-  // Get counts by entity type
-  const entityTypes: ZohoEntityType[] = ["PRODUCT", "CUSTOMER", "ORDER", "INVOICE", "PAYMENT"]
+  // Get counts by entity type (database uses lowercase entity types)
+  const entityTypes = ["product", "customer", "order", "invoice", "payment"]
   const syncsByEntity = await Promise.all(
     entityTypes.map(async (entityType) => {
       const [synced, pending, failed] = await Promise.all([
-        prisma.zohoSyncLog.count({ where: { entityType, status: "SYNCED" } }),
-        prisma.zohoSyncLog.count({ where: { entityType, status: "PENDING" } }),
-        prisma.zohoSyncLog.count({ where: { entityType, status: "FAILED" } }),
+        prisma.zohoSyncLog.count({ where: { entityType, status: "success" } }),
+        prisma.zohoSyncLog.count({ where: { entityType, status: "pending" } }),
+        prisma.zohoSyncLog.count({ where: { entityType, status: "failed" } }),
       ])
-      return { entityType, synced, pending, failed }
+      return {
+        entityType: entityType.toUpperCase() as ZohoEntityType,
+        synced,
+        pending,
+        failed
+      }
     })
   )
 
@@ -183,7 +205,7 @@ export async function getZohoStats(): Promise<ZohoStatsData> {
   const recentLogs = await prisma.zohoSyncLog.findMany({
     where: {
       updatedAt: { gte: sevenDaysAgo },
-      status: { in: ["SYNCED", "FAILED"] },
+      status: { in: ["success", "failed"] },
     },
     select: {
       status: true,
@@ -196,8 +218,8 @@ export async function getZohoStats(): Promise<ZohoStatsData> {
   recentLogs.forEach((log) => {
     const date = log.updatedAt.toISOString().split("T")[0]!
     const current = activityMap.get(date) ?? { synced: 0, failed: 0 }
-    if (log.status === "SYNCED") current.synced++
-    if (log.status === "FAILED") current.failed++
+    if (log.status === "success") current.synced++
+    if (log.status === "failed") current.failed++
     activityMap.set(date, current)
   })
 
@@ -284,6 +306,141 @@ export async function clearAllFailedSyncs(entityType?: ZohoEntityType) {
   const result = await prisma.zohoSyncLog.deleteMany({ where })
 
   return { success: true, count: result.count }
+}
+
+export async function syncAllExistingProducts() {
+  await requireAdmin()
+
+  // Get all products that haven't been synced yet or failed
+  const products = await prisma.product.findMany({
+    where: {
+      OR: [
+        { zohoItemId: null },
+        { zohoSyncStatus: "failed" },
+      ],
+    },
+    select: { id: true, name: true },
+  })
+
+  if (products.length === 0) {
+    return {
+      success: true,
+      message: "All products are already synced",
+      count: 0,
+    }
+  }
+
+  // Queue all products for sync
+  const productIds = products.map(p => p.id)
+  
+  // Create sync log entries for all products
+  const syncLogs = await prisma.zohoSyncLog.createMany({
+    data: productIds.map(id => ({
+      entityType: "product",
+      entityId: id,
+      action: "create",
+      status: "pending",
+      priority: 1, // High priority for bulk sync
+    })),
+    skipDuplicates: true, // Skip if already queued
+  })
+
+  return {
+    success: true,
+    message: `Queued ${products.length} products for sync`,
+    count: products.length,
+    productNames: products.slice(0, 5).map(p => p.name), // First 5 for preview
+  }
+}
+
+export async function syncAllExistingCustomers() {
+  await requireAdmin()
+
+  // Get all customers that haven't been synced yet
+  const customers = await prisma.user.findMany({
+    where: {
+      role: "CUSTOMER",
+      OR: [
+        { zohoContactId: null },
+        { zohoSyncStatus: "failed" },
+      ],
+    },
+    select: { id: true, name: true, email: true },
+  })
+
+  if (customers.length === 0) {
+    return {
+      success: true,
+      message: "All customers are already synced",
+      count: 0,
+    }
+  }
+
+  // Queue all customers for sync
+  const customerIds = customers.map(c => c.id)
+  
+  await prisma.zohoSyncLog.createMany({
+    data: customerIds.map(id => ({
+      entityType: "customer",
+      entityId: id,
+      action: "create",
+      status: "pending",
+      priority: 2,
+    })),
+    skipDuplicates: true,
+  })
+
+  return {
+    success: true,
+    message: `Queued ${customers.length} customers for sync`,
+    count: customers.length,
+  }
+}
+
+export async function syncAllExistingOrders() {
+  await requireAdmin()
+
+  // Get all completed orders that haven't been synced yet
+  const orders = await prisma.order.findMany({
+    where: {
+      status: {
+        in: ["PROCESSING", "SHIPPED", "DELIVERED"],
+      },
+      OR: [
+        { zohoSalesOrderId: null },
+        { zohoSyncStatus: "failed" },
+      ],
+    },
+    select: { id: true, orderNumber: true },
+  })
+
+  if (orders.length === 0) {
+    return {
+      success: true,
+      message: "All orders are already synced",
+      count: 0,
+    }
+  }
+
+  // Queue all orders for sync
+  const orderIds = orders.map(o => o.id)
+  
+  await prisma.zohoSyncLog.createMany({
+    data: orderIds.map(id => ({
+      entityType: "order",
+      entityId: id,
+      action: "create",
+      status: "pending",
+      priority: 3,
+    })),
+    skipDuplicates: true,
+  })
+
+  return {
+    success: true,
+    message: `Queued ${orders.length} orders for sync`,
+    count: orders.length,
+  }
 }
 
 export async function getZohoConnectionStatus() {

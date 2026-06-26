@@ -20,11 +20,19 @@ interface ZohoLogsClientProps {
   }
 }
 
-const statusConfig: Record<ZohoSyncStatus, { icon: any; color: string; label: string }> = {
+type IconComponent = typeof Clock | typeof CheckCircle | typeof XCircle | typeof RotateCcw | typeof AlertCircle
+
+const statusConfig: Record<string, { icon: IconComponent; color: string; label: string }> = {
+  // Uppercase (old format)
   PENDING: { icon: Clock, color: "bg-blue-100 text-blue-700 border-blue-200", label: "Pending" },
   SYNCED: { icon: CheckCircle, color: "bg-green-100 text-green-700 border-green-200", label: "Synced" },
   FAILED: { icon: XCircle, color: "bg-red-100 text-red-700 border-red-200", label: "Failed" },
   RETRYING: { icon: RotateCcw, color: "bg-amber-100 text-amber-700 border-amber-200", label: "Retrying" },
+  // Lowercase (new format)
+  pending: { icon: Clock, color: "bg-blue-100 text-blue-700 border-blue-200", label: "Pending" },
+  processing: { icon: RotateCcw, color: "bg-amber-100 text-amber-700 border-amber-200", label: "Processing" },
+  success: { icon: CheckCircle, color: "bg-green-100 text-green-700 border-green-200", label: "Success" },
+  failed: { icon: XCircle, color: "bg-red-100 text-red-700 border-red-200", label: "Failed" },
 }
 
 export function ZohoLogsClient({ initialData }: ZohoLogsClientProps) {
@@ -189,7 +197,11 @@ export function ZohoLogsClient({ initialData }: ZohoLogsClientProps) {
           ) : (
             <div className="space-y-4">
               {initialData.logs.map((log) => {
-                const config = statusConfig[log.status]
+                const config = statusConfig[log.status] || {
+                  icon: AlertCircle,
+                  color: "bg-gray-100 text-gray-700 border-gray-200",
+                  label: log.status
+                }
                 const Icon = config.icon
 
                 return (

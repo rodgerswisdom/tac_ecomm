@@ -63,7 +63,10 @@ export async function POST(request: NextRequest) {
       if (process.env.ZOHO_SYNC_ENABLED !== 'true') {
         return NextResponse.json({ skipped: true, message: 'Zoho sync is disabled (ZOHO_SYNC_ENABLED != true)' })
       }
-      const stats = await zohoSyncQueue.processQueue(20)
+      
+      // Process smaller batch to avoid timeout (5 items max)
+      // Each item can take up to 15 seconds with retries
+      const stats = await zohoSyncQueue.processQueue(5)
       return NextResponse.json({ triggered: true, stats })
     }
 
