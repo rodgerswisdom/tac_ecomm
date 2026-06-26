@@ -24,7 +24,7 @@ const heroImages = [
     alt: "Portrait of an African model adorned with artisan jewelry in warm beige tones",
     title: "Heritage Atelier Spotlight",
     subtitle: "Crafted by Heritage, Worn with Pride",
-    description: "Discover limited-edition adornments curated from Nairobi to Accra.",
+    description: "From the soil of Africa to the hands of its artisans, our jewellery is a symphony of earth and soul. Every design is a poetic expression of culture, artistry, and authenticity. These treasures are more than adornments — they are the heartbeat of Africa, worn close to yours.",
     cta: { label: "Shop Collections", href: "/collections" },
   },
   {

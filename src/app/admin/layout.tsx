@@ -31,6 +31,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     { label: "Users", href: "/admin/users", icon: "users" },
     { label: "Discount Codes", href: "/admin/coupons", icon: "categories" },
     { label: "Communication", href: "/admin/communication", icon: "communication" },
+    { label: "Zoho Sync", href: "/admin/zoho", icon: "zoho" },
     { label: "Settings", href: "/admin/settings", icon: "settings" },
   ]
 

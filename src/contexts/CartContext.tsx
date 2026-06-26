@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react'
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
+import { trackAddToCart, trackRemoveFromCart, trackBeginCheckout } from '@/lib/analytics'
 
 interface CartItem {
   /** Product id (string cuid from DB); used as key and for API sync */
@@ -195,6 +196,15 @@ export function CartProvider({ children }: CartProviderProps) {
           )
         : [...prevCart, { ...item, quantity: 1 }]
       if (user) queueMicrotask(() => saveUserCart(next))
+      
+      // Track add to cart event
+      trackAddToCart({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        originalPrice: item.originalPrice,
+      }, 1)
+      
       return next
     })
     toast.success('Added to cart', {
@@ -211,8 +221,17 @@ export function CartProvider({ children }: CartProviderProps) {
 
   const removeFromCart = (id: number | string) => {
     setCart(prevCart => {
+      // Find the item being removed for tracking
+      const itemToRemove = prevCart.find(item => item.id === id)
+      
       const next = prevCart.filter(item => item.id !== id)
       if (user) queueMicrotask(() => saveUserCart(next))
+      
+      // Track remove from cart event
+      if (itemToRemove) {
+        trackRemoveFromCart(itemToRemove, itemToRemove.quantity)
+      }
+      
       return next
     })
   }

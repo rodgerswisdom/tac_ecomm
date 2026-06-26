@@ -4,14 +4,17 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
+import { Breadcrumb } from "@/components/Breadcrumb";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
 import { ProductCardData } from "@/types/product";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
+import { trackViewItem } from "@/lib/analytics";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
@@ -26,6 +29,18 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
 
+  // Track product view when component mounts
+  useEffect(() => {
+    trackViewItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
+      slug: product.slug,
+    });
+  }, [product.id, product.name, product.price, product.originalPrice, product.category, product.slug]);
+
   const handleAddToCart = () => {
     if (isOutOfStock) return;
     addToCart({
@@ -36,19 +51,34 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
     });
   };
 
+  // Generate breadcrumb items
+  const breadcrumbItems = [
+    { name: "Home", url: "/" },
+    { name: "Collections", url: "/collections" },
+  ];
+
+  if (product.category) {
+    breadcrumbItems.push({
+      name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+      url: `/collections/${product.category}`,
+    });
+  }
+
+  breadcrumbItems.push({
+    name: product.name,
+    url: `/products/${product.slug}`,
+  });
+
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-xs text-brand-umber/60">
-            <Link
-              href="/collections"
-              className="caps-spacing inline-flex items-center gap-2 text-brand-teal transition-colors hover:text-brand-coral"
-            >
-              <ArrowLeft className="h-4 w-4" /> Back to collections
-            </Link>
-            <span className="caps-spacing">Crafted in {product.origin}</span>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <Breadcrumb items={breadcrumbItems} />
+            <span className="caps-spacing text-xs text-brand-umber/60">
+              Crafted in {product.origin}
+            </span>
           </div>
 
           <div className="grid gap-8 lg:gap-16 lg:grid-cols-[1.1fr_0.9fr]">

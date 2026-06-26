@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
 import { ClearCartClient } from "./ClearCartClient"
 import { PaymentStatusWatcherClient } from "./PaymentStatusWatcherClient"
+import { PurchaseTracker } from "./PurchaseTracker"
 import { PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 
@@ -75,6 +76,8 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
     orderNumber: string
   } | null
 
+  let orderData: any = null
+
   if (orderId) {
     try {
       order = await prisma.order.findUnique({
@@ -105,6 +108,39 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   const isPaymentCompleted = status === "success"
   const displayOrderNumber = order?.orderNumber ?? orderNumberParam
 
+  // Fetch full order details for analytics tracking if payment is completed
+  if (isPaymentCompleted && orderId) {
+    try {
+      orderData = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true,
+          total: true,
+          tax: true,
+          shippingCost: true,
+          currency: true,
+          couponCode: true,
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              price: true,
+              product: {
+                select: {
+                  name: true,
+                  category: true,
+                }
+              }
+            }
+          }
+        }
+      })
+    } catch (error) {
+      console.error("Failed to fetch order details for analytics:", error)
+    }
+  }
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <ClearCartClient active={isPaymentCompleted} />
@@ -114,6 +150,24 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
         orderNumber={displayOrderNumber}
         trackingId={trackingId}
       />
+      {/* Track purchase in Google Analytics when payment is completed */}
+      {isPaymentCompleted && orderData && (
+        <PurchaseTracker
+          orderId={orderData.id}
+          orderTotal={orderData.total}
+          orderTax={orderData.tax}
+          orderShipping={orderData.shippingCost}
+          orderCurrency={orderData.currency}
+          orderItems={orderData.items.map((item: any) => ({
+            id: item.productId,
+            name: item.product?.name || 'Unknown Product',
+            price: item.price,
+            quantity: item.quantity,
+            category: item.product?.category,
+          }))}
+          couponCode={orderData.couponCode}
+        />
+      )}
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col items-center gap-10 text-center">

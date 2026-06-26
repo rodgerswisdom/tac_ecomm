@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity, LayoutDashboard, Mail, MessageSquare, Package, Receipt, Settings, Tags, Users } from "lucide-react"
+import { Activity, LayoutDashboard, Mail, MessageSquare, Package, Receipt, Settings, Tags, Users, RefreshCw } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-export type AdminNavIcon = "overview" | "products" | "categories" | "orders" | "users" | "analytics" | "settings" | "bespoke" | "communication"
+export type AdminNavIcon = "overview" | "products" | "categories" | "orders" | "users" | "analytics" | "settings" | "bespoke" | "communication" | "zoho"
 
 const iconMap: Record<AdminNavIcon, LucideIcon> = {
   overview: LayoutDashboard,
@@ -25,6 +25,7 @@ const iconMap: Record<AdminNavIcon, LucideIcon> = {
   settings: Settings,
   bespoke: MessageSquare,
   communication: Mail,
+  zoho: RefreshCw,
 }
 
 export type AdminNavItem = {

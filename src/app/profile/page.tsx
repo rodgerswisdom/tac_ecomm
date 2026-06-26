@@ -3,7 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { User, Mail, Calendar, Shield, Settings, MapPin, Pencil, Loader2 } from 'lucide-react'
+import { User, Mail, Calendar, Shield, Settings, MapPin, Pencil, Loader2, LayoutDashboard, Package, Heart } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -340,7 +340,34 @@ export default function ProfilePage() {
               <CardDescription>Manage your account and preferences</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Button asChild variant="outline" className="h-auto py-4 justify-start">
+                  <Link href="/profile/dashboard">
+                    <LayoutDashboard className="mr-2 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Dashboard</div>
+                      <div className="text-xs text-muted-foreground">View your overview</div>
+                    </div>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-auto py-4 justify-start">
+                  <Link href="/profile/orders">
+                    <Package className="mr-2 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">All Orders</div>
+                      <div className="text-xs text-muted-foreground">View order history</div>
+                    </div>
+                  </Link>
+                </Button>
+                <Button asChild variant="outline" className="h-auto py-4 justify-start">
+                  <Link href="/wishlist">
+                    <Heart className="mr-2 h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-medium">Wishlist</div>
+                      <div className="text-xs text-muted-foreground">View saved items</div>
+                    </div>
+                  </Link>
+                </Button>
                 <Button asChild variant="outline" className="h-auto py-4 justify-start">
                   <Link href="/profile/settings">
                     <Settings className="mr-2 h-5 w-5" />
@@ -354,8 +381,8 @@ export default function ProfilePage() {
                   <Link href="#order-history">
                     <Calendar className="mr-2 h-5 w-5" />
                     <div className="text-left">
-                      <div className="font-medium">Order History</div>
-                      <div className="text-xs text-muted-foreground">View your past orders</div>
+                      <div className="font-medium">Recent Orders</div>
+                      <div className="text-xs text-muted-foreground">Quick view below</div>
                     </div>
                   </Link>
                 </Button>

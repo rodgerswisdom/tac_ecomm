@@ -13,6 +13,7 @@ import { DeliveryStep, DeliveryMethod } from "./steps/DeliveryStep";
 import { ReviewStep } from "./steps/ReviewStep";
 import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
+import { trackBeginCheckout } from "@/lib/analytics";
 
 const TOTAL_STEPS = 2;
 
@@ -47,6 +48,14 @@ export default function ShopifyCheckout() {
       router.replace("/cart");
     }
   }, [cart.length, orderPlaced, router]);
+
+  // Track begin_checkout event when checkout page loads with items
+  useEffect(() => {
+    if (cart.length > 0) {
+      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      trackBeginCheckout(cart, total, appliedCoupon?.code);
+    }
+  }, []); // Only fire once on mount
 
   function handleNextStep() {
     setCurrentStep((s) => Math.min(TOTAL_STEPS, s + 1));

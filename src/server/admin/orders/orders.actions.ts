@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
 import { decrementStock, restoreStock } from "@/lib/stock"
+import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
 
 // ─────────────────────────────────────────────
 // Schema
@@ -110,6 +111,37 @@ export async function updateOrderStatusAction(
 
         return true
     })
+
+    // Queue Zoho sync when order is confirmed
+    if (didUpdate && status === OrderStatus.CONFIRMED && process.env.ZOHO_SYNC_ENABLED === 'true') {
+        try {
+            await queueOrderSync(orderId)
+        } catch (error) {
+            console.error('Failed to queue order sync:', error)
+            // Don't fail the order update if sync queueing fails
+        }
+    }
+
+    // Queue invoice creation when payment is completed
+    if (didUpdate && paymentStatus === PaymentStatus.COMPLETED && process.env.ZOHO_SYNC_ENABLED === 'true') {
+        try {
+            // First queue invoice creation
+            await queueInvoiceCreation(orderId)
+            
+            // Then queue payment recording
+            const payment = await prisma.payment.findFirst({
+                where: { orderId, status: PaymentStatus.COMPLETED },
+                orderBy: { createdAt: 'desc' },
+            })
+            
+            if (payment) {
+                await queuePaymentRecording(payment.id)
+            }
+        } catch (error) {
+            console.error('Failed to queue invoice/payment sync:', error)
+            // Don't fail the order update if sync queueing fails
+        }
+    }
 
     if (!didUpdate) {
         return {

@@ -36,6 +36,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@keverdjs/agent": "^1.6.0",
     "@keverdjs/react": "^1.6.0",
+    "@next/third-parties": "^16.2.9",
     "@paypal/react-paypal-js": "^8.9.2",
     "@prisma/adapter-pg": "^7.4.1",
     "@prisma/client": "^7.4.1",

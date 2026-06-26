@@ -133,8 +133,8 @@ export class SEOService {
       '@type': 'Organization',
       name: 'Tac Accessories',
       description: 'Afrocentric jewelry and accessories celebrating African heritage',
-      url: 'https://tacaccessories.com',
-      logo: 'https://tacaccessories.com/logo.png',
+      url: 'https://www.tacaccessories.co.ke',
+      logo: 'https://www.tacaccessories.co.ke/logo.png',
       contactPoint: {
         '@type': 'ContactPoint',
         telephone: '+1-555-TAC-ACCESSORIES',
@@ -158,10 +158,10 @@ export class SEOService {
       '@type': 'WebSite',
       name: 'Tac Accessories',
       description: 'Afrocentric jewelry and accessories celebrating African heritage',
-      url: 'https://tacaccessories.com',
+      url: 'https://www.tacaccessories.co.ke',
       potentialAction: {
         '@type': 'SearchAction',
-        target: 'https://tacaccessories.com/search?q={search_term_string}',
+        target: 'https://www.tacaccessories.co.ke/search?q={search_term_string}',
         'query-input': 'required name=search_term_string'
       }
     }
@@ -196,7 +196,7 @@ ${pages.map(page => `  <url>
     return `User-agent: *
 Allow: /
 
-Sitemap: https://tacaccessories.com/sitemap.xml
+Sitemap: https://www.tacaccessories.co.ke/sitemap.xml
 
 # Disallow admin and API routes
 Disallow: /admin/
