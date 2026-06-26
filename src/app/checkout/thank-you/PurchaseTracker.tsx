@@ -49,4 +49,3 @@ export function PurchaseTracker({
   return null; // This component doesn't render anything
 }
 
-// Made with Bob

@@ -32,4 +32,3 @@ export default async function OrderDetailPage({
   return <OrderDetailClient order={order} />
 }
 
-// Made with Bob

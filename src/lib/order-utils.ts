@@ -311,4 +311,3 @@ export function getRelativeTime(date: Date | string): string {
   return years === 1 ? "1 year ago" : `${years} years ago`
 }
 
-// Made with Bob

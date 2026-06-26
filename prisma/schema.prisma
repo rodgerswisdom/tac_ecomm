@@ -2,8 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// In Prisma 7+, connection URL is configured in prisma.config.ts (not here).
-// If you're on Prisma 6.x and see "Argument url is missing", add: url = env("DATABASE_URL")
 datasource db {
   provider = "postgresql"
 }
@@ -35,24 +33,30 @@ model Session {
 }
 
 model User {
-  id            String     @id @default(cuid())
+  id            String         @id @default(cuid())
   name          String?
-  email         String     @unique
+  email         String         @unique
   emailVerified DateTime?
   image         String?
-  role          UserRole   @default(CUSTOMER)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  role          UserRole       @default(CUSTOMER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   passwordHash  String?
-  lastActiveAt  DateTime?  @default(now())
+  lastActiveAt  DateTime?      @default(now())
+  status        String?        @default("ACTIVE")
   accounts      Account[]
   addresses     Address[]
   cart          CartItem[]
+  mfaChallenges MfaChallenge[]
   orders        Order[]
   reviews       Review[]
   sessions      Session[]
-  mfaChallenges MfaChallenge[]
-  status        String?    @default("ACTIVE") // Physical status
+
+  // Zoho Books Integration
+  zohoContactId  String?   @unique
+  zohoSyncStatus String?   @default("pending") // "pending", "synced", "failed"
+  lastSyncedAt   DateTime?
+  syncError      String?
 }
 
 model VerificationToken {
@@ -108,7 +112,7 @@ model Product {
   slug             String           @unique
   description      String
   shortDescription String?
-  price            Float // Always KSH
+  price            Float
   comparePrice     Float?
   sku              String           @unique
   stock            Int              @default(0)
@@ -141,11 +145,18 @@ model Product {
   reviews          Review[]
   matchingSets     ProductSet[]     @relation("ProductToProductSet")
 
+  // Zoho Books Integration
+  zohoItemId     String?   @unique
+  zohoSyncStatus String?   @default("pending")
+  lastSyncedAt   DateTime?
+  syncError      String?
+
   @@index([categoryId])
   @@index([isActive])
   @@index([isFeatured])
   @@index([isBespoke])
   @@index([productType])
+  @@index([zohoSyncStatus])
 }
 
 model ProductImage {
@@ -234,7 +245,7 @@ model Order {
   tax               Float
   shipping          Float
   total             Float
-  currency          String        @default("KSH")
+  currency          String        @default("USD")
   paymentMethod     String?
   paymentStatus     PaymentStatus @default(PENDING)
   shippingMethod    String?
@@ -249,9 +260,17 @@ model Order {
   items             OrderItem[]
   payments          Payment[]
 
+  // Zoho Books Integration
+  zohoSalesOrderId String?   @unique
+  zohoInvoiceId    String?   @unique
+  zohoSyncStatus   String?   @default("pending")
+  lastSyncedAt     DateTime?
+  syncError        String?
+
   @@index([userId])
   @@index([status])
   @@index([paymentStatus])
+  @@index([zohoSyncStatus])
 }
 
 model OrderItem {
@@ -270,7 +289,7 @@ model OrderItem {
 model Payment {
   id              String        @id @default(cuid())
   amount          Float
-  currency        String        @default("KSH")
+  currency        String        @default("USD")
   method          PaymentMethod
   status          PaymentStatus @default(PENDING)
   transactionId   String?
@@ -280,8 +299,15 @@ model Payment {
   updatedAt       DateTime      @updatedAt
   order           Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
+  // Zoho Books Integration
+  zohoPaymentId  String?   @unique
+  zohoSyncStatus String?   @default("pending")
+  lastSyncedAt   DateTime?
+  syncError      String?
+
   @@index([orderId])
   @@index([status])
+  @@index([zohoSyncStatus])
 }
 
 model Newsletter {
@@ -345,16 +371,106 @@ model ProductSet {
 
 model AuditLog {
   id        String   @id @default(cuid())
-  action    String // e.g., "CREATE_PRODUCT", "UPDATE_ORDER_STATUS"
-  entity    String // e.g., "Product", "Order"
-  entityId  String // The ID of the affected entity
-  details   String? // Summary of changes or specific metadata
-  adminId   String
+  action    String
+  entity    String?
+  entityId  String?
+  details   String?
+  adminId   String?
   adminName String?
+  userAgent String?
   createdAt DateTime @default(now())
 
   @@index([adminId])
   @@index([entity, entityId])
+}
+
+model BespokeRequest {
+  id             String               @id @default(cuid())
+  name           String
+  email          String
+  phone          String?
+  vision         String
+  category       String
+  categoryLabel  String
+  budget         String
+  timeline       String
+  isExpress      Boolean              @default(false)
+  expressPremium Float                @default(0)
+  photoUrls      String[]             @default([])
+  status         BespokeRequestStatus @default(NEW)
+  adminNotes     String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Settings {
+  id              String    @id @default("singleton")
+  storeName       String    @default("Tac Accessories")
+  storeTagline    String    @default("The African Gallery Experience")
+  supportEmail    String    @default("info@tacaccessories.co.ke")
+  salesEmail      String    @default("info@tacaccessories.co.ke")
+  whatsappNumber  String    @default("254704800866")
+  address         String    @default("Nairobi, Kenya")
+  instagramUrl    String?
+  facebookUrl     String?
+  maintenanceMode Boolean   @default(false)
+  autoSyncRates   Boolean   @default(true)
+  lastRatesSyncAt DateTime?
+  defaultCurrency String    @default("KES")
+  usdToKesRate    Float     @default(129.0)
+  usdToEurRate    Float     @default(0.92)
+  taxRate         Float     @default(16.0)
+  baseShippingFee Float     @default(300.0)
+  updatedAt       DateTime  @updatedAt
+  emailFromName   String    @default("TAC Accessories")
+  smsSenderId     String    @default("TAC Accessories")
+}
+
+// ============================================
+// ZOHO BOOKS INTEGRATION MODELS
+// ============================================
+
+model ZohoSyncLog {
+  id           String   @id @default(cuid())
+  entityType   String   // "product", "order", "payment", "customer"
+  entityId     String   // Your database ID
+  zohoId       String?  // Zoho Books ID
+  action       String   // "create", "update", "delete"
+  status       String   // "pending", "success", "failed"
+  priority     Int      @default(5)
+  retryCount   Int      @default(0)
+  errorMessage String?  @db.Text
+  requestData  Json?
+  responseData Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([entityType, entityId])
+  @@index([status, priority])
+}
+
+model ZohoToken {
+  id           String   @id @default("singleton")
+  accessToken  String   @db.Text
+  refreshToken String   @db.Text
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ZohoSyncStats {
+  id              String   @id @default("singleton")
+  totalSynced     Int      @default(0)
+  totalFailed     Int      @default(0)
+  lastSyncAt      DateTime?
+  productsSynced  Int      @default(0)
+  ordersSynced    Int      @default(0)
+  paymentsSynced  Int      @default(0)
+  customersSynced Int      @default(0)
+  updatedAt       DateTime @updatedAt
 }
 
 enum UserRole {
@@ -391,9 +507,9 @@ enum PaymentStatus {
 enum PaymentMethod {
   PAYPAL
   PESAPAL
-  TUMA
   CREDIT_CARD
   BANK_TRANSFER
+  TUMA
 }
 
 enum CouponType {
@@ -409,49 +525,4 @@ enum BespokeRequestStatus {
   QUOTED
   COMPLETED
   CANCELLED
-}
-
-model BespokeRequest {
-  id             String              @id @default(cuid())
-  name           String
-  email          String
-  phone          String?
-  vision         String
-  category       String              // e.g. earrings, rings
-  categoryLabel  String              // e.g. Earrings
-  budget         String              // e.g. 500-1000
-  timeline       String              // e.g. 4-6 weeks
-  isExpress      Boolean             @default(false)
-  expressPremium Float               @default(0)
-  photoUrls      String[]            @default([])
-  status         BespokeRequestStatus @default(NEW)
-  adminNotes     String?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
-
-  @@index([status])
-  @@index([createdAt])
-}
-
-model Settings {
-  id                String   @id @default("singleton")
-  storeName         String   @default("Tac Accessories")
-  storeTagline      String   @default("The African Gallery Experience")
-  supportEmail      String   @default("info@tacaccessories.co.ke")
-  salesEmail        String   @default("info@tacaccessories.co.ke")
-  whatsappNumber    String   @default("254704800866")
-  address           String   @default("Nairobi, Kenya")
-  instagramUrl      String?
-  facebookUrl       String?
-  maintenanceMode   Boolean  @default(false)
-  autoSyncRates     Boolean  @default(true)
-  lastRatesSyncAt   DateTime?
-  defaultCurrency   String   @default("KES")
-  usdToKesRate      Float    @default(129.0)
-  usdToEurRate      Float    @default(0.92)
-  taxRate           Float    @default(16.0)
-  baseShippingFee   Float    @default(300.0)
-  smsSenderId       String   @default("TAC Accessories")
-  emailFromName     String   @default("TAC Accessories")
-  updatedAt         DateTime @updatedAt
 }

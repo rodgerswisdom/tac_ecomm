@@ -17,4 +17,3 @@ export default async function OrdersPage() {
   return <OrdersListClient />
 }
 
-// Made with Bob

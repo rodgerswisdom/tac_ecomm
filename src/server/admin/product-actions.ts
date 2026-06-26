@@ -20,6 +20,7 @@ import {
 } from "./products"
 import type { CreateProductFormState } from "./products"
 import { logAdminAction } from "./audit"
+import { queueProductSync } from "@/lib/zoho"
 
 export async function createProductAction(
   _prevState: CreateProductFormState,
@@ -109,6 +110,16 @@ export async function createProductAction(
     })),
   })
 
+  // Queue Zoho sync for published products
+  if (!isDraft && process.env.ZOHO_SYNC_ENABLED === 'true') {
+    try {
+      await queueProductSync(created.id, 'create')
+    } catch (error) {
+      console.error('Failed to queue product sync:', error)
+      // Don't fail the product creation if sync queueing fails
+    }
+  }
+
   revalidateProductRoute(created.id)
 
   const statusParam = isDraft ? "draft" : "published"
@@ -147,13 +158,24 @@ export async function updateProductAction(formData: FormData) {
   const slug = await resolveProductSlug(parsed.data.name, undefined, parsed.data.id)
 
   try {
-    await prisma.product.update({
+    const updated = await prisma.product.update({
       where: { id: parsed.data.id },
       data: {
         ...parsed.data,
         slug,
       },
+      select: { id: true, isActive: true, isDraft: true, zohoItemId: true },
     })
+
+    // Queue Zoho sync for active products that are already synced
+    if (updated.isActive && !updated.isDraft && updated.zohoItemId && process.env.ZOHO_SYNC_ENABLED === 'true') {
+      try {
+        await queueProductSync(updated.id, 'update')
+      } catch (error) {
+        console.error('Failed to queue product sync:', error)
+        // Don't fail the product update if sync queueing fails
+      }
+    }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       throw new Error("SKU already exists. Please use a unique SKU.")

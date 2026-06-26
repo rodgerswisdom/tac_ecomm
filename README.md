@@ -30,6 +30,14 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
 - **EasyPost Support** - Alternative shipping provider
 - **Order Tracking** - Complete shipment tracking with status updates
 
+### Accounting Integration
+
+- **Zoho Books** - Automatic sync of products, customers, orders, invoices, and payments
+- **Async Queue System** - Priority-based sync with automatic dependency resolution
+- **Health Monitoring** - Comprehensive monitoring with alerts and metrics
+- **Admin Dashboard** - Manage syncs, view logs, and monitor health
+
+
 ### Admin Dashboard
 
 - **Analytics** - Sales trends, order volumes, and customer insights
@@ -136,6 +144,14 @@ A modern, full-stack e-commerce platform for Afrocentric jewelry and accessories
    # Image Upload (one URL from Cloudinary dashboard)
    CLOUDINARY_URL="cloudinary://api_key:api_secret@cloud_name"
    NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="your-cloud-name"
+    
+    # Zoho Books Integration (Optional)
+    ZOHO_CLIENT_ID="your-zoho-client-id"
+    ZOHO_CLIENT_SECRET="your-zoho-client-secret"
+    ZOHO_ORGANIZATION_ID="your-zoho-org-id"
+    ZOHO_REDIRECT_URI="http://localhost:3000/api/zoho/callback"
+    ZOHO_DATA_CENTER="US"
+    CRON_SECRET="your-random-secret"
    NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET="tac_accessories"
    ```
 
@@ -236,8 +252,9 @@ tac_ecomm/
    - Ensure `APP_URL` is your public site URL so Tuma can reach `/api/payment/tuma/callback`.
    - See [Tuma Setup Guide](docs/tuma-setup.md).
 4. Configure shipping APIs (ShipEngine, EasyPost)
-5. Set up email service (Resend)
-6. Configure image storage (Cloudinary)
+5. (Optional) Set up Zoho Books integration - See [Zoho Integration Guide](docs/ZOHO_INTEGRATION.md)
+6. Set up email service (Resend)
+7. Configure image storage (Cloudinary)
 
 ### Deployment Options
 
@@ -298,7 +315,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Modern Web Standards** - Built with latest web technologies
 - **Open Source Community** - Thanks to all contributors and maintainers
 
-## 📞 Support
+## 📚 Documentation
+
+### General Documentation
+
+- [Setup Database](docs/SETUP_DATABASE.md) - Database setup and configuration
+- [Email/Password Authentication](docs/EMAIL_PASSWORD_AUTH.md) - Authentication setup
+- [PesaPal Setup](docs/pesapal-setup.md) - Payment gateway configuration
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment instructions
+
+### Zoho Books Integration
+
+- [Integration Guide](docs/ZOHO_INTEGRATION.md) - Complete integration documentation
+- [Deployment Checklist](docs/ZOHO_DEPLOYMENT.md) - Step-by-step deployment guide
+- [Quick Reference](docs/ZOHO_QUICK_REFERENCE.md) - Common tasks and commands
+
+## Support
 
 For support, email <support@tacaccessories.com> or join our Discord community.
 

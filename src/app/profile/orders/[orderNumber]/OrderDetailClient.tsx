@@ -386,4 +386,3 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
   )
 }
 
-// Made with Bob

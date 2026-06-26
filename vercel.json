@@ -42,5 +42,19 @@
       "source": "/health",
       "destination": "/api/health"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/zoho-sync",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/zoho-stock-sync",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/zoho-monitor",
+      "schedule": "0,30 * * * *"
+    }
   ]
 }
