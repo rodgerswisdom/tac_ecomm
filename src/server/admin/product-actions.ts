@@ -14,6 +14,8 @@ import {
   buildFieldErrors,
   validateMediaPayload,
   resolveProductSlug,
+  resolveProductSku,
+  SkuConflictError,
   generateDuplicateSku,
   variantSchema,
   imageSchema,
@@ -77,11 +79,35 @@ export async function createProductAction(
 
   const slug = await resolveProductSlug(parsed.data.name, proposedSlug)
 
+  let sku: string
+  try {
+    sku = await resolveProductSku(parsed.data.name, parsed.data.sku.trim() || undefined)
+  } catch (error) {
+    if (error instanceof SkuConflictError) {
+      return {
+        status: "error",
+        message: error.message,
+        fieldErrors: { sku: error.message },
+        values: formValues,
+      }
+    }
+    if (error instanceof Error && error.message === "Unable to generate product SKU") {
+      return {
+        status: "error",
+        message: error.message,
+        fieldErrors: { sku: "Enter a product name or SKU to continue." },
+        values: formValues,
+      }
+    }
+    throw error
+  }
+
   let created: { id: string; name: string }
   try {
     created = await prisma.product.create({
       data: {
         ...parsed.data,
+        sku,
         shortDescription: parsed.data.shortDescription ?? null,
         materials: [],
         slug,
@@ -157,11 +183,25 @@ export async function updateProductAction(formData: FormData) {
 
   const slug = await resolveProductSlug(parsed.data.name, undefined, parsed.data.id)
 
+  let sku: string
+  try {
+    sku = await resolveProductSku(parsed.data.name, parsed.data.sku, parsed.data.id)
+  } catch (error) {
+    if (error instanceof SkuConflictError) {
+      throw new Error(error.message)
+    }
+    if (error instanceof Error && error.message === "Unable to generate product SKU") {
+      throw new Error("Enter a product name or SKU to continue.")
+    }
+    throw error
+  }
+
   try {
     const updated = await prisma.product.update({
       where: { id: parsed.data.id },
       data: {
         ...parsed.data,
+        sku,
         slug,
       },
       select: { id: true, isActive: true, isDraft: true, zohoItemId: true },
@@ -422,5 +462,24 @@ function revalidateProductRoute(productId?: string) {
   revalidatePath("/admin/products")
   if (productId) {
     revalidatePath(`/admin/products/${productId}`)
+  }
+}
+
+export async function generateSkuAction(name: string): Promise<{ sku: string } | { error: string }> {
+  await assertAdmin()
+
+  const trimmedName = name.trim()
+  if (!trimmedName) {
+    return { error: "Enter a product name to generate a SKU." }
+  }
+
+  try {
+    const sku = await resolveProductSku(trimmedName)
+    return { sku }
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unable to generate product SKU") {
+      return { error: error.message }
+    }
+    throw error
   }
 }

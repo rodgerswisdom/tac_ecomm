@@ -25,6 +25,7 @@
     "db:studio": "npx prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "admin:create": "tsx scripts/bootstrapAdmin.ts",
+    "db:backfill-skus": "tsx scripts/backfill-product-skus.ts",
     "test:stock": "tsx scripts/test-stock.ts",
     "postinstall": "prisma generate"
   },

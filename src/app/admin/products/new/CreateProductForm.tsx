@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
 import { createProductInitialState, type CreateProductFormState } from "@/lib/admin/create-product-form-state"
-import { createProductAction } from "@/server/admin/product-actions"
-import { generateSlug } from "@/lib/utils"
+import { buildSkuBaseFromName } from "@/lib/sku"
+import { createProductAction, generateSkuAction } from "@/server/admin/product-actions"
 
 const PRODUCT_TYPES = [
   { value: "READY_TO_WEAR", label: "Ready to wear" },
@@ -51,15 +51,6 @@ const deriveComparePrice = (priceValue: string) => {
   return (numericPrice * MARKUP_MULTIPLIER).toFixed(2)
 }
 
-const buildSkuFromName = (name: string) => {
-  if (!name) return ""
-  const normalized = generateSlug(name).replace(/-/g, "").toUpperCase()
-  if (!normalized) return ""
-  const prefix = normalized.slice(0, 5).padEnd(5, "X")
-  const yearSuffix = new Date().getFullYear().toString().slice(-2)
-  return `${prefix}-${yearSuffix}`
-}
-
 type CreateProductFormProps = {
   categories: Array<{ id: string; name: string }>
 }
@@ -79,6 +70,8 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   const [autosaveState, setAutosaveState] = useState<AutosaveState>({ status: "idle" })
   const [hasPendingMediaUploads, setHasPendingMediaUploads] = useState(false)
   const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
+  const [isGeneratingSku, setIsGeneratingSku] = useState(false)
+  const [skuGenerateError, setSkuGenerateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -253,7 +246,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
         }
       }
       if (field === "name" && !hasEditedSku) {
-        const generatedSku = buildSkuFromName(value)
+        const generatedSku = buildSkuBaseFromName(value)
         if (generatedSku) {
           next.sku = generatedSku
         }
@@ -274,16 +267,31 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
     }
   }
 
-  const handleGenerateSku = () => {
-    const generated = buildSkuFromName(formValues.name || formValues.categoryId || "")
-    if (!generated) return
-    setFormValues((prev) => ({
-      ...prev,
-      sku: generated,
-    }))
-    setHasEditedSku(false)
-    if (!hasInteracted) {
-      setHasInteracted(true)
+  const handleGenerateSku = async () => {
+    const name = formValues.name.trim()
+    if (!name) {
+      setSkuGenerateError("Enter a product name to generate a SKU.")
+      return
+    }
+
+    setIsGeneratingSku(true)
+    setSkuGenerateError(null)
+    try {
+      const result = await generateSkuAction(name)
+      if ("error" in result) {
+        setSkuGenerateError(result.error)
+        return
+      }
+      setFormValues((prev) => ({
+        ...prev,
+        sku: result.sku,
+      }))
+      setHasEditedSku(false)
+      if (!hasInteracted) {
+        setHasInteracted(true)
+      }
+    } finally {
+      setIsGeneratingSku(false)
     }
   }
 
@@ -357,9 +365,10 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                     <button
                       type="button"
                       onClick={handleGenerateSku}
-                      className="text-[11px] font-semibold tracking-wide text-primary underline-offset-2 hover:underline"
+                      disabled={isGeneratingSku}
+                      className="text-[11px] font-semibold tracking-wide text-primary underline-offset-2 hover:underline disabled:opacity-50"
                     >
-                      Generate
+                      {isGeneratingSku ? "Generating…" : "Generate"}
                     </button>
                   </div>
                   <Input
@@ -367,11 +376,11 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                     name="sku"
                     value={formValues.sku}
                     onChange={handleFieldChange("sku")}
-                    required
                     className="h-10 text-sm uppercase tracking-[0.2em]"
                     placeholder="ARC-2024-GOLD"
                   />
                   {fieldError("sku") ? <p className="text-xs text-rose-600">{fieldError("sku")}</p> : null}
+                  {skuGenerateError ? <p className="text-xs text-rose-600">{skuGenerateError}</p> : null}
                 </div>
               </div>
 

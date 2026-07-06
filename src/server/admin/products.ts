@@ -1,6 +1,7 @@
 import { Prisma, ProductType } from "@prisma/client"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
+import { buildSkuBaseFromName, normalizeSku } from "@/lib/sku"
 import { generateSlug } from "@/lib/utils"
 import { getCloudinaryConfig } from "@/lib/cloudinary"
 
@@ -13,7 +14,7 @@ export const productInputSchema = z
         price: z.coerce.number().positive(), // Product prices are always stored in KSH
         comparePrice: z.coerce.number().positive().optional().nullable(),
         stock: z.coerce.number().int().nonnegative(),
-        sku: z.string().min(1, "SKU is required"),
+        sku: z.string().default(""),
         categoryId: z.string().min(1, "Category is required"),
         productType: z.nativeEnum(ProductType).default(ProductType.READY_TO_WEAR),
         isActive: z.boolean().default(true),
@@ -164,6 +165,57 @@ export async function resolveProductSlug(name: string, proposedSlug?: string, ex
     }
 }
 
+export class SkuConflictError extends Error {
+    constructor(message = "SKU already exists. Please use a unique SKU.") {
+        super(message)
+        this.name = "SkuConflictError"
+    }
+}
+
+export async function isSkuAvailable(sku: string, excludeProductId?: string): Promise<boolean> {
+    const existing = await prisma.product.findUnique({
+        where: { sku },
+        select: { id: true },
+    })
+    if (!existing) return true
+    if (excludeProductId && existing.id === excludeProductId) return true
+    return false
+}
+
+export async function resolveProductSku(
+    name: string,
+    proposedSku?: string,
+    excludeProductId?: string
+): Promise<string> {
+    const trimmed = proposedSku?.trim()
+    if (trimmed) {
+        const normalized = normalizeSku(trimmed)
+        if (!(await isSkuAvailable(normalized, excludeProductId))) {
+            throw new SkuConflictError()
+        }
+        return normalized
+    }
+
+    const base = buildSkuBaseFromName(name)
+    if (!base) {
+        throw new Error("Unable to generate product SKU")
+    }
+
+    let suffix = 0
+    let candidate = base
+
+    while (true) {
+        if (await isSkuAvailable(candidate, excludeProductId)) {
+            return candidate
+        }
+        suffix += 1
+        candidate = `${base}-${suffix}`
+        if (suffix > 1000) {
+            return `${base}-${Date.now().toString(36).toUpperCase()}`
+        }
+    }
+}
+
 export async function generateDuplicateSku(baseSku: string) {
     const sanitized = baseSku.replace(/\s+/g, "-").toUpperCase()
     let attempt = 0
@@ -171,8 +223,7 @@ export async function generateDuplicateSku(baseSku: string) {
     while (attempt < 5) {
         const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
         const candidate = `${sanitized}-COPY-${suffix}`
-        const existing = await prisma.product.findUnique({ where: { sku: candidate } })
-        if (!existing) {
+        if (await isSkuAvailable(candidate)) {
             return candidate
         }
         attempt += 1

@@ -51,7 +51,6 @@ function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
       submenu: shopSubmenu.length > 0 ? shopSubmenu : undefined,
     },
     { href: "/bespoke", label: "Bespoke Studio" },
-    { href: "/artisans", label: "Artisans" },
     { href: "/contact", label: "Contact" },
   ];
 }
