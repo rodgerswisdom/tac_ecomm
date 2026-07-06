@@ -2,10 +2,9 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { getCategoryById, getCategoryOptions, updateCategoryAction, deleteCategoryAction } from "@/server/admin/categories"
+import { getCategoryById, getCategoryOptions, deleteCategoryAction } from "@/server/admin/categories"
+import { EditCategoryForm } from "./EditCategoryForm"
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ categoryId: string }> }) {
   const { categoryId } = await params
@@ -15,11 +14,6 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
   }
 
   const options = await getCategoryOptions()
-  const updateCategory = async (formData: FormData) => {
-    "use server"
-
-    await updateCategoryAction(undefined, formData)
-  }
   const parentOptions = options.filter((option) => option.id !== category.id)
 
   return (
@@ -39,67 +33,17 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
         toolbarAlignment="end"
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Category details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={updateCategory} className="space-y-6">
-            <input type="hidden" name="id" value={category.id} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground" htmlFor="name">Title</label>
-                <Input id="name" name="name" defaultValue={category.name} required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground" htmlFor="slug">Slug</label>
-                <Input id="slug" name="slug" defaultValue={category.slug ?? ""} placeholder="auto-generated if left blank" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground" htmlFor="description">Description</label>
-              <Textarea
-                id="description"
-                name="description"
-                defaultValue={category.description ?? ""}
-                rows={4}
-                placeholder="Optional description"
-              />
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground" htmlFor="image">Image URL</label>
-                <Input id="image" name="image" defaultValue={category.image ?? ""} placeholder="https://..." />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground" htmlFor="parentId">Parent category</label>
-                <select
-                  id="parentId"
-                  name="parentId"
-                  defaultValue={category.parent?.id ?? ""}
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  <option value="">None</option>
-                  {parentOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap justify-end gap-3">
-              <Button asChild variant="ghost">
-                <Link href="/admin/categories">Cancel</Link>
-              </Button>
-              <Button type="submit">Save changes</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <EditCategoryForm
+        category={{
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          image: category.image,
+          parent: category.parent,
+        }}
+        parentOptions={parentOptions}
+      />
 
       <Card className="border-rose-200">
         <CardHeader>

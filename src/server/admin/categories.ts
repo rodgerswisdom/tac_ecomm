@@ -34,6 +34,23 @@ function normalizeSlug(value: FormDataEntryValue | null) {
     return cleaned || undefined
 }
 
+function normalizeImage(value: FormDataEntryValue | null) {
+    const trimmed = value?.toString().trim()
+    return trimmed ? trimmed : null
+}
+
+function revalidateCategoryPaths(slug?: string | null, categoryId?: string) {
+    revalidatePath("/admin/categories")
+    if (categoryId) {
+        revalidatePath(`/admin/categories/${categoryId}`)
+    }
+    revalidatePath("/")
+    revalidatePath("/collections")
+    if (slug) {
+        revalidatePath(`/collections/${slug}`)
+    }
+}
+
 export async function getCategories() {
     const categories = await prisma.category.findMany({
         orderBy: { name: "asc" },
@@ -107,7 +124,7 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
     const parsed = categorySchema.safeParse({
         name: formData.get("name")?.toString() ?? "",
         description: formData.get("description")?.toString(),
-        image: formData.get("image")?.toString(),
+        image: normalizeImage(formData.get("image")),
         parentId: formData.get("parentId")?.toString() || undefined,
         slug: normalizeSlug(formData.get("slug")),
     })
@@ -119,12 +136,13 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined)
 
     try {
-        await prisma.category.create({
+        const created = await prisma.category.create({
             data: {
                 ...parsed.data,
                 slug,
             },
         })
+        revalidateCategoryPaths(slug, created.id)
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             return { error: "Category slug must be unique" }
@@ -132,7 +150,6 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
         return { error: "Failed to create category" }
     }
 
-    revalidatePath("/admin/categories")
     return { success: true }
 }
 
@@ -143,7 +160,7 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
         id: formData.get("id")?.toString(),
         name: formData.get("name")?.toString() ?? "",
         description: formData.get("description")?.toString(),
-        image: formData.get("image")?.toString(),
+        image: normalizeImage(formData.get("image")),
         parentId: formData.get("parentId")?.toString() || undefined,
         slug: normalizeSlug(formData.get("slug")),
     })
@@ -162,6 +179,7 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
                 slug,
             },
         })
+        revalidateCategoryPaths(slug, parsed.data.id)
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
             return { error: "Category slug must be unique" }
@@ -169,7 +187,6 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
         return { error: "Failed to update category" }
     }
 
-    revalidatePath("/admin/categories")
     return { success: true }
 }
 
@@ -205,5 +222,5 @@ export async function deleteCategoryAction(formData: FormData) {
         throw error
     }
 
-    revalidatePath("/admin/categories")
+    revalidateCategoryPaths(category.slug, categoryId)
 }
