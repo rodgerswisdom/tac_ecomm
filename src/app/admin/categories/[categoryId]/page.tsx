@@ -3,8 +3,9 @@ import { notFound } from "next/navigation"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getCategoryById, getCategoryOptions, deleteCategoryAction } from "@/server/admin/categories"
+import { getCategoryById, getCategoryOptions } from "@/server/admin/categories"
 import { EditCategoryForm } from "./EditCategoryForm"
+import { CategoryDeleteForm } from "./CategoryDeleteForm"
 
 export default async function EditCategoryPage({ params }: { params: Promise<{ categoryId: string }> }) {
   const { categoryId } = await params
@@ -51,12 +52,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>Deleting this category requires no products or child categories to be attached.</p>
-          <form action={deleteCategoryAction} className="flex flex-wrap items-center gap-3">
-            <input type="hidden" name="categoryId" value={category.id} />
-            <Button type="submit" variant="destructive" size="sm">
-              Delete category
-            </Button>
-          </form>
+          <CategoryDeleteForm categoryId={category.id} />
         </CardContent>
       </Card>
     </div>

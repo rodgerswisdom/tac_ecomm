@@ -1,13 +1,13 @@
 'use client'
 
-import { useActionState, useEffect } from "react"
+import { useActionState } from "react"
 import { useFormStatus } from "react-dom"
 import { updateProfileAction, type ProfileFormState } from "@/server/admin/profile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 const initialState: ProfileFormState = { status: "idle" }
 
@@ -18,13 +18,9 @@ export function ProfileForm({
 }) {
     const [state, formAction] = useActionState(updateProfileAction, initialState)
 
-    useEffect(() => {
-        if (state.status === "success") {
-            toast.success(state.message || "Profile updated!")
-        } else if (state.status === "error" && state.message) {
-            toast.error(state.message)
-        }
-    }, [state])
+    useAdminActionFeedback(state, {
+        successMessage: "Profile updated!",
+    })
 
     return (
         <Card className="border-[#2d3b34]/10 shadow-sm">

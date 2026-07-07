@@ -24,7 +24,7 @@ type UsersSummaryFilters = {
 
 const DEFAULT_PAGE_SIZE = 10
 
-export type ActionResult = { success?: boolean; error?: string }
+export type ActionResult = { success?: boolean; error?: string; message?: string }
 
 /**
  * ================================

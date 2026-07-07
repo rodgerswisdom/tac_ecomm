@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect, useState } from "react"
+import { useActionState, useState } from "react"
 import { sendBulkSmsAction } from "@/server/admin/communication"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,22 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, MessageSquare, Send } from "lucide-react"
-import { toast } from "sonner"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 export function SMSForm() {
     const [state, action, isPending] = useActionState(sendBulkSmsAction, { status: "idle" })
     const [charCount, setCharCount] = useState(0)
 
-    useEffect(() => {
-        if (state.status === "success") {
-            toast.success(state.message)
+    useAdminActionFeedback(state, {
+        onSuccess: () => {
             const form = document.getElementById("sms-form") as HTMLFormElement
             form?.reset()
             setCharCount(0)
-        } else if (state.status === "error") {
-            toast.error(state.message)
-        }
-    }, [state])
+        },
+    })
 
     const maxChars = 160
     const smsCount = Math.ceil(charCount / maxChars) || 1

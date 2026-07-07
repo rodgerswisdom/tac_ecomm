@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { adminToast } from "@/lib/admin/feedback"
 import { ActionResult } from "@/server/admin/users"
 import { Artisan } from "@prisma/client"
 
@@ -22,10 +22,10 @@ export function ArtisanForm({ artisan, action, title }: ArtisanFormProps) {
   const [state, formAction, isPending] = useActionState(async (prevState: ActionResult | undefined, formData: FormData) => {
     const result = await action(prevState, formData)
     if (result.success) {
-      toast.success(artisan?.id ? "Artisan updated" : "Artisan created")
+      adminToast.success(artisan?.id ? "Artisan updated" : "Artisan created")
       router.push("/admin/artisans")
     } else if (result.error) {
-      toast.error(result.error)
+      adminToast.error(result.error)
     }
     return result
   }, undefined)

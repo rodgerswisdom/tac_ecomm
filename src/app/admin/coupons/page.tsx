@@ -8,9 +8,9 @@ import { RowActions } from "@/components/admin/row-actions"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { CouponType } from "@prisma/client"
 import { useState, useEffect } from "react"
-import { useRef } from "react"
 import React from "react"
-import { Plus } from "lucide-react";
+import { Plus } from "lucide-react"
+import { adminToast } from "@/lib/admin/feedback"
 
 type Coupon = {
   id: string;
@@ -26,8 +26,6 @@ type Coupon = {
 };
 
 export default function AdminCouponsPage() {
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const toastTimeout = useRef<NodeJS.Timeout | null>(null);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [total, setTotal] = useState(0);
   const [usageStats, setUsageStats] = useState<any>({});
@@ -84,9 +82,7 @@ export default function AdminCouponsPage() {
           body: formData,
         });
         if (!res.ok) throw new Error("Failed to create coupon");
-        setToast({ message: "Coupon created successfully!", type: "success" });
-        if (toastTimeout.current) clearTimeout(toastTimeout.current);
-        toastTimeout.current = setTimeout(() => setToast(null), 3000);
+        adminToast.success("Coupon created successfully!");
         onSuccess();
       } catch (err: any) {
         setError(err.message || "Failed to create coupon");
@@ -152,9 +148,11 @@ export default function AdminCouponsPage() {
     fetchCoupons();
     // Show toast after deletion
     const message = success ? `Deleted ${selected.length} coupon(s).` : 'Some coupons could not be deleted.';
-    setToast({ message, type: success ? 'success' : 'error' });
-    if (toastTimeout.current) clearTimeout(toastTimeout.current);
-    toastTimeout.current = setTimeout(() => setToast(null), 3000);
+    if (success) {
+      adminToast.success(message);
+    } else {
+      adminToast.error(message);
+    }
   }
 
   // Store pending activation dates for confirmation
@@ -187,9 +185,11 @@ export default function AdminCouponsPage() {
       setSelected([]);
       fetchCoupons();
       message = success ? `Deactivated ${selected.length} coupon(s).` : 'Some coupons could not be deactivated.';
-      setToast({ message, type: success ? 'success' : 'error' });
-      if (toastTimeout.current) clearTimeout(toastTimeout.current);
-      toastTimeout.current = setTimeout(() => setToast(null), 3000);
+      if (success) {
+        adminToast.success(message);
+      } else {
+        adminToast.error(message);
+      }
     }
   }
 
@@ -215,24 +215,15 @@ export default function AdminCouponsPage() {
     setPendingActivation(null);
     setShowFinalConfirm(false);
     message = success ? `Activated ${selected.length} coupon(s).` : 'Some coupons could not be activated.';
-    setToast({ message, type: success ? 'success' : 'error' });
-    if (toastTimeout.current) clearTimeout(toastTimeout.current);
-    toastTimeout.current = setTimeout(() => setToast(null), 3000);
+    if (success) {
+      adminToast.success(message);
+    } else {
+      adminToast.error(message);
+    }
   }
 
   return (
     <div className="space-y-8">
-      {toast && (
-        <div
-          className={`rounded-md border px-4 py-3 text-sm ${
-            toast.type === "success"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-              : "border-rose-200 bg-rose-50 text-rose-900"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
       <AdminPageHeader
         title="Discount Codes"
         breadcrumb={[{ label: "Discount Codes", href: "/admin/coupons" }]}
@@ -372,10 +363,9 @@ export default function AdminCouponsPage() {
                             body: JSON.stringify({ couponId: coupon.id })
                           })
                           fetchCoupons()
-                          const message = res.ok ? `Deleted coupon ${coupon.code}.` : `Failed to delete coupon ${coupon.code}.`
-                          setToast({ message, type: res.ok ? "success" : "error" })
-                          if (toastTimeout.current) clearTimeout(toastTimeout.current)
-                          toastTimeout.current = setTimeout(() => setToast(null), 3000)
+                          if (!res.ok) {
+                            throw new Error(`Failed to delete coupon ${coupon.code}.`)
+                          }
                         },
                         fields: {},
                         resourceLabel: `coupon ${coupon.code}`,

@@ -9,6 +9,7 @@ import { StatsCard } from "@/components/admin/stats-card"
 import { SimpleBarChart } from "@/components/admin/trend-chart"
 import type { ZohoStatsData } from "@/server/admin/zoho"
 import { cn } from "@/lib/utils"
+import { adminToast } from "@/lib/admin/feedback"
 import { useRouter } from "next/navigation"
 import { syncAllExistingProducts, syncAllExistingCustomers, syncAllExistingOrders } from "@/server/admin/zoho"
 
@@ -86,7 +87,9 @@ export function ZohoDashboardClient({
         if (remaining === 0 || processed === 0) {
           processing = false
           setSyncProgress(`🎉 Sync pipeline clear! Completed ${totalProcessed} entries securely.`)
-          alert(`Queue processing complete!\nTotal items run: ${totalProcessed}\n✅ Succeeded: ${totalSucceeded}\n❌ Failed: ${totalFailed}`)
+          adminToast.success(
+            `Queue processing complete! Total: ${totalProcessed}, succeeded: ${totalSucceeded}, failed: ${totalFailed}.`
+          )
         }
 
         // Optional: Add a 300ms pause on the client side to avoid hammering your own database too fast
@@ -95,7 +98,7 @@ export function ZohoDashboardClient({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
       setSyncProgress(`Pipeline halted: ${errorMessage}`)
-      alert(`Sync interrupted: ${errorMessage}`)
+      adminToast.error(`Sync interrupted: ${errorMessage}`)
       console.error("Streaming sync error:", error)
     } finally {
       setIsSyncing(false)
@@ -113,11 +116,11 @@ export function ZohoDashboardClient({
     try {
       const result = await syncAllExistingProducts()
       if (result.success) {
-        alert(`✅ ${result.message}\n\nThe sync queue will process these automatically.`)
+        adminToast.success(result.message)
         router.refresh()
       }
     } catch (error) {
-      alert("Failed to queue products for sync")
+      adminToast.error("Failed to queue products for sync")
     } finally {
       setIsSyncing(false)
     }
@@ -130,11 +133,11 @@ export function ZohoDashboardClient({
     try {
       const result = await syncAllExistingCustomers()
       if (result.success) {
-        alert(`✅ ${result.message}`)
+        adminToast.success(result.message)
         router.refresh()
       }
     } catch (error) {
-      alert("Failed to queue customers for sync")
+      adminToast.error("Failed to queue customers for sync")
     } finally {
       setIsSyncing(false)
     }
@@ -147,11 +150,11 @@ export function ZohoDashboardClient({
     try {
       const result = await syncAllExistingOrders()
       if (result.success) {
-        alert(`✅ ${result.message}`)
+        adminToast.success(result.message)
         router.refresh()
       }
     } catch (error) {
-      alert("Failed to queue orders for sync")
+      adminToast.error("Failed to queue orders for sync")
     } finally {
       setIsSyncing(false)
     }

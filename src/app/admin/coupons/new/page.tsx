@@ -1,18 +1,20 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { buildAdminFlashUrl } from "@/lib/admin/feedback"
 import { createCouponAction } from "@/server/admin/coupons"
 import { CouponType } from "@prisma/client"
 import { redirect } from "next/navigation"
 
-export default function NewCouponPage({ searchParams }: { searchParams?: { error?: string } }) {
+export default function NewCouponPage() {
   async function createCoupon(formData: FormData) {
+    "use server"
     try {
       await createCouponAction(formData)
-      redirect("/admin/coupons")
-    } catch (err: any) {
-      const message = err?.message ?? "Failed to create coupon"
-      redirect(`/admin/coupons/new?error=${encodeURIComponent(message)}`)
+      redirect(buildAdminFlashUrl("/admin/coupons", { type: "success", message: "Coupon created." }))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to create coupon"
+      redirect(buildAdminFlashUrl("/admin/coupons/new", { type: "error", message }))
     }
   }
 
@@ -22,11 +24,6 @@ export default function NewCouponPage({ searchParams }: { searchParams?: { error
         <CardTitle>Create Discount Code</CardTitle>
       </CardHeader>
       <CardContent>
-        {searchParams?.error ? (
-          <div className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {searchParams.error}
-          </div>
-        ) : null}
         <form action={createCoupon} className="space-y-4">
           <Input name="code" placeholder="Code" required maxLength={32} />
           <Input name="description" placeholder="Description" />

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { requireAdmin } from "@/server/admin/auth"
 import type { AdminNavItem } from "@/components/admin/sidebar-nav"
 import { AdminDashboardShell } from "@/components/admin/dashboard-shell"
+import { AdminFeedbackRoot } from "@/components/admin/AdminFeedbackRoot"
 
 function getInitials(name?: string | null, email?: string | null) {
   if (name) {
@@ -42,6 +43,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       userInitials={userInitials}
       userName={userName}
     >
+      <AdminFeedbackRoot />
       {children}
     </AdminDashboardShell>
   )

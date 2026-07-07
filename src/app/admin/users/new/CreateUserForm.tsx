@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom"
 import { UserRole } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 const roleOptions = Object.values(UserRole)
 
@@ -28,23 +29,13 @@ export function CreateUserForm({
   action: (prevState: ActionResult, formData: FormData) => Promise<ActionResult>
 }) {
   const [state, formAction] = useActionState(action, initialState)
+  useAdminActionFeedback(state, { successMessage: "User created." })
 
   return (
     <form
       action={formAction}
       className="mx-auto w-full max-w-xl space-y-8"
     >
-  {state.error ? (
-    <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">
-      {state.error}
-    </div>
-  ) : null}
-
-  {state.success ? (
-    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-      User created.
-    </div>
-  ) : null}
 
   {/* Account details */}
   <section className="space-y-5">

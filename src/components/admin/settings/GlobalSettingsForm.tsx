@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { toast } from "sonner"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
+import { adminToast } from "@/lib/admin/feedback"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink } from "lucide-react"
 import Image from "next/image"
@@ -36,13 +37,10 @@ export function GlobalSettingsForm({
     const [corporateGiftProductsState, setCorporateGiftProductsState] = useState<any[]>(corporateGiftProducts)
     const [removingProductIds, setRemovingProductIds] = useState<Record<string, boolean>>({})
 
-    useEffect(() => {
-        if (state.status === "success") {
-            toast.success(state.message || "Settings updated!")
-        } else if (state.status === "error") {
-            toast.error(state.message || "Failed to update settings")
-        }
-    }, [state])
+    useAdminActionFeedback(state, {
+        successMessage: "Settings updated!",
+        errorMessage: "Failed to update settings",
+    })
 
     useEffect(() => {
         setFeaturedProductsState(featuredProducts)
@@ -75,10 +73,10 @@ export function GlobalSettingsForm({
                 setCorporateGiftProductsState(prev => prev.filter((product: any) => product.id !== productId))
             }
 
-            toast.success("Product removed from curated section")
+            adminToast.success("Product removed from curated section")
         } catch (error) {
             console.error("Failed to remove curated product:", error)
-            toast.error("Could not remove product. Please try again.")
+            adminToast.error("Could not remove product. Please try again.")
         } finally {
             setRemovingProductIds(prev => {
                 const next = { ...prev }

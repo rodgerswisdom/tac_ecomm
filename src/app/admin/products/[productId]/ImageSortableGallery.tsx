@@ -21,6 +21,8 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AdminActionForm } from "@/components/admin/AdminActionForm"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface ProductImage {
     id: string
@@ -69,9 +71,11 @@ export function ImageSortableGallery({
                 startTransition(async () => {
                     try {
                         await onReorderAction(productId, newItems.map(i => i.id))
+                        adminToast.success("Image order updated.")
                     } catch (error) {
-                        console.error("Failed to reorder images:", error)
-                        // Rollback on error if needed, but for now we just log
+                        adminToast.error(
+                            error instanceof Error ? error.message : "Failed to reorder images."
+                        )
                     }
                 })
 
@@ -161,8 +165,9 @@ function SortableImage({
                 </div>
 
                 {/* Delete Form */}
-                <form
+                <AdminActionForm
                     action={onDeleteAction}
+                    successMessage="Image removed."
                     className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
                 >
                     <input type="hidden" name="imageId" value={image.id} />
@@ -174,7 +179,7 @@ function SortableImage({
                     >
                         <X className="h-3 w-3" />
                     </Button>
-                </form>
+                </AdminActionForm>
             </div>
 
             <div className="mt-2 flex items-center justify-between px-1">

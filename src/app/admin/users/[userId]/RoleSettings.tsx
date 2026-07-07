@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { UserRole } from "@prisma/client"
 import { Button } from "@/components/ui/button"
+import { useAdminFormAction } from "@/hooks/use-admin-form-action"
 import { useFormStatus } from "react-dom"
 
 type Props = {
@@ -23,9 +24,10 @@ function SaveButton({ disabled }: { disabled: boolean }) {
 export function RoleSettings({ userId, currentRole, action }: Props) {
   const [role, setRole] = useState<UserRole>(currentRole)
   const dirty = role !== currentRole
+  const { handleAction } = useAdminFormAction(action, { success: "Role updated." })
 
   return (
-    <form action={action} className="space-y-2">
+    <form action={handleAction} className="space-y-2">
       <input type="hidden" name="userId" value={userId} />
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-foreground" htmlFor="role-select">

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { ActionResult } from "@/server/admin/users"
 import { updateCategoryAction } from "@/server/admin/categories"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { EditCategoryImageField } from "./EditCategoryImageField"
 
 type EditCategoryFormProps = {
@@ -37,6 +38,7 @@ function SaveButton() {
 
 export function EditCategoryForm({ category, parentOptions }: EditCategoryFormProps) {
   const [state, formAction] = useActionState(updateCategoryAction, initialState)
+  useAdminActionFeedback(state, { successMessage: "Category saved." })
 
   return (
     <Card>
@@ -46,17 +48,6 @@ export function EditCategoryForm({ category, parentOptions }: EditCategoryFormPr
       <CardContent>
         <form action={formAction} className="space-y-6">
           <input type="hidden" name="id" value={category.id} />
-
-          {state.error ? (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {state.error}
-            </div>
-          ) : null}
-          {state.success ? (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-              Category saved.
-            </div>
-          ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">

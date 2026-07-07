@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { updateOrderStatusAction, type UpdateOrderStatusFormState } from "@/server/admin/orders/orders.actions"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 const initialState: UpdateOrderStatusFormState = { status: "idle" }
 
@@ -31,6 +32,7 @@ export function StatusUpdateForm({
 }: StatusUpdateFormProps) {
   const [state, formAction] = useActionState(updateOrderStatusAction, initialState)
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus>(defaultStatus)
+  useAdminActionFeedback(state, { successMessage: "Order updated." })
 
   const showShippingFields =
     selectedStatus === OrderStatus.SHIPPED || selectedStatus === OrderStatus.DELIVERED
@@ -147,18 +149,6 @@ export function StatusUpdateForm({
           rows={3}
         />
       </div>
-
-      {/* ── Feedback ── */}
-      {state.status === "error" && (
-        <p className="rounded-md bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 border border-rose-200">
-          {state.message ?? "Unable to update order"}
-        </p>
-      )}
-      {state.status === "success" && (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 border border-emerald-200">
-          {state.message ?? "Order updated"}
-        </p>
-      )}
 
       <SubmitButton />
     </form>

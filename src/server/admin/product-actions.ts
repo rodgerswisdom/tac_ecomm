@@ -4,6 +4,7 @@ import { Prisma, ProductType } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { buildAdminFlashUrl } from "@/lib/admin/feedback"
 import { assertAdmin } from "./auth"
 import {
   productInputSchema,
@@ -148,8 +149,12 @@ export async function createProductAction(
 
   revalidateProductRoute(created.id)
 
-  const statusParam = isDraft ? "draft" : "published"
-  redirect(`/admin/products/${created.id}?status=${statusParam}`)
+  const message = isDraft
+    ? "Draft saved successfully."
+    : "Product published successfully and is now live."
+  redirect(
+    buildAdminFlashUrl(`/admin/products/${created.id}`, { type: "success", message })
+  )
 }
 
 export async function updateProductAction(formData: FormData) {

@@ -1,17 +1,17 @@
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import { ProductType } from "@prisma/client"
+import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { AddProductImageForm } from "./AddProductImageForm"
 import { getProductDetail } from "@/server/admin/products"
 import { ImageSortableGallery } from "./ImageSortableGallery"
+import { ProductDeleteForm } from "./ProductDeleteForm"
 import {
   addProductImageAction,
   addVariantAction,
-  deleteProductAction,
   deleteProductImageAction,
   deleteVariantAction,
   reorderImagesAction,
@@ -21,27 +21,10 @@ import { getCategoryOptions } from "@/server/admin/categories"
 
 interface ProductDetailPageProps {
   params: Promise<{ productId: string }>
-  searchParams?: Promise<Record<string, string | string[]>>
 }
 
-export default async function ProductDetailPage({ params, searchParams }: ProductDetailPageProps) {
-  const [{ productId }, query] = await Promise.all([
-    params,
-    searchParams ?? Promise.resolve<Record<string, string | string[]>>({}),
-  ])
-
-  const statusParam = (() => {
-    const raw = query?.status
-    if (!raw) return undefined
-    return Array.isArray(raw) ? raw[0] : raw
-  })()
-
-  const statusMessage =
-    statusParam === "published"
-      ? "Product published successfully and is now live."
-      : statusParam === "draft"
-        ? "Draft saved successfully."
-        : null
+export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
+  const { productId } = await params
 
   const [product, categories] = await Promise.all([
     getProductDetail(productId),
@@ -68,20 +51,9 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
           <Button asChild variant="outline" size="sm">
             <Link href="/admin/products">Back to products</Link>
           </Button>
-          <form action={deleteProductAction}>
-            <input type="hidden" name="productId" value={product.id} />
-            <Button variant="destructive" size="sm">
-              Delete product
-            </Button>
-          </form>
+          <ProductDeleteForm productId={product.id} />
         </div>
       </div>
-
-      {statusMessage ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          {statusMessage}
-        </div>
-      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
@@ -89,7 +61,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
             <CardTitle>Product details</CardTitle>
           </CardHeader>
           <CardContent>
-            <form action={updateProductAction} className="space-y-4">
+            <AdminActionForm action={updateProductAction} successMessage="Product saved." className="space-y-4">
               <input type="hidden" name="id" value={product.id} />
               <Input name="name" defaultValue={product.name} required />
               <Input name="sku" defaultValue={product.sku} required />
@@ -183,7 +155,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                 </label>
               </div>
               <Button type="submit">Save changes</Button>
-            </form>
+            </AdminActionForm>
           </CardContent>
         </Card>
 
@@ -202,12 +174,15 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                       <div className="font-medium">{variant.name}</div>
                       <p className="text-xs text-muted-foreground">{variant.value}</p>
                     </div>
-                    <form action={deleteVariantAction}>
+                    <AdminActionForm
+                      action={deleteVariantAction}
+                      successMessage="Variant removed."
+                    >
                       <input type="hidden" name="variantId" value={variant.id} />
                       <Button variant="ghost" size="sm">
                         Remove
                       </Button>
-                    </form>
+                    </AdminActionForm>
                   </div>
                   <div className="mt-2 grid grid-cols-3 text-xs text-muted-foreground">
                     <span>Stock: {variant.stock}</span>
@@ -217,7 +192,11 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
                 </div>
               ))
             )}
-            <form action={addVariantAction} className="space-y-2 rounded-lg border border-dashed border-border p-4">
+            <AdminActionForm
+              action={addVariantAction}
+              successMessage="Variant added."
+              className="space-y-2 rounded-lg border border-dashed border-border p-4"
+            >
               <input type="hidden" name="productId" value={product.id} />
               <div className="grid grid-cols-2 gap-2">
                 <Input name="name" placeholder="Variant name" required />
@@ -231,7 +210,7 @@ export default async function ProductDetailPage({ params, searchParams }: Produc
               <Button type="submit" size="sm">
                 Add variant
               </Button>
-            </form>
+            </AdminActionForm>
           </CardContent>
         </Card>
       </div>

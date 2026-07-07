@@ -6,6 +6,7 @@ import { BespokeRequestStatus } from "@prisma/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { updateBespokeStatusAction, type UpdateBespokeStatusFormState } from "@/server/admin/bespoke"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 const initialState: UpdateBespokeStatusFormState = { status: "idle" }
 
@@ -23,6 +24,7 @@ export function BespokeStatusForm({
   defaultAdminNotes,
 }: BespokeStatusFormProps) {
   const [state, formAction] = useActionState(updateBespokeStatusAction, initialState)
+  useAdminActionFeedback(state, { successMessage: "Bespoke request updated." })
 
   return (
     <form action={formAction} className="space-y-3">
@@ -52,12 +54,6 @@ export function BespokeStatusForm({
         defaultValue={defaultAdminNotes ?? ""}
         className="min-h-[80px]"
       />
-      {state.status === "error" ? (
-        <p className="text-sm font-medium text-rose-600">{state.message ?? "Unable to update"}</p>
-      ) : null}
-      {state.status === "success" ? (
-        <p className="text-sm font-medium text-emerald-600">{state.message ?? "Updated"}</p>
-      ) : null}
       <SubmitButton />
     </form>
   )

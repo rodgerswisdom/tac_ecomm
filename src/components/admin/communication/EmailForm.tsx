@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useEffect } from "react"
+import { useActionState } from "react"
 import { sendBulkEmailAction } from "@/server/admin/communication"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,20 +9,17 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Mail, Send } from "lucide-react"
-import { toast } from "sonner"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 export function EmailForm() {
     const [state, action, isPending] = useActionState(sendBulkEmailAction, { status: "idle" })
 
-    useEffect(() => {
-        if (state.status === "success") {
-            toast.success(state.message)
+    useAdminActionFeedback(state, {
+        onSuccess: () => {
             const form = document.getElementById("email-form") as HTMLFormElement
             form?.reset()
-        } else if (state.status === "error") {
-            toast.error(state.message)
-        }
-    }, [state])
+        },
+    })
 
     return (
         <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden">

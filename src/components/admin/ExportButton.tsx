@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Download, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface ExportButtonProps {
     action: () => Promise<string>
@@ -28,7 +28,7 @@ export function ExportButton({
             const csvContent = await action()
 
             if (!csvContent) {
-                toast.error("No data to export.")
+                adminToast.error("No data to export.")
                 return
             }
 
@@ -43,10 +43,10 @@ export function ExportButton({
             link.click()
             document.body.removeChild(link)
 
-            toast.success("Export successful!")
+            adminToast.success("Export successful!")
         } catch (error) {
             console.error("Export failed:", error)
-            toast.error("Failed to generate export. Please try again.")
+            adminToast.error("Failed to generate export. Please try again.")
         } finally {
             setIsExporting(false)
         }

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ZohoSyncLogWithDetails, ZohoSyncStatus, ZohoEntityType } from "@/server/admin/zoho"
 import { cn } from "@/lib/utils"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface ZohoLogsClientProps {
   initialData: {
@@ -70,12 +71,13 @@ export function ZohoLogsClient({ initialData }: ZohoLogsClientProps) {
         body: JSON.stringify({ logId }),
       })
       if (response.ok) {
+        adminToast.success("Sync queued for retry.")
         router.refresh()
       } else {
-        alert("Failed to retry sync")
+        adminToast.error("Failed to retry sync")
       }
     } catch (error) {
-      alert("Failed to retry sync")
+      adminToast.error("Failed to retry sync")
     } finally {
       setIsRetrying(null)
     }
@@ -92,12 +94,13 @@ export function ZohoLogsClient({ initialData }: ZohoLogsClientProps) {
         body: JSON.stringify({ logId }),
       })
       if (response.ok) {
+        adminToast.success("Log entry deleted.")
         router.refresh()
       } else {
-        alert("Failed to delete log")
+        adminToast.error("Failed to delete log")
       }
     } catch (error) {
-      alert("Failed to delete log")
+      adminToast.error("Failed to delete log")
     } finally {
       setIsDeleting(null)
     }
@@ -117,13 +120,13 @@ export function ZohoLogsClient({ initialData }: ZohoLogsClientProps) {
       })
       if (response.ok) {
         const result = await response.json()
-        alert(`Successfully queued ${result.count} syncs for retry`)
+        adminToast.success(`Queued ${result.count} syncs for retry.`)
         router.refresh()
       } else {
-        alert("Failed to retry syncs")
+        adminToast.error("Failed to retry syncs")
       }
     } catch (error) {
-      alert("Failed to retry syncs")
+      adminToast.error("Failed to retry syncs")
     }
   }
 

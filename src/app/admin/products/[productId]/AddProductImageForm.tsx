@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { ImageUploader } from "@/components/ImageUploader"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -17,7 +18,11 @@ export function AddProductImageForm({
   const [imageUrl, setImageUrl] = useState("")
 
   return (
-    <form action={addProductImageAction} className="space-y-2 rounded-lg border border-dashed border-border p-4">
+    <AdminActionForm
+      action={addProductImageAction}
+      successMessage="Image added."
+      className="space-y-2 rounded-lg border border-dashed border-border p-4"
+    >
       <input type="hidden" name="productId" value={productId} />
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground">Image</p>
@@ -35,6 +40,6 @@ export function AddProductImageForm({
       <Button type="submit" size="sm" disabled={!imageUrl}>
         Add image
       </Button>
-    </form>
+    </AdminActionForm>
   )
 }

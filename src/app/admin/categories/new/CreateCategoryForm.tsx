@@ -4,6 +4,7 @@ import { useActionState, type ReactNode } from "react"
 import { useFormStatus } from "react-dom"
 
 import { ImageUploader } from "@/components/ImageUploader"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -48,21 +49,11 @@ export function CreateCategoryForm({
   action: (prevState: ActionResult, formData: FormData) => Promise<ActionResult>
 }) {
   const [state, formAction] = useActionState(action, initialState)
+  useAdminActionFeedback(state, { successMessage: "Category created." })
 
   return (
     <form id="create-category-form" action={formAction} className="space-y-8">
       {pageHeader}
-
-      {state.error ? (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {state.error}
-        </div>
-      ) : null}
-      {state.success ? (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Category created.
-        </div>
-      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="border border-[#e2c49a]/80 bg-[#fffaf1] text-[#3f3324] shadow-[0_25px_60px_rgba(112,78,45,0.18)]">

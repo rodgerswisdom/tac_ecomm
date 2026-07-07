@@ -11,7 +11,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { toast } from "sonner"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface BulkAction {
     label: string
@@ -37,13 +37,13 @@ export function BulkActions({ selectedIds, onClear, resourceName, actions }: Bul
         try {
             const result = await action(selectedIds)
             if (result.success) {
-                toast.success(`Successfully updated ${selectedIds.length} ${resourceName}s`)
+                adminToast.success(`Successfully updated ${selectedIds.length} ${resourceName}s`)
                 onClear()
             } else {
-                toast.error(result.error || `Failed to update ${resourceName}s`)
+                adminToast.error(result.error || `Failed to update ${resourceName}s`)
             }
         } catch (error) {
-            toast.error("Something went wrong")
+            adminToast.error("Something went wrong")
         } finally {
             setIsPending(false)
         }

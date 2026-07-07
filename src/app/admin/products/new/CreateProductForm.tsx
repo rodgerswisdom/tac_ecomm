@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
 import { createProductInitialState, type CreateProductFormState } from "@/lib/admin/create-product-form-state"
 import { buildSkuBaseFromName } from "@/lib/sku"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { createProductAction, generateSkuAction } from "@/server/admin/product-actions"
 
 const PRODUCT_TYPES = [
@@ -72,6 +73,10 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   const [showDraftSavedToast, setShowDraftSavedToast] = useState(false)
   const [isGeneratingSku, setIsGeneratingSku] = useState(false)
   const [skuGenerateError, setSkuGenerateError] = useState<string | null>(null)
+
+  useAdminActionFeedback(state, {
+    errorMessage: "Could not create product. Please check the form and try again.",
+  })
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -317,12 +322,6 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
           aria-live="polite"
         >
           <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-        </div>
-      ) : null}
-
-      {state.status === "error" && state.message ? (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {state.message}
         </div>
       ) : null}
 

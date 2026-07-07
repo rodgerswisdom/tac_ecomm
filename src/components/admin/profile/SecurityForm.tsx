@@ -1,13 +1,13 @@
 'use client'
 
-import { useActionState, useEffect, useRef } from "react"
+import { useActionState, useRef } from "react"
 import { useFormStatus } from "react-dom"
 import { updatePasswordAction, type ProfileFormState } from "@/server/admin/profile"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { toast } from "sonner"
+import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 
 const initialState: ProfileFormState = { status: "idle" }
 
@@ -15,14 +15,10 @@ export function SecurityForm() {
     const [state, formAction] = useActionState(updatePasswordAction, initialState)
     const formRef = useRef<HTMLFormElement>(null)
 
-    useEffect(() => {
-        if (state.status === "success") {
-            toast.success(state.message || "Password updated!")
-            formRef.current?.reset()
-        } else if (state.status === "error" && state.message) {
-            toast.error(state.message)
-        }
-    }, [state])
+    useAdminActionFeedback(state, {
+        successMessage: "Password updated!",
+        onSuccess: () => formRef.current?.reset(),
+    })
 
     return (
         <Card className="border-red-100 shadow-sm border-2">

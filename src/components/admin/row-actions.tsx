@@ -6,6 +6,7 @@ import { Eye, PenSquare, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface DeleteConfig {
   action: (formData: FormData) => Promise<void>
@@ -55,9 +56,12 @@ export function RowActions({
           formData.append(key, value)
         })
         await deleteConfig.action(formData)
+        adminToast.success(`Deleted ${deleteConfig.resourceLabel ?? "item"}.`)
         setDialogOpen(false)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Unable to delete item")
+        const message = err instanceof Error ? err.message : "Unable to delete item"
+        setError(message)
+        adminToast.error(message)
       }
     })
   }
