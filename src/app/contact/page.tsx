@@ -82,7 +82,7 @@ export default function ContactPage() {
     {
       icon: <Clock className="h-6 w-6 text-purple-500" />,
       title: "Business Hours",
-      details: "Mon to Friday: 9am-5pm",
+      details: "Monday to Friday: 9am-5pm",
       description: "Closed on weekends"
     }
   ]
