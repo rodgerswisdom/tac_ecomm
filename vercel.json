@@ -15,7 +15,8 @@
   },
   "build": {
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT": "60000"
     }
   },
   "headers": [

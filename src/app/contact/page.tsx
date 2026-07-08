@@ -71,7 +71,7 @@ export default function ContactPage() {
       icon: <Phone className="h-6 w-6 text-blue-500" />,
       title: "Call Us",
       details: "+254 704 800866",
-      description: "Mon to Friday, 9am-5pm"
+      description: "Open Monday to Friday, 9am-5pm"
     },
     {
       icon: <MapPin className="h-6 w-6 text-gold" />,

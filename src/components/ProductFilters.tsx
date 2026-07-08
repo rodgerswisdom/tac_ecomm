@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export interface FilterState {
   category: string;
@@ -28,6 +29,27 @@ interface ProductFiltersProps {
   totalCount: number;
 }
 
+/** Price bounds in base currency (KSH). Labels are formatted in the shopper's selected currency. */
+export const PRICE_RANGE_BOUNDS: Array<[number, number]> = [
+  [0, 5000],
+  [5000, 10000],
+  [10000, 15000],
+  [15000, 20000],
+];
+
+export function formatPriceRangeLabel(
+  [min, max]: [number, number],
+  formatPrice: (amountBase: number) => string
+): string {
+  if (max === Infinity) {
+    return `Over ${formatPrice(min)}`;
+  }
+  if (min === 0) {
+    return `Under ${formatPrice(max)}`;
+  }
+  return `${formatPrice(min)} - ${formatPrice(max)}`;
+}
+
 export function ProductFilters({
   filters,
   onFiltersChange,
@@ -39,13 +61,12 @@ export function ProductFilters({
   totalCount,
 }: ProductFiltersProps) {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const { formatPrice } = useCurrency();
 
-  const priceRanges = [
-    { label: "Under KES 20,000", value: [0, 20000] as [number, number] },
-    { label: "KES 20,000 - 40,000", value: [20000, 40000] as [number, number] },
-    { label: "KES 40,000 - 60,000", value: [40000, 60000] as [number, number] },
-    { label: "Over KES 60,000", value: [60000, Infinity] as [number, number] },
-  ];
+  const priceRanges = PRICE_RANGE_BOUNDS.map((value) => ({
+    label: formatPriceRangeLabel(value, formatPrice),
+    value,
+  }));
 
   const categoryOptions = [
     { value: "all", label: "All Categories" },

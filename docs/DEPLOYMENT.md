@@ -34,6 +34,8 @@ Add these environment variables to your Vercel project:
 
 ```sh
 DATABASE_URL=postgresql://username:password@host:5432/database?schema=public
+# Neon: use the direct (non-pooler) host for migrations — copy from Neon dashboard → Connection details → "Direct connection"
+DIRECT_URL=postgresql://username:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require
 NEXTAUTH_SECRET=your-production-secret-key-here
 NEXTAUTH_URL=https://www.tacaccessories.co.ke
 GOOGLE_CLIENT_ID=your-google-client-id
@@ -152,8 +154,10 @@ npx prisma migrate deploy && npm run build
 ### Database Issues
 
 - Verify DATABASE_URL is correct
+- **Neon + Vercel:** set `DIRECT_URL` to the non-pooler connection string. `prisma migrate deploy` during build uses `DIRECT_URL`; the app runtime keeps using the pooled `DATABASE_URL`.
+- If migrate deploy fails with `P1002` / advisory lock timeout, confirm `DIRECT_URL` is set and no other deploy is running migrations at the same time
 - Check database permissions
-- Run migrations manually if needed
+- Run migrations manually if needed: `vercel env pull .env.local && npx prisma migrate deploy`
 
 ### Authentication Issues
 
