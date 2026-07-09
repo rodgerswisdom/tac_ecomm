@@ -6,7 +6,6 @@ import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { CategoryCard } from "@/components/CategoryCard";
 import { ProductCard } from "@/components/ProductCard";
-import { TestimonialsMarquee } from "@/components/TestimonialsMarquee";
 import { Button } from "@/components/ui/button";
 import type { CollectionSummary } from "@/types/collection";
 import { ProductCardData } from "@/types/product";
@@ -117,8 +116,6 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
           </div>
         </div>
       </section>
-
-      <TestimonialsMarquee />
     </main>
   );
 }

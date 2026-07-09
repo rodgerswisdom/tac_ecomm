@@ -272,10 +272,7 @@ function buildHighlights(itemCount: number, artisanCount: number, featuredRegion
 }
 
 function buildDefaultCtas(name: string): CollectionCta[] {
-  return [
-    { label: `Shop ${name}`, href: "#collection-products", variant: "primary" },
-    { label: "Book Styling Session", href: "/contact", variant: "secondary" },
-  ]
+  return [{ label: `Shop ${name}`, href: "#collection-products", variant: "primary" }]
 }
 
 function uniqueStrings(values: string[]) {

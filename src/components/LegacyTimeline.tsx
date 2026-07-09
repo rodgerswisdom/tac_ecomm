@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { patternAssets } from "@/lib/patterns";
 import { cn } from "@/lib/utils";
-import { TestimonialsMarquee } from "@/components/TestimonialsMarquee";
 
 export interface LegacyMilestone {
   id: number;
@@ -110,10 +109,6 @@ const LegacyTimelineComponent = ({ milestones }: LegacyTimelineProps) => {
               );
             })}
           </div>
-        </div>
-
-        <div className="mt-20">
-          <TestimonialsMarquee />
         </div>
 
         <div className="mt-20 rounded-3xl border border-brand-teal/25 bg-brand-jade/25 p-10 text-center shadow-[0_25px_60px_rgba(74,43,40,0.14)] backdrop-blur-md">

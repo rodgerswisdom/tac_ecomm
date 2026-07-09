@@ -31,10 +31,9 @@ interface ProductFiltersProps {
 
 /** Price bounds in base currency (KSH). Labels are formatted in the shopper's selected currency. */
 export const PRICE_RANGE_BOUNDS: Array<[number, number]> = [
-  [0, 5000],
-  [5000, 10000],
-  [10000, 15000],
-  [15000, 20000],
+  [0, 1000],
+  [1000, 2000],
+  [2000, 5000],
 ];
 
 export function formatPriceRangeLabel(
@@ -45,7 +44,7 @@ export function formatPriceRangeLabel(
     return `Over ${formatPrice(min)}`;
   }
   if (min === 0) {
-    return `Under ${formatPrice(max)}`;
+    return `Below ${formatPrice(max)}`;
   }
   return `${formatPrice(min)} - ${formatPrice(max)}`;
 }

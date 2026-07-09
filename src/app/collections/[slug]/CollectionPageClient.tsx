@@ -118,20 +118,21 @@ export const CollectionPageClient = ({
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
 
-      <section className="relative overflow-hidden">
+      <section className="relative flex max-h-[360px] min-h-[240px] items-center overflow-hidden sm:max-h-[400px] md:max-h-[420px]">
         <div className="absolute inset-0">
           <Image
             src={heroImage}
             alt={collection.name}
             fill
             priority
-            className="object-cover"
+            sizes="100vw"
+            className="object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/40 to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/45 to-black/25" />
         </div>
 
-        <div className="relative z-10">
-          <div className="gallery-container flex flex-col gap-8 py-24 sm:py-28 md:py-32">
+        <div className="relative z-10 w-full">
+          <div className="gallery-container flex flex-col gap-4 py-8 sm:gap-5 sm:py-10 md:py-12">
             <div className="flex flex-wrap items-center gap-3 text-sm text-brand-beige/80">
               <Breadcrumb
                 items={breadcrumbItems}
@@ -146,15 +147,15 @@ export const CollectionPageClient = ({
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-              className="max-w-3xl space-y-6 text-brand-beige"
+              className="max-w-2xl space-y-3 text-brand-beige sm:space-y-4"
             >
               <span className="caps-spacing text-xs text-brand-beige/70">
                 TAC Collection
               </span>
-              <h1 className="font-heading text-3xl leading-tight sm:text-5xl md:text-6xl">
+              <h1 className="font-heading text-2xl leading-tight sm:text-4xl md:text-5xl">
                 {heroTitle}
               </h1>
-              <p className="text-base text-brand-beige/80 sm:text-lg">
+              <p className="line-clamp-2 text-sm text-brand-beige/80 sm:line-clamp-3 sm:text-base">
                 {heroDescription}
               </p>
             </motion.div>
@@ -177,7 +178,7 @@ export const CollectionPageClient = ({
               ))}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3 sm:gap-6 text-brand-beige/80">
+            <div className="hidden gap-4 text-brand-beige/80 lg:grid lg:grid-cols-3 lg:gap-6">
               <div>
                 <p className="text-xs uppercase tracking-[0.3em] text-brand-beige/60">
                   Artisan Circle

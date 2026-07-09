@@ -7,7 +7,6 @@ import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Crown, Heart, Award, Users, Globe, Shield, ChevronDown, ChevronUp, Star, Gem, Sparkles, Zap } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 interface FAQ {
   id: number
@@ -183,21 +182,6 @@ export default function AboutPage() {
                 <span className="font-semibold text-lg">Cultural Preservation</span>
               </div>
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl aspect-[16/9]"
-            >
-              <Image
-                src="https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=1200&h=675&fit=crop&crop=center"
-                alt="African Artisan at Work"
-                fill
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -257,83 +241,6 @@ export default function AboutPage() {
                     <CardDescription className="text-lg luxury-text leading-relaxed">
                       {value.description}
                     </CardDescription>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Our Artisans */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold luxury-heading mb-6">
-              Meet Our <span className="afro-text-gradient">Artisans</span>
-            </h2>
-            <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              Behind every piece of Tac Accessories are skilled artisans who have dedicated
-              their lives to preserving traditional African craftsmanship.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                name: "Kwame Asante",
-                location: "Ghana",
-                specialty: "Gold Adinkra Symbols",
-                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
-                story: "Kwame has been crafting Adinkra jewellery for over 30 years, learning from his grandfather who was a master craftsman in the Ashanti tradition."
-              },
-              {
-                name: "Aisha Okafor",
-                location: "Nigeria",
-                specialty: "Bronze Warrior Pieces",
-                image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face",
-                story: "Aisha specializes in bronze casting techniques passed down through her family for generations, creating powerful warrior-inspired pieces."
-              },
-              {
-                name: "Hassan Berber",
-                location: "Morocco",
-                specialty: "Silver Geometric Patterns",
-                image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
-                story: "Hassan is a master of Berber silverwork, creating intricate geometric patterns that tell the stories of his people's nomadic heritage."
-              }
-            ].map((artisan, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.2 }}
-              >
-                <Card className="afro-card overflow-hidden">
-                  <div className="aspect-square relative overflow-hidden">
-                    <Image
-                      src={artisan.image}
-                      alt={artisan.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="text-xl luxury-heading">
-                      {artisan.name}
-                    </CardTitle>
-                    <CardDescription className="text-gold font-semibold">
-                      {artisan.location} • {artisan.specialty}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground luxury-text">
-                      {artisan.story}
-                    </p>
                   </CardContent>
                 </Card>
               </motion.div>

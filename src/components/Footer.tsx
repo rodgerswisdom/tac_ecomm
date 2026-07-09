@@ -68,10 +68,6 @@ export const Footer = () => {
             <h3 className="font-heading text-3xl leading-tight text-brand-gold">
               Where heritage breathes, and luxury lives.
             </h3>
-            <p className="max-w-sm text-sm text-white/70">
-              Inspired by sun-drenched ateliers across Nairobi, Accra, and Bamako,
-              we curate Africa&apos;s finest craftsmanship for contemporary collectors.
-            </p>
           </motion.div>
 
           {footerLinks.map((group) => (

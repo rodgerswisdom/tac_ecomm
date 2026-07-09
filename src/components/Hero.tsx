@@ -56,6 +56,9 @@ interface HeroProps {
   featuredProducts: ProductCardData[];
 }
 
+const DEFAULT_SLIDE_DURATION_MS = 5000;
+const FIRST_SLIDE_DURATION_MS = 10000;
+
 const HeroComponent = ({ featuredProducts }: HeroProps) => {
   const { formatPrice } = useCurrency();
   // Get featured products (first 3)
@@ -93,12 +96,14 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
   const activeSlide = allSlides[activeIndex];
 
   useEffect(() => {
-    const interval = setInterval(
+    const duration =
+      activeIndex === 0 ? FIRST_SLIDE_DURATION_MS : DEFAULT_SLIDE_DURATION_MS;
+    const timer = setTimeout(
       () => setActiveIndex((prev) => (prev + 1) % allSlides.length),
-      5000, // Faster transition for more dynamic feel
+      duration
     );
-    return () => clearInterval(interval);
-  }, [allSlides.length]);
+    return () => clearTimeout(timer);
+  }, [activeIndex, allSlides.length]);
 
   return (
     <section
@@ -167,12 +172,18 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                   className="font-heading mobile-page-title leading-tight text-brand-umber sm:text-4xl md:text-5xl lg:text-6xl"
                 >
                   {activeSlide.subtitle ? (
-                    <>
-                      {activeSlide.subtitle.split(",")[0]},&nbsp;
+                    activeSlide.subtitle.includes(",") ? (
+                      <>
+                        {activeSlide.subtitle.split(",")[0]},&nbsp;
+                        <span className="bg-gradient-to-r from-brand-gold to-brand-teal bg-clip-text text-transparent">
+                          {activeSlide.subtitle.split(",")[1]?.trim()}
+                        </span>
+                      </>
+                    ) : (
                       <span className="bg-gradient-to-r from-brand-gold to-brand-teal bg-clip-text text-transparent">
-                        {activeSlide.subtitle.split(",")[1]?.trim() || activeSlide.subtitle}
+                        {activeSlide.subtitle}
                       </span>
-                    </>
+                    )
                   ) : (
                     <>
                       Crafted by Heritage,&nbsp;
