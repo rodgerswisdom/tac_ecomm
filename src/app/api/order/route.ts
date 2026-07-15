@@ -5,6 +5,12 @@ import { auth } from '@/lib/auth'
 import { PaymentService, getPaymentConfig, normalizeKenyaPhone } from '@/lib/payments'
 import { assertProductionCallbackUrl, buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
 import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
+import {
+  calculateShippingKsh,
+  isDeliveryMethod,
+  isDeliveryMethodValidForCountry,
+  type DeliveryMethod,
+} from '@/lib/delivery'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
 
@@ -115,11 +121,21 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // Total is subtotal minus any coupon (no shipping or duty/tax). All order amounts are stored in KSH (product prices are KSH).
-  const shipping = 0
-  const tax = 0
+  // Merchandise subtotal (KSH) before coupon — used for Kenya free-shipping threshold.
+  const shippingMethodRaw = typeof shippingMethod === 'string' ? shippingMethod.trim() : ''
+  if (!isDeliveryMethod(shippingMethodRaw)) {
+    return NextResponse.json({ error: 'Invalid delivery method.' }, { status: 400 })
+  }
+  const deliveryMethod = shippingMethodRaw as DeliveryMethod
+  if (!isDeliveryMethodValidForCountry(deliveryMethod, countryTrim)) {
+    return NextResponse.json(
+      { error: 'Selected delivery method is not available for this destination.' },
+      { status: 400 }
+    )
+  }
 
   let couponDiscountKsh = 0
+  let couponGrantsFreeShipping = false
   let appliedCoupon: { id: string; code: string } | null = null
   const couponCodeRaw = typeof couponCode === 'string' ? couponCode.trim() : ''
   if (couponCodeRaw) {
@@ -151,12 +167,22 @@ export async function POST(req: NextRequest) {
       couponDiscountKsh = subtotal * (coupon.value / 100)
     } else if (coupon.type === CouponType.FIXED_AMOUNT) {
       couponDiscountKsh = Math.min(coupon.value, subtotal)
+    } else if (coupon.type === CouponType.FREE_SHIPPING) {
+      couponGrantsFreeShipping = true
     }
     couponDiscountKsh = Math.max(0, Math.min(couponDiscountKsh, subtotal))
     appliedCoupon = { id: coupon.id, code: coupon.code }
   }
 
-  const total = Math.max(0, subtotal - couponDiscountKsh)
+  const shippingQuote = calculateShippingKsh({
+    country: countryTrim,
+    deliveryMethod,
+    merchandiseSubtotalKsh: subtotal,
+    freeShippingFromCoupon: couponGrantsFreeShipping,
+  })
+  const shipping = shippingQuote.shippingKsh
+  const tax = 0
+  const total = Math.max(0, subtotal - couponDiscountKsh + shipping)
   const orderCurrency = 'KSH' as const
   const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
   // For Tuma M-Pesa we charge in KES (same as KSH base). For PayPal, convert KSH to USD.
@@ -166,7 +192,20 @@ export async function POST(req: NextRequest) {
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
 
   // Log order totals and payment amount so checkout display matches Tuma (amount in KES).
-  console.info('[order] subtotal (KSH):', subtotal, 'couponDiscount (KSH):', couponDiscountKsh, 'total (KSH):', total, '→ payment:', paymentAmount, paymentCurrency, appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)')
+  console.info(
+    '[order] subtotal (KSH):',
+    subtotal,
+    'couponDiscount (KSH):',
+    couponDiscountKsh,
+    'shipping (KSH):',
+    shipping,
+    'total (KSH):',
+    total,
+    '→ payment:',
+    paymentAmount,
+    paymentCurrency,
+    appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)'
+  )
 
   // Optionally: validate coupon here (not implemented)
 
@@ -237,7 +276,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: normalizedPaymentMethod ?? undefined,
       paymentStatus: PaymentStatus.PENDING,
       status: OrderStatus.PENDING,
-      shippingMethod: shippingMethod ?? null,
+      shippingMethod: deliveryMethod,
       items: {
         create: validatedItems.map(({ productId, variantId, quantity, price }) => ({
           productId,

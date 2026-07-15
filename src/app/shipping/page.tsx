@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FreeShippingNote } from "@/components/FreeShippingNote";
 
 export default function ShippingPage() {
   return (
@@ -11,30 +12,42 @@ export default function ShippingPage() {
               Delivery information
             </h1>
             <p className="max-w-3xl text-sm text-brand-umber/75">
-              We deliver locally and internationally. Shipping timelines vary by
-              destination, product type, and payment confirmation status.
+              We deliver locally and internationally. Timelines depend on your
+              destination, delivery speed (standard or express), and payment
+              confirmation.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-3xl border border-brand-teal/20 bg-white/90 p-5">
-              <h2 className="font-heading text-2xl text-brand-umber">Kenya</h2>
+              <h2 className="font-heading text-2xl text-brand-umber">Kenya — Standard</h2>
               <p className="mt-2 text-sm text-brand-umber/75">
-                Typical delivery: 1-3 business days after payment confirmation.
+                1-3 business days after payment confirmation.
               </p>
             </article>
             <article className="rounded-3xl border border-brand-teal/20 bg-white/90 p-5">
-              <h2 className="font-heading text-2xl text-brand-umber">East Africa</h2>
+              <h2 className="font-heading text-2xl text-brand-umber">Kenya — Express</h2>
               <p className="mt-2 text-sm text-brand-umber/75">
-                Typical delivery: 3-7 business days depending on courier routes.
+                1-2 business days after payment confirmation.
               </p>
             </article>
             <article className="rounded-3xl border border-brand-teal/20 bg-white/90 p-5">
-              <h2 className="font-heading text-2xl text-brand-umber">International</h2>
+              <h2 className="font-heading text-2xl text-brand-umber">International — Standard</h2>
               <p className="mt-2 text-sm text-brand-umber/75">
-                Typical delivery: 5-12 business days plus customs processing time.
+                3-7 business days plus customs processing where applicable.
               </p>
             </article>
+            <article className="rounded-3xl border border-brand-teal/20 bg-white/90 p-5">
+              <h2 className="font-heading text-2xl text-brand-umber">International — Express</h2>
+              <p className="mt-2 text-sm text-brand-umber/75">
+                2-5 business days plus customs processing where applicable.
+              </p>
+            </article>
+          </div>
+
+          <div className="rounded-3xl border border-brand-gold/30 bg-brand-gold/5 p-6 text-sm text-brand-umber/75">
+            <p className="font-medium text-brand-umber">Free shipping</p>
+            <FreeShippingNote className="mt-2" />
           </div>
 
           <div className="rounded-3xl border border-brand-teal/20 bg-white/90 p-6 text-sm text-brand-umber/75">

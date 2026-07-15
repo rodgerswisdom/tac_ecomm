@@ -17,13 +17,13 @@ function createPrismaClient() {
   // connection and produce P2022 / ColumnNotFound errors.
   //
   // idleTimeoutMillis: 3 min — close idle connections before Neon's 5-min cutoff
-  // connectionTimeoutMillis: 15 s — give Neon time to wake from cold-start
-  // max: 2 — free-tier Neon has limited concurrent connections
+  // connectionTimeoutMillis: 30 s — allow for cold-start wake on free-tier Neon
+  // max: 5 — dev layout + page can run several reads per request
   const adapter = new PrismaPg({
     connectionString,
-    idleTimeoutMillis: 180_000,   // 3 min — close before Neon's 5-min suspend
-    connectionTimeoutMillis: 15_000, // 15 s — allow for cold-start wake
-    max: 2,
+    idleTimeoutMillis: 180_000,
+    connectionTimeoutMillis: 30_000,
+    max: 5,
   })
 
   return new PrismaClient({

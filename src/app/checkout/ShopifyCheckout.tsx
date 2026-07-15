@@ -145,6 +145,8 @@ export default function ShopifyCheckout() {
                 <OrderSummarySidebar
                   appliedCoupon={appliedCoupon}
                   onAppliedCouponChange={setAppliedCoupon}
+                  country={shipping?.country}
+                  deliveryMethod={delivery}
                   className="md:hidden"
                 />
               </div>
@@ -188,6 +190,12 @@ export default function ShopifyCheckout() {
                         />
                         {shipping && (
                           <DeliveryStep
+                            country={shipping.country}
+                            merchandiseSubtotal={cart.reduce(
+                              (sum, item) => sum + item.price * item.quantity,
+                              0
+                            )}
+                            freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
                             onNext={method => {
                               setDelivery(method);
                               handleNextStep();
@@ -229,6 +237,8 @@ export default function ShopifyCheckout() {
               <OrderSummarySidebar
                 appliedCoupon={appliedCoupon}
                 onAppliedCouponChange={setAppliedCoupon}
+                country={shipping?.country}
+                deliveryMethod={delivery}
               />
             </div>
           </div>

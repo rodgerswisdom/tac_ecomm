@@ -24,6 +24,7 @@ export const productInputSchema = z
         artisanId: z.string().optional().nullable(),
         weight: z.coerce.number().nonnegative().optional().nullable(),
         dimensions: z.string().max(120).optional().nullable(),
+        subcategory: z.string().max(120).optional().nullable(),
     })
     .refine(
         (data) => data.comparePrice == null || data.comparePrice > data.price,
@@ -54,6 +55,7 @@ export type ProductListFilters = {
     page?: number
     pageSize?: number
     sort?: ProductSortOption
+    archived?: boolean
 }
 
 import {
@@ -108,7 +110,9 @@ export async function getProductList(filters: ProductListFilters = {}) {
         whereFilters.push({ categoryId: filters.categoryId })
     }
 
-    const where = whereFilters.length ? { AND: whereFilters } : undefined
+    whereFilters.push({ isArchived: filters.archived === true })
+
+    const where = { AND: whereFilters }
 
     const [items, total] = await Promise.all([
         prisma.product.findMany({

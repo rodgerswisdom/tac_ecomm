@@ -7,15 +7,15 @@ import { Hero } from "@/components/Hero";
 import { CategoryCard } from "@/components/CategoryCard";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import type { CollectionSummary } from "@/types/collection";
+import type { HomePageCategoryCard } from "@/server/storefront/collections";
 import { ProductCardData } from "@/types/product";
 
 interface HomePageClientProps {
   featuredProducts: ProductCardData[];
-  collections: CollectionSummary[];
+  mainCategories: HomePageCategoryCard[];
 }
 
-export function HomePageClient({ featuredProducts, collections }: HomePageClientProps) {
+export function HomePageClient({ featuredProducts, mainCategories }: HomePageClientProps) {
   const featuredShowcase = featuredProducts.slice(0, 4);
 
   return (
@@ -41,7 +41,7 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
           </motion.div>
 
           <motion.div
-            className="mt-14 grid grid-cols-2 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 place-items-center sm:mt-14"
+            className="mt-14 grid grid-cols-2 place-items-center gap-4 sm:mt-14 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-120px" }}
@@ -54,14 +54,14 @@ export function HomePageClient({ featuredProducts, collections }: HomePageClient
               },
             }}
           >
-            {collections.map((collection) => (
+            {mainCategories.map((category) => (
               <motion.div
-                key={collection.id}
+                key={category.slug}
                 variants={{ hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } }}
                 transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
                 className="w-full"
               >
-                <CategoryCard category={collection} />
+                <CategoryCard category={category} />
               </motion.div>
             ))}
           </motion.div>

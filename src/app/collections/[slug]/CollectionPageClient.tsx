@@ -4,13 +4,12 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Filter } from "lucide-react";
 
 import { Navbar } from "@/components/Navbar";
 import { Breadcrumb } from "@/components/Breadcrumb";
 import { ProductCard } from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { SortDropdown } from "@/components/ui/custom-dropdown";
+import { SubcategoryDropdown } from "@/components/ui/custom-dropdown";
 import { CategoryCard } from "@/components/CategoryCard";
 import type { CollectionSummary } from "@/types/collection";
 import { ProductCardData } from "@/types/product";
@@ -22,21 +21,16 @@ interface CollectionPageClientProps {
   relatedCollections?: CollectionSummary[];
 }
 
-type SortOption = "featured" | "price-low" | "price-high" | "newest" | "rating";
-
 export const CollectionPageClient = ({
   collection,
   products,
   relatedCollections = [],
 }: CollectionPageClientProps) => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<SortOption>("featured");
 
   const heroTitle = collection.heroTitle ?? collection.name;
   const heroDescription = collection.heroDescription ?? collection.description;
   const heroImage = collection.heroImage ?? collection.image;
-  const longDescription = collection.longDescription ?? collection.description;
-  const availableHighlights = collection.highlights ?? [];
 
   const baseProducts = useMemo(() => {
     if (!collection.featuredProductIds?.length) {
@@ -61,48 +55,41 @@ export const CollectionPageClient = ({
   }, [collection.featuredProductIds, products]);
 
   const subcategoryOptions = useMemo(() => {
+    const childNames = collection.childCategories?.map((child) => child.name) ?? []
     const productSubcategories = Array.from(
       new Set(
         baseProducts
           .map((product) => product.subcategory)
           .filter(Boolean) as string[]
       )
-    );
+    )
 
-    if (!productSubcategories.length) {
-      return ["all"];
+    const options = Array.from(new Set([...childNames, ...productSubcategories]))
+    if (!options.length) {
+      return ["all"]
     }
 
-    return ["all", ...productSubcategories];
-  }, [baseProducts]);
+    return ["all", ...options]
+  }, [baseProducts, collection.childCategories])
 
-  const filteredAndSortedProducts = useMemo(() => {
-    let products = baseProducts;
+  const filteredProducts = useMemo(() => {
+    let nextProducts = baseProducts;
 
     if (selectedSubcategory !== "all") {
-      products = products.filter(
-        (product) => product.subcategory === selectedSubcategory
-      );
+      const childMatch = collection.childCategories?.find(
+        (child) => child.name === selectedSubcategory
+      )
+      nextProducts = nextProducts.filter((product) => {
+        if (childMatch) {
+          return product.category === childMatch.slug || product.subcategory === selectedSubcategory
+        }
+        return product.subcategory === selectedSubcategory
+      })
     }
 
-    const getCreatedAtValue = (product: ProductCardData) =>
-      product.createdAt ? new Date(product.createdAt).getTime() : 0;
+    return nextProducts;
+  }, [baseProducts, collection.childCategories, selectedSubcategory]);
 
-    switch (sortBy) {
-      case "price-low":
-        return [...products].sort((a, b) => a.price - b.price);
-      case "price-high":
-        return [...products].sort((a, b) => b.price - a.price);
-      case "newest":
-        return [...products].sort((a, b) => getCreatedAtValue(b) - getCreatedAtValue(a));
-      case "rating":
-        return products;
-      default:
-        return products;
-    }
-  }, [baseProducts, selectedSubcategory, sortBy]);
-
-  const spotlight = collection.spotlight;
   const ctas = collection.ctas ?? [
     { label: `Shop ${collection.name}`, href: "#collection-products" },
   ];
@@ -138,9 +125,6 @@ export const CollectionPageClient = ({
                 items={breadcrumbItems}
                 className="text-brand-beige/70 [&_a]:text-brand-beige/90 [&_a:hover]:text-brand-beige [&_span]:text-brand-beige/70 [&_svg]:text-brand-beige/50"
               />
-              <span className="text-xs uppercase tracking-[0.3em] text-brand-beige/50">
-                {collection.featuredRegions.join(" • ")}
-              </span>
             </div>
 
             <motion.div
@@ -177,138 +161,36 @@ export const CollectionPageClient = ({
                 </Button>
               ))}
             </div>
-
-            <div className="hidden gap-4 text-brand-beige/80 lg:grid lg:grid-cols-3 lg:gap-6">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-brand-beige/60">
-                  Artisan Circle
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-brand-beige">
-                  {collection.artisanCount.toString().padStart(2, "0")} Makers
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-brand-beige/60">
-                  Pieces Curated
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-brand-beige">
-                  {collection.itemCount.toString().padStart(2, "0")} Designs
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-brand-beige/60">
-                  Regions Featured
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-brand-beige">
-                  {collection.featuredRegions.length} Territories
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       <section className="section-spacing bg-white" id="collection-products">
-        <div className="gallery-container space-y-12">
-          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="space-y-6">
-              <h2 className="font-heading text-3xl text-brand-umber">
-                {collection.name}
-              </h2>
-              <p className="max-w-2xl text-base text-brand-umber/70">
-                {longDescription}
+        <div className="gallery-container space-y-8">
+          {subcategoryOptions.length > 1 && (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-brand-umber/70">
+                {filteredProducts.length}{" "}
+                {filteredProducts.length === 1 ? "piece" : "pieces"}
               </p>
-
-              {availableHighlights.length > 0 && (
-                <div className="grid gap-4 rounded-3xl border border-brand-umber/15 bg-brand-beige/60 p-6 sm:grid-cols-3">
-                  {availableHighlights.map((highlight) => (
-                    <div key={highlight.title} className="space-y-2">
-                      <p className="text-xs uppercase tracking-[0.3em] text-brand-umber/50">
-                        {highlight.title}
-                      </p>
-                      <p className="text-sm text-brand-umber/70">
-                        {highlight.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {spotlight && (
-              <div className="relative overflow-hidden rounded-3xl border border-brand-umber/15 bg-brand-umber text-brand-beige shadow-[0_20px_48px_rgba(74,43,40,0.2)]">
-                <div className="absolute inset-0">
-                  <Image
-                    src={spotlight.image}
-                    alt={spotlight.name}
-                    fill
-                    className="object-cover opacity-40"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-br from-brand-umber via-brand-umber/90 to-brand-umber/70" />
-                </div>
-                <div className="relative z-10 space-y-6 p-8">
-                  <span className="caps-spacing text-xs text-brand-beige/60">
-                    Artisan Spotlight
-                  </span>
-                  <p className="text-lg italic leading-relaxed text-brand-beige/90">
-                    “{spotlight.quote}”
-                  </p>
-                  <div>
-                    <p className="text-sm font-semibold text-brand-beige">
-                      {spotlight.name}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.25em] text-brand-beige/60">
-                      {spotlight.role}
-                    </p>
-                  </div>
-                </div>
+              <div className="w-full sm:max-w-xs">
+                <SubcategoryDropdown
+                  value={selectedSubcategory}
+                  onChange={setSelectedSubcategory}
+                  options={subcategoryOptions}
+                />
               </div>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-3 rounded-3xl border border-brand-umber/10 bg-brand-beige/50 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-3 overflow-x-auto pb-1 text-sm text-brand-umber/70">
-              <span className="flex items-center gap-2 uppercase tracking-[0.3em]">
-                <Filter className="h-4 w-4" />
-                Filters
-              </span>
-              {subcategoryOptions.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSelectedSubcategory(option)}
-                  className={cn(
-                    "shrink-0 rounded-full px-3 py-1 text-xs uppercase tracking-[0.25em] transition-colors",
-                    selectedSubcategory === option
-                      ? "bg-brand-umber text-brand-beige"
-                      : "bg-white text-brand-umber/70 hover:bg-brand-umber/10"
-                  )}
-                >
-                  {option === "all"
-                    ? "All designs"
-                    : option.replace(/-/g, " ")}
-                </button>
-              ))}
             </div>
+          )}
 
-            <div className="flex items-center justify-between gap-3 md:justify-start">
-              <span className="text-xs uppercase tracking-[0.3em] text-brand-umber/50">
-                Sort
-              </span>
-              <SortDropdown
-                value={sortBy}
-                onChange={(value) => setSortBy(value as SortOption)}
-              />
-            </div>
-          </div>
-
-          {filteredAndSortedProducts.length > 0 ? (
+          {filteredProducts.length > 0 ? (
             <motion.div
               initial={{ opacity: 0, y: 24 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
               className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
             >
-              {filteredAndSortedProducts.map((product) => (
+              {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </motion.div>
@@ -318,7 +200,7 @@ export const CollectionPageClient = ({
                 No pieces match your filters yet
               </h3>
               <p className="mt-3 text-sm text-brand-umber/70">
-                Adjust your subcategory or sorting options to reveal more artisan work.
+                Try another subcategory to reveal more artisan work.
               </p>
             </div>
           )}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
 import { ProductCardData } from "@/types/product";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { formatFreeShippingThreshold } from "@/lib/delivery";
 import { Sparkles, ArrowRight, ShoppingBag } from "lucide-react";
 
 const floatingParticles = [
@@ -287,8 +288,7 @@ const HeroComponent = ({ featuredProducts }: HeroProps) => {
                 />
               </div>
               <p>
-                Complimentary global delivery &mdash; curated with care from the
-                atelier to your sanctuary.
+                Free shipping on Kenya orders over {formatFreeShippingThreshold(formatPrice)} &mdash; delivered with care from our atelier to you.
               </p>
             </motion.div>
           </div>

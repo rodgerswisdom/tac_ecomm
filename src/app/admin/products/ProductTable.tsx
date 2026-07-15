@@ -1,16 +1,25 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
+import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import { Trash2, Archive } from "lucide-react"
-import { bulkArchiveProducts, bulkDeleteProducts } from "@/server/admin/product-actions"
+import { Archive, ArchiveRestore, Trash2 } from "lucide-react"
+import {
+  bulkArchiveProducts,
+  bulkDeleteProducts,
+  bulkUnarchiveProducts,
+  archiveProductAction,
+  unarchiveProductAction,
+} from "@/server/admin/product-actions"
 import { RowActions } from "@/components/admin/row-actions"
 import { deleteProductAction } from "@/server/admin/product-actions"
 import { BulkActions } from "./BulkActions"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
+import { Button } from "@/components/ui/button"
+import { adminToast } from "@/lib/admin/feedback"
 
 interface Product {
     id: string
@@ -20,6 +29,7 @@ interface Product {
     stock: number
     isActive: boolean
     isDraft: boolean
+    isArchived: boolean
     currency: string | null
     category: { name: string | null } | null
     images: { url: string; alt?: string | null; order?: number | null }[]
@@ -34,10 +44,32 @@ interface Product {
 
 interface ProductTableProps {
     products: Product[]
+    view?: "active" | "archived"
 }
 
-export function ProductTable({ products }: ProductTableProps) {
+export function ProductTable({ products, view = "active" }: ProductTableProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([])
+    const [isArchiving, startArchive] = useTransition()
+    const router = useRouter()
+
+    const handleRowArchiveToggle = (productId: string) => {
+        startArchive(async () => {
+            try {
+                const formData = new FormData()
+                formData.append("productId", productId)
+                if (view === "archived") {
+                    await unarchiveProductAction(formData)
+                    adminToast.success("Product restored.")
+                } else {
+                    await archiveProductAction(formData)
+                    adminToast.success("Product archived.")
+                }
+                router.refresh()
+            } catch (error) {
+                adminToast.error(error instanceof Error ? error.message : "Action failed")
+            }
+        })
+    }
 
     const toggleAll = () => {
         if (selectedIds.length === products.length) {
@@ -64,6 +96,13 @@ export function ProductTable({ products }: ProductTableProps) {
     }
 
     const getStatus = (p: Product) => {
+        if (p.isArchived) {
+            return {
+                label: "Archived",
+                dot: "bg-slate-500",
+                text: "text-slate-600",
+            }
+        }
         if (p.isDraft) {
             return {
                 label: "Draft",
@@ -79,19 +118,34 @@ export function ProductTable({ products }: ProductTableProps) {
         }
     }
 
-    const bulkActions = [
-        {
-            label: "Archive",
-            icon: <Archive className="h-4 w-4" />,
-            action: bulkArchiveProducts,
-        },
-        {
-            label: "Delete",
-            icon: <Trash2 className="h-4 w-4" />,
-            action: bulkDeleteProducts,
-            variant: "destructive" as const,
-        },
-    ]
+    const bulkActions =
+        view === "archived"
+            ? [
+                  {
+                      label: "Restore",
+                      icon: <ArchiveRestore className="h-4 w-4" />,
+                      action: bulkUnarchiveProducts,
+                  },
+                  {
+                      label: "Delete",
+                      icon: <Trash2 className="h-4 w-4" />,
+                      action: bulkDeleteProducts,
+                      variant: "destructive" as const,
+                  },
+              ]
+            : [
+                  {
+                      label: "Archive",
+                      icon: <Archive className="h-4 w-4" />,
+                      action: bulkArchiveProducts,
+                  },
+                  {
+                      label: "Delete",
+                      icon: <Trash2 className="h-4 w-4" />,
+                      action: bulkDeleteProducts,
+                      variant: "destructive" as const,
+                  },
+              ]
 
     return (
         <div className="space-y-4">
@@ -127,7 +181,9 @@ export function ProductTable({ products }: ProductTableProps) {
                         {products.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                                    No products found.
+                                    {view === "archived"
+                                        ? "No archived products found."
+                                        : "No products found."}
                                 </td>
                             </tr>
                         ) : (
@@ -197,13 +253,29 @@ export function ProductTable({ products }: ProductTableProps) {
 
                                         <td className="px-4 py-4">
                                             <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", status.text)}>
-                                                <span className={cn("h-1.5 w-1.5 rounded-full", status.dot)} />
+                                                <span className={cn("h-2 w-2 rounded-full", status.dot)} />
                                                 {status.label}
                                             </span>
                                         </td>
 
                                         <td className="px-4 py-4 text-right">
-                                            <RowActions
+                                            <div className="flex items-center justify-end gap-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-8 w-8 text-slate-500 hover:text-slate-700"
+                                                    disabled={isArchiving}
+                                                    onClick={() => handleRowArchiveToggle(product.id)}
+                                                    aria-label={view === "archived" ? "Restore product" : "Archive product"}
+                                                >
+                                                    {view === "archived" ? (
+                                                        <ArchiveRestore className="h-4 w-4" />
+                                                    ) : (
+                                                        <Archive className="h-4 w-4" />
+                                                    )}
+                                                </Button>
+                                                <RowActions
                                                 viewHref={`/admin/products/${product.id}`}
                                                 editHref={`/admin/products/${product.id}`}
                                                 modalTitle="Product Summary"
@@ -245,14 +317,14 @@ export function ProductTable({ products }: ProductTableProps) {
                                                         {product.shortDescription && (
                                                             <div className="rounded-2xl bg-slate-50 p-4 border border-slate-100">
                                                                 <p className="text-[10px] font-black tracking-widest text-slate-400 mb-2">Short Preview</p>
-                                                                <p className="text-sm text-slate-600 italic">"{product.shortDescription}"</p>
+                                                                <p className="text-sm text-slate-600 italic">&ldquo;{product.shortDescription}&rdquo;</p>
                                                             </div>
                                                         )}
 
                                                         <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
                                                             <div>
                                                                 <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Product Type</p>
-                                                                <p className="text-xs font-black text-brand-umber tracking-wider">{product.productType.replace(/_/g, ' ')}</p>
+                                                                <p className="text-xs font-black text-brand-umber tracking-wider">{product.productType.replace(/_/g, " ")}</p>
                                                             </div>
                                                             <div>
                                                                 <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Commercial Impact</p>
@@ -262,26 +334,26 @@ export function ProductTable({ products }: ProductTableProps) {
                                                                 <div className="col-span-2 mt-2 pt-2 border-t border-slate-50">
                                                                     <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Shipping Logistics</p>
                                                                     <p className="text-xs text-slate-500">
-                                                                        {product.weight ? `${product.weight} kg` : ''} 
-                                                                        {product.weight && product.dimensions ? ' • ' : ''}
-                                                                        {product.dimensions ?? ''}
+                                                                        {product.weight ? `${product.weight} kg` : ""}
+                                                                        {product.weight && product.dimensions ? " • " : ""}
+                                                                        {product.dimensions ?? ""}
                                                                     </p>
                                                                 </div>
                                                             )}
                                                         </div>
 
                                                         <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                                                             <div className="flex flex-col gap-1">
+                                                            <div className="flex flex-col gap-1">
                                                                 <p className="text-[10px] font-black tracking-widest text-slate-400">Inventory Status</p>
                                                                 <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap font-black text-xs uppercase tracking-wider", status.text)}>
                                                                     <span className={cn("h-2 w-2 rounded-full", status.dot)} />
                                                                     {status.label} ({product.stock} units)
                                                                 </span>
-                                                             </div>
-                                                             <div className="text-right flex flex-col items-end gap-1">
+                                                            </div>
+                                                            <div className="text-right flex flex-col items-end gap-1">
                                                                 <p className="text-[10px] font-black tracking-widest text-slate-400">Classification</p>
                                                                 <span className="text-sm font-bold text-slate-900">{product.category?.name ?? "Uncategorized"}</span>
-                                                             </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 }
@@ -293,6 +365,7 @@ export function ProductTable({ products }: ProductTableProps) {
                                                     confirmDescription: `This will permanently remove ${product.name}.`,
                                                 }}
                                             />
+                                            </div>
                                         </td>
                                     </tr>
                                 )

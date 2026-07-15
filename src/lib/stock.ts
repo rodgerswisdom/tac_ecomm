@@ -16,6 +16,7 @@
 
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
+import { syncProductArchiveForStock } from '@/lib/admin/product-archive'
 
 export interface StockLineItem {
   productId: string
@@ -92,6 +93,8 @@ export async function decrementStock(items: StockLineItem[], tx?: StockClient): 
         if (result.count === 0) {
           throw new InsufficientStockError(`Insufficient product stock for ${item.productId}`)
         }
+
+        await syncProductArchiveForStock(item.productId, client)
       }
     }
   }

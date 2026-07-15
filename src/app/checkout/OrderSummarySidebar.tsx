@@ -1,22 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { calculateShippingKsh, type DeliveryMethod } from "@/lib/delivery";
 
 export type AppliedCoupon = { code: string; discount: number; type: string };
 
 interface OrderSummarySidebarProps {
   appliedCoupon?: AppliedCoupon | null;
   onAppliedCouponChange?: (coupon: AppliedCoupon | null) => void;
+  country?: string;
+  deliveryMethod?: DeliveryMethod | null;
   className?: string;
 }
 
 export function OrderSummarySidebar({
   appliedCoupon = null,
   onAppliedCouponChange,
+  country,
+  deliveryMethod = null,
   className = "",
 }: OrderSummarySidebarProps) {
   const { cart, getCartTotal, getCartItemCount } = useCart();
@@ -24,7 +29,20 @@ export function OrderSummarySidebar({
 
   const subtotal = getCartTotal();
   const discount = appliedCoupon?.discount ?? 0;
-  const total = Math.max(0, subtotal - discount);
+  const freeShippingFromCoupon = appliedCoupon?.type === "FREE_SHIPPING";
+  const shippingQuote = useMemo(() => {
+    if (!country || !deliveryMethod) {
+      return { shippingKsh: 0 };
+    }
+    return calculateShippingKsh({
+      country,
+      deliveryMethod,
+      merchandiseSubtotalKsh: subtotal,
+      freeShippingFromCoupon,
+    });
+  }, [country, deliveryMethod, subtotal, freeShippingFromCoupon]);
+  const shippingCost = shippingQuote.shippingKsh;
+  const total = Math.max(0, subtotal - discount + shippingCost);
 
   const [codeInput, setCodeInput] = useState("");
   const [applyError, setApplyError] = useState("");
@@ -140,6 +158,18 @@ export function OrderSummarySidebar({
           <div className="flex justify-between text-brand-teal">
             <span>Discount</span>
             <span>-{formatPrice(discount)}</span>
+          </div>
+        )}
+        {deliveryMethod && (
+          <div className="flex justify-between text-brand-umber/80">
+            <span>Shipping</span>
+            <span>
+              {shippingCost === 0 ? (
+                <span className="text-brand-teal">Free</span>
+              ) : (
+                formatPrice(shippingCost)
+              )}
+            </span>
           </div>
         )}
         <div className="flex justify-between font-semibold text-brand-umber pt-2">

@@ -65,9 +65,6 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 <h1 className="font-heading text-3xl sm:text-4xl text-brand-umber md:text-5xl lg:text-6xl">
                   Cart — curated with intention
                 </h1>
-                <p className="max-w-2xl text-sm text-brand-umber/70">
-                  Each selection is reserved for 24 hours. Complete the experience to invite these pieces into your private collection.
-                </p>
               </div>
               <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
                 <Button variant="outline" asChild className="w-full sm:w-auto">
@@ -114,7 +111,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                     Order Summary
                   </h2>
                   <p className="text-sm text-brand-umber/65">
-                    {cart.length} piece{cart.length === 1 ? "" : "s"} reserved for you
+                    {cart.length} piece{cart.length === 1 ? "" : "s"} in your cart
                   </p>
                 </div>
                 <div className="space-y-6">

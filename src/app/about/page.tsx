@@ -7,6 +7,8 @@ import { Navbar } from '@/components/Navbar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Crown, Heart, Award, Users, Globe, Shield, ChevronDown, ChevronUp, Star, Gem, Sparkles, Zap } from 'lucide-react'
 import Link from 'next/link'
+import { useCurrency } from '@/contexts/CurrencyContext'
+import { formatFreeShippingThreshold } from '@/lib/delivery'
 
 interface FAQ {
   id: number
@@ -18,6 +20,8 @@ interface FAQ {
 export default function AboutPage() {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const { formatPrice } = useCurrency()
+  const freeShippingThreshold = formatFreeShippingThreshold(formatPrice)
 
   const faqs: FAQ[] = [
     {
@@ -35,13 +39,13 @@ export default function AboutPage() {
     {
       id: 3,
       question: "What materials do you use?",
-      answer: "We use only the finest materials including 24k gold, sterling silver, precious stones like emeralds and diamonds, traditional African beads, and ethically sourced ivory alternatives. All materials are carefully selected for their quality and cultural significance.",
+      answer: "We use locally sourced materials including cow bones, wood, brass, aluminium, and clay. All materials are carefully selected for their quality and cultural significance.",
       category: "materials"
     },
     {
       id: 4,
       question: "How long does shipping take?",
-      answer: "We offer worldwide shipping with standard delivery taking 5-7 business days and express delivery taking 2-3 business days. All orders are fully insured and tracked. We also offer free shipping on orders over $200.",
+      answer: `We offer worldwide shipping. Kenya standard delivery takes 1-3 business days; Kenya express is faster (1-2 business days). International standard delivery takes 3-7 business days; international express is faster (2-5 business days). All orders are fully insured and tracked. Free shipping applies to orders within Kenya worth ${freeShippingThreshold} or more.`,
       category: "shipping"
     },
     {
@@ -77,7 +81,7 @@ export default function AboutPage() {
     {
       id: 10,
       question: "Can I visit your workshops?",
-      answer: "We offer cultural tours to our partner workshops in Ghana, Nigeria, and other African countries. These tours allow you to meet the artisans, learn about traditional techniques, and see the creation process firsthand. Contact us for more information about upcoming tours.",
+      answer: "We are currently an online-only business. In-person workshop visits are not available at this time. Contact us for virtual consultations or custom order discussions.",
       category: "tours"
     }
   ]

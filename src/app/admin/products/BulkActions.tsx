@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { ChevronDown, Trash2, Archive, Copy, MoreHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -29,6 +30,7 @@ interface BulkActionsProps {
 
 export function BulkActions({ selectedIds, onClear, resourceName, actions }: BulkActionsProps) {
     const [isPending, setIsPending] = useState(false)
+    const router = useRouter()
 
     if (selectedIds.length === 0) return null
 
@@ -39,6 +41,7 @@ export function BulkActions({ selectedIds, onClear, resourceName, actions }: Bul
             if (result.success) {
                 adminToast.success(`Successfully updated ${selectedIds.length} ${resourceName}s`)
                 onClear()
+                router.refresh()
             } else {
                 adminToast.error(result.error || `Failed to update ${resourceName}s`)
             }

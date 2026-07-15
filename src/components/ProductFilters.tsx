@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Filter, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { convertToBase, type CurrencyCode } from "@/lib/currency";
 
 export interface FilterState {
   category: string;
   priceRange: [number, number] | null;
   materials: string[];
   origin: string[];
-  sortBy: string;
 }
 
 export interface CategoryOption {
@@ -29,12 +29,27 @@ interface ProductFiltersProps {
   totalCount: number;
 }
 
-/** Price bounds in base currency (KSH). Labels are formatted in the shopper's selected currency. */
-export const PRICE_RANGE_BOUNDS: Array<[number, number]> = [
-  [0, 1000],
-  [1000, 2000],
-  [2000, 5000],
-];
+/** Price tier ceilings shown in the shopper's selected currency. */
+export const PRICE_RANGE_MAXES = [500, 1000, 2000, 5000] as const;
+
+export function getPriceRangeLabel(
+  range: [number, number] | null,
+  currency: CurrencyCode,
+  formatPrice: (amountBase: number) => string
+): string {
+  if (!range) return "";
+
+  const [, maxBase] = range;
+  const tier = PRICE_RANGE_MAXES.find(
+    (max) => Math.abs(convertToBase(max, currency) - maxBase) < 1
+  );
+
+  if (tier) {
+    return `Below ${tier.toLocaleString()}`;
+  }
+
+  return formatPriceRangeLabel(range, formatPrice);
+}
 
 export function formatPriceRangeLabel(
   [min, max]: [number, number],
@@ -60,11 +75,11 @@ export function ProductFilters({
   totalCount,
 }: ProductFiltersProps) {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
 
-  const priceRanges = PRICE_RANGE_BOUNDS.map((value) => ({
-    label: formatPriceRangeLabel(value, formatPrice),
-    value,
+  const priceRanges = PRICE_RANGE_MAXES.map((max) => ({
+    label: `Below ${max.toLocaleString()}`,
+    value: [0, convertToBase(max, currency)] as [number, number],
   }));
 
   const categoryOptions = [
@@ -101,7 +116,6 @@ export function ProductFilters({
       priceRange: null,
       materials: [],
       origin: [],
-      sortBy: "featured",
     });
   };
 

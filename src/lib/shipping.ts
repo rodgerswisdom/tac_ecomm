@@ -441,12 +441,17 @@ export function calculateShippingCost(weight: number, distance: string = 'domest
 
 export function getEstimatedDeliveryDays(service: string): number {
   const estimates: Record<string, number> = {
-    'standard': 5,
-    'express': 2,
-    'overnight': 1,
-    'international': 10
+    kenya_standard: 2,
+    kenya_express: 1,
+    international_standard: 5,
+    international_express: 3,
+    standard: 2,
+    express: 1,
+    overnight: 1,
+    international: 5,
+    pickup: 0,
   }
-  return estimates[service] || 7
+  return estimates[service] ?? 5
 }
 
 // React hook for shipping

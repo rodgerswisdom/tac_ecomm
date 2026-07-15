@@ -91,25 +91,23 @@ export default async function RootLayout({
   let shopCategories: Awaited<ReturnType<typeof getNavShopCategories>> = [];
 
   try {
-    // Fetch global settings for currency rates.
-    const dbSettings = await (prisma as any).settings.upsert({
-      where: { id: "singleton" },
-      update: {},
-      create: { id: "singleton" },
-    });
+    const [dbSettings, navCategories] = await Promise.all([
+      (prisma as any).settings.upsert({
+        where: { id: "singleton" },
+        update: {},
+        create: { id: "singleton" },
+      }),
+      getNavShopCategories(),
+    ])
+
     settings = {
       usdToKesRate: dbSettings.usdToKesRate,
       usdToEurRate: dbSettings.usdToEurRate,
       maintenanceMode: Boolean((dbSettings as any).maintenanceMode),
-    };
+    }
+    shopCategories = navCategories
   } catch (error) {
-    console.error("Failed to load settings in layout, using defaults:", error);
-  }
-
-  try {
-    shopCategories = await getNavShopCategories();
-  } catch (error) {
-    console.error("Failed to load nav categories, using empty list:", error);
+    console.error("Failed to load layout data, using defaults:", error)
   }
 
   // Initialize server-side rates.

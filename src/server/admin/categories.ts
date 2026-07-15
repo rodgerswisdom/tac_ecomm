@@ -65,7 +65,21 @@ export async function getCategories() {
 
 
 export async function getCategoryOptions() {
-    return prisma.category.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
+    const categories = await prisma.category.findMany({
+        orderBy: { name: "asc" },
+        include: { parent: { select: { name: true, slug: true } } },
+    })
+
+    return categories
+        .filter((category) => category.parentId !== null)
+        .map((category) => ({
+            id: category.id,
+            name: category.parent
+                ? `${category.parent.name} / ${category.name}`
+                : category.name,
+            slug: category.slug,
+            parentSlug: category.parent?.slug ?? null,
+        }))
 }
 
 export async function getCategoryById(id: string) {

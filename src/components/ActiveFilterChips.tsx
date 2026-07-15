@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { FilterState, formatPriceRangeLabel } from "./ProductFilters";
+import { FilterState, getPriceRangeLabel } from "./ProductFilters";
 import type { CategoryOption } from "./ProductFilters";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
@@ -20,7 +20,7 @@ export function ActiveFilterChips({
   onRemoveFilter,
   onClearAll,
 }: ActiveFilterChipsProps) {
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
   const categoryLabels = new Map(
     [...categories, ...collections].map((option) => [option.slug, option.name])
   );
@@ -42,7 +42,7 @@ export function ActiveFilterChips({
 
   if (filters.priceRange) {
     activeFilters.push({
-      label: formatPriceRangeLabel(filters.priceRange, formatPrice),
+      label: getPriceRangeLabel(filters.priceRange, currency, formatPrice),
       type: "priceRange",
       value: null,
     });

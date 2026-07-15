@@ -24,6 +24,7 @@ import {
 import type { CreateProductFormState } from "./products"
 import { logAdminAction } from "./audit"
 import { queueProductSync } from "@/lib/zoho"
+import { archiveFieldsForStock, syncProductArchiveForStock } from "@/lib/admin/product-archive"
 
 export async function createProductAction(
   _prevState: CreateProductFormState,
@@ -55,6 +56,7 @@ export async function createProductAction(
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
+    subcategory: optionalString(formData.get("subcategory")),
   }
 
   const parsed = productInputSchema.safeParse(payload)
@@ -108,6 +110,7 @@ export async function createProductAction(
     created = await prisma.product.create({
       data: {
         ...parsed.data,
+        ...archiveFieldsForStock(parsed.data.stock, isDraft),
         sku,
         shortDescription: parsed.data.shortDescription ?? null,
         materials: [],
@@ -178,6 +181,7 @@ export async function updateProductAction(formData: FormData) {
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
+    subcategory: optionalString(formData.get("subcategory")),
   }
 
   const parsed = productInputSchema.safeParse(payload)
@@ -202,18 +206,39 @@ export async function updateProductAction(formData: FormData) {
   }
 
   try {
+    const existing = await prisma.product.findUnique({
+      where: { id: parsed.data.id },
+      select: { stock: true, isArchived: true },
+    })
+
+    if (!existing) {
+      throw new Error("Product not found")
+    }
+
+    const stockJustDepleted = existing.stock > 0 && parsed.data.stock <= 0
+    const archiveUpdate = stockJustDepleted
+      ? archiveFieldsForStock(parsed.data.stock, false)
+      : {}
+
     const updated = await prisma.product.update({
       where: { id: parsed.data.id },
       data: {
         ...parsed.data,
+        ...archiveUpdate,
         sku,
         slug,
       },
-      select: { id: true, isActive: true, isDraft: true, zohoItemId: true },
+      select: { id: true, isActive: true, isDraft: true, isArchived: true, zohoItemId: true },
     })
 
     // Queue Zoho sync for active products that are already synced
-    if (updated.isActive && !updated.isDraft && updated.zohoItemId && process.env.ZOHO_SYNC_ENABLED === 'true') {
+    if (
+      updated.isActive &&
+      !updated.isDraft &&
+      !updated.isArchived &&
+      updated.zohoItemId &&
+      process.env.ZOHO_SYNC_ENABLED === "true"
+    ) {
       try {
         await queueProductSync(updated.id, 'update')
       } catch (error) {
@@ -334,7 +359,24 @@ export async function archiveProductAction(formData: FormData) {
 
   await prisma.product.update({
     where: { id: productId },
-    data: { isActive: false },
+    data: { isArchived: true, isActive: false },
+  })
+
+  revalidateProductRoute(productId)
+}
+
+export async function unarchiveProductAction(formData: FormData) {
+  await assertAdmin()
+
+  const productId = formData.get("productId")?.toString()
+
+  if (!productId) {
+    throw new Error("Product id is required")
+  }
+
+  await prisma.product.update({
+    where: { id: productId },
+    data: { isArchived: false, isActive: true },
   })
 
   revalidateProductRoute(productId)
@@ -348,12 +390,29 @@ export async function bulkArchiveProducts(
   try {
     await prisma.product.updateMany({
       where: { id: { in: ids } },
-      data: { isActive: false },
+      data: { isArchived: true, isActive: false },
     })
     revalidatePath("/admin/products")
     return { success: true }
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : "Failed to archive" }
+  }
+}
+
+export async function bulkUnarchiveProducts(
+  ids: string[]
+): Promise<{ success?: boolean; error?: string }> {
+  await assertAdmin()
+  if (ids.length === 0) return { success: true }
+  try {
+    await prisma.product.updateMany({
+      where: { id: { in: ids } },
+      data: { isArchived: false, isActive: true },
+    })
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : "Failed to restore products" }
   }
 }
 

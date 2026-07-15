@@ -98,7 +98,7 @@ export default function ContactPage() {
     },
     {
       question: "Can I schedule a visit to your workshop?",
-      answer: "Absolutely! We offer guided tours of our workshops where you can meet our artisans and see the creation process."
+      answer: "We are currently an online-only business. In-person workshop visits are not available at this time. We do offer virtual consultations to discuss your needs.",
     }
   ]
 

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   if (coupon.minAmount != null && (Number.isNaN(subtotalNum) || subtotalNum < coupon.minAmount)) {
     return NextResponse.json({
       valid: false,
-      message: `Minimum order amount for this coupon is $${coupon.minAmount.toFixed(2)}`
+      message: `Minimum order amount for this coupon is KES ${Math.round(coupon.minAmount).toLocaleString()}`
     }, { status: 400 })
   }
   let discount = 0

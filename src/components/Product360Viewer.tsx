@@ -139,38 +139,6 @@ export function Product360Viewer({
           </AnimatePresence>
         </div>
 
-        {/* Rotation controls */}
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm sm:bottom-4 sm:px-4 sm:py-2">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
-              setRotation((prev) => (prev - anglePerImage + 360) % 360);
-            }}
-            className="h-8 w-8 p-0"
-            aria-label="Rotate left"
-            // aria-label="Previous image"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setCurrentIndex((prev) => (prev + 1) % totalImages);
-              setRotation((prev) => (prev + anglePerImage) % 360);
-            }}
-            className="h-8 w-8 p-0"
-            aria-label="Rotate right"
-            // aria-label="Next image"
-          >
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        </div>
-
         {/* Drag hint */}
         {!isDragging && (
           <motion.div
@@ -182,6 +150,39 @@ export function Product360Viewer({
             Drag to rotate
           </motion.div>
         )}
+      </div>
+
+      {/* Rotation controls — below image so they don't cover the product */}
+      <div className="flex items-center justify-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
+            setRotation((prev) => (prev - anglePerImage + 360) % 360);
+          }}
+          className="h-10 w-10 rounded-full p-0"
+          aria-label="Previous image"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <span className="min-w-[4rem] text-center text-xs text-brand-umber/60">
+          {currentIndex + 1} / {totalImages}
+        </span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setCurrentIndex((prev) => (prev + 1) % totalImages);
+            setRotation((prev) => (prev + anglePerImage) % 360);
+          }}
+          className="h-10 w-10 rounded-full p-0"
+          aria-label="Next image"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </Button>
       </div>
 
       {/* Thumbnail navigation */}

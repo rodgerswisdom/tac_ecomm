@@ -122,6 +122,7 @@ model Product {
   size             String?
   isActive         Boolean          @default(true)
   isDraft          Boolean          @default(false)
+  isArchived       Boolean          @default(false)
   isFeatured       Boolean          @default(false)
   isDigital        Boolean          @default(false)
   isBespoke        Boolean          @default(false)
@@ -153,6 +154,7 @@ model Product {
 
   @@index([categoryId])
   @@index([isActive])
+  @@index([isArchived])
   @@index([isFeatured])
   @@index([isBespoke])
   @@index([productType])

@@ -103,6 +103,14 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   ))}
                 </select>
               </div>
+              <label className="space-y-1 block">
+                <span className="text-xs font-medium text-muted-foreground">Subcategory (optional)</span>
+                <Input
+                  name="subcategory"
+                  defaultValue={product.subcategory ?? ""}
+                  placeholder="e.g. African Beads, Classic Kenyan"
+                />
+              </label>
               <div className="grid gap-4 md:grid-cols-2 text-sm">
                 <label className="space-y-2">
                   <span className="text-xs font-medium text-muted-foreground">Weight (kg)</span>

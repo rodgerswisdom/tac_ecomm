@@ -1,6 +1,7 @@
 import { Prisma, ProductType } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
+import { getCategorySlugsForFilter } from "@/lib/category-tree"
 import { ProductCardData } from "@/types/product"
 
 const FALLBACK_IMAGE = "/textures/linen.png"
@@ -37,10 +38,12 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
   const where: Prisma.ProductWhereInput = {
     isDraft: options.includeDrafts ? undefined : false,
     isActive: options.includeDrafts ? undefined : true,
+    isArchived: options.includeDrafts ? undefined : false,
   }
 
   if (options.categorySlug) {
-    where.category = { slug: options.categorySlug }
+    const slugs = await getCategorySlugsForFilter(options.categorySlug)
+    where.category = { slug: { in: slugs } }
   }
 
   if (options.ids?.length) {
@@ -116,7 +119,11 @@ export async function getProductCardBySlug(slug: string) {
     },
   })
 
-  return product ? mapProductToCard(product) : null
+  if (!product || product.isArchived || product.isDraft || !product.isActive) {
+    return null
+  }
+
+  return mapProductToCard(product)
 }
 
 type RelatedProductOptions = {
@@ -134,10 +141,12 @@ export async function getRelatedProductCards({
     id: { not: productId },
     isDraft: false,
     isActive: true,
+    isArchived: false,
   }
 
   if (categorySlug) {
-    baseWhere.category = { slug: categorySlug }
+    const slugs = await getCategorySlugsForFilter(categorySlug)
+    baseWhere.category = { slug: { in: slugs } }
   }
 
   const related = await prisma.product.findMany({
@@ -163,6 +172,7 @@ export async function getRelatedProductCards({
       id: { notIn: Array.from(usedIds) },
       isDraft: false,
       isActive: true,
+      isArchived: false,
     },
     take: limit - related.length,
     orderBy: { createdAt: "desc" },

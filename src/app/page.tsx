@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { HomePageClient } from "./HomePageClient";
 import { getFeaturedProductCards } from "@/server/storefront/products";
-import { getCollectionSummaries } from "@/server/storefront/collections";
+import { getHomePageMainCategories } from "@/server/storefront/collections";
 import { SEOService, SEO_PRESETS } from "@/lib/seo";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
@@ -54,10 +54,17 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredProducts, collections] = await Promise.all([
-    getFeaturedProductCards(8),
-    getCollectionSummaries({ limit: 6 }),
-  ]);
+  let featuredProducts: Awaited<ReturnType<typeof getFeaturedProductCards>> = []
+  let mainCategories: Awaited<ReturnType<typeof getHomePageMainCategories>> = []
+
+  try {
+    ;[featuredProducts, mainCategories] = await Promise.all([
+      getFeaturedProductCards(8),
+      getHomePageMainCategories(),
+    ])
+  } catch (error) {
+    console.error("Failed to load home page data:", error)
+  }
 
   // Generate structured data
   const seoService = new SEOService();
@@ -79,7 +86,7 @@ export default async function HomePage() {
           __html: JSON.stringify(websiteStructuredData),
         }}
       />
-      <HomePageClient featuredProducts={featuredProducts} collections={collections} />
+      <HomePageClient featuredProducts={featuredProducts} mainCategories={mainCategories} />
     </>
   );
 }

@@ -34,4 +34,5 @@ export interface CollectionSummary {
   spotlight?: CollectionSpotlight
   ctas?: CollectionCta[]
   featuredProductIds?: string[]
+  childCategories?: { slug: string; name: string }[]
 }

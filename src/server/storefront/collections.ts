@@ -1,29 +1,64 @@
 import { ProductType } from "@prisma/client"
-import type { Prisma } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
+import { getChildCategoriesForSlug } from "@/lib/category-tree"
+import { CATEGORY_TAXONOMY, TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
 import type { CollectionSummary, CollectionHighlight, CollectionSpotlight, CollectionCta } from "@/types/collection"
 import type { ProductCardData } from "@/types/product"
 
 const FALLBACK_COLLECTION_IMAGE = "/patterns/linen.png"
 
-type CategoryWithActiveProducts = Prisma.CategoryGetPayload<{
-  include: {
-    products: {
-      where: {
-        isActive: true
-        isDraft: false
-      }
-      include: {
-        images: {
-          orderBy: { order: "asc" }
-        }
-        artisan: true
-      }
+const activeProductWhere = {
+  isActive: true,
+  isDraft: false,
+  isArchived: false,
+} as const
+
+export type HomePageCategoryCard = Pick<CollectionSummary, "id" | "name" | "slug" | "image">
+
+/** Six main shop categories for the home page, in taxonomy order. Works before seed via taxonomy fallbacks. */
+export async function getHomePageMainCategories(): Promise<HomePageCategoryCard[]> {
+  const dbCategories = await prisma.category.findMany({
+    where: { slug: { in: [...TOP_LEVEL_CATEGORY_SLUGS] }, parentId: null },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      image: true,
+      products: {
+        where: activeProductWhere,
+        take: 1,
+        orderBy: { createdAt: "desc" },
+        select: {
+          images: {
+            take: 1,
+            orderBy: { order: "asc" },
+            select: { url: true },
+          },
+        },
+      },
+    },
+  })
+
+  const bySlug = new Map(dbCategories.map((category) => [category.slug, category]))
+
+  return TOP_LEVEL_CATEGORY_SLUGS.map((slug) => {
+    const taxonomy = CATEGORY_TAXONOMY.find((category) => category.slug === slug)
+    const dbCategory = bySlug.get(slug)
+    const image =
+      dbCategory?.image ??
+      dbCategory?.products[0]?.images[0]?.url ??
+      FALLBACK_COLLECTION_IMAGE
+
+    return {
+      id: dbCategory?.id ?? slug,
+      name: dbCategory?.name ?? taxonomy?.name ?? slug,
+      slug,
+      image,
     }
-  }
-}>
+  })
+}
 
 type CollectionSummaryOptions = {
   excludeSlugs?: string[]
@@ -34,20 +69,39 @@ type CollectionSummaryOptions = {
 export async function getCollectionSummaries(options: CollectionSummaryOptions = {}) {
   const { excludeSlugs = [], limit, includeVirtual = true } = options
 
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      products: {
-        where: { isActive: true, isDraft: false },
-        include: {
-          images: { orderBy: { order: "asc" } },
-          artisan: true,
+  const [categories, allProducts] = await Promise.all([
+    prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: { name: "asc" },
+      include: {
+        children: {
+          orderBy: { name: "asc" },
+          select: { id: true, name: true, slug: true },
         },
       },
-    },
-  })
+    }),
+    getProductCardData(),
+  ])
 
-  let summaries: CollectionSummary[] = categories.map(mapCategoryToSummary)
+  const builtSummaries: CollectionSummary[] = []
+
+  for (const category of categories) {
+    const categorySlugs = new Set([
+      category.slug,
+      ...category.children.map((child) => child.slug),
+    ])
+    const products = allProducts.filter(
+      (product) => product.category && categorySlugs.has(product.category)
+    )
+
+    if (products.length === 0 && !TOP_LEVEL_CATEGORY_SLUGS.includes(category.slug)) {
+      continue
+    }
+
+    builtSummaries.push(mapCategoryToSummary(category, products, category.children))
+  }
+
+  let summaries = builtSummaries
 
   if (includeVirtual) {
     const virtualCollections = await Promise.all([
@@ -102,20 +156,14 @@ export async function getCollectionSummaryBySlug(slug: string) {
 
   const category = await prisma.category.findUnique({
     where: { slug },
-    include: {
-      products: {
-        where: { isActive: true, isDraft: false },
-        include: {
-          images: { orderBy: { order: "asc" } },
-          artisan: true,
-        },
-      },
-    },
   })
 
   if (!category) return null
 
-  return mapCategoryToSummary(category)
+  const products = await getProductCardData({ categorySlug: slug })
+  const children = await getChildCategoriesForSlug(slug)
+
+  return mapCategoryToSummary(category, products, children)
 }
 
 export async function getCollectionSlugs() {
@@ -125,25 +173,66 @@ export async function getCollectionSlugs() {
     .filter((slug): slug is string => Boolean(slug))
 }
 
-/** Lightweight list of collection slug+name for navbar Shop submenu. Includes DB categories + virtual collections with products. */
+/** Lightweight list of collection slug+name for navbar Shop submenu. Top-level DB categories + virtual collections. */
 export async function getNavShopCategories(): Promise<{ slug: string; name: string }[]> {
-  const summaries = await getCollectionSummaries({ includeVirtual: true })
-  return summaries.map((s) => ({ slug: s.slug, name: s.name }))
+  const [topLevel, matchingSetCount, corporateGiftCount] = await Promise.all([
+    prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: { name: "asc" },
+      select: { slug: true, name: true },
+    }),
+    prisma.product.count({
+      where: { ...activeProductWhere, productType: ProductType.MATCHING_SET },
+    }),
+    prisma.product.count({
+      where: { ...activeProductWhere, isCorporateGift: true },
+    }),
+  ])
+
+  const navItems = topLevel.map((category) => ({
+    slug: category.slug,
+    name: category.name,
+  }))
+
+  if (matchingSetCount > 0) {
+    navItems.push({ slug: "matching-sets", name: "Matching Sets" })
+  }
+
+  if (corporateGiftCount > 0) {
+    navItems.push({ slug: "corporate-gifts", name: "Corporate Gifts" })
+  }
+
+  return navItems
 }
 
-function mapCategoryToSummary(category: CategoryWithActiveProducts): CollectionSummary {
-  const sortedProducts = category.products
-  const heroImage = category.image ?? sortedProducts[0]?.images[0]?.url ?? FALLBACK_COLLECTION_IMAGE
+type CategoryRecord = {
+  id: string
+  name: string
+  slug: string
+  description?: string | null
+  image?: string | null
+}
+
+type ChildCategory = {
+  id: string
+  name: string
+  slug: string
+}
+
+function mapCategoryToSummary(
+  category: CategoryRecord,
+  products: ProductCardData[],
+  children: ChildCategory[] = []
+): CollectionSummary {
+  const heroImage = category.image ?? products[0]?.image ?? FALLBACK_COLLECTION_IMAGE
   const description = category.description ?? "Curated by the TAC atelier"
-  const featuredRegions = uniqueStrings(
-    sortedProducts
-      .map((product) => product.origin || product.artisan?.regionLabel)
-      .filter(Boolean) as string[]
+  const featuredRegions = uniqueStrings(products.map((product) => product.origin).filter(Boolean))
+  const artisanCount = new Set(products.map((product) => product.artisan?.name).filter(Boolean)).size
+  const childNames = children.map((child) => child.name)
+  const productSubcategories = uniqueStrings(
+    products.map((product) => product.subcategory).filter(Boolean) as string[]
   )
-  const artisanCount = new Set(sortedProducts.map((product) => product.artisan?.id).filter(Boolean)).size
-  const subcategories = uniqueStrings(
-    sortedProducts.map((product) => product.subcategory).filter(Boolean) as string[]
-  )
+  const subcategories = uniqueStrings([...childNames, ...productSubcategories])
 
   return {
     id: category.id,
@@ -151,18 +240,22 @@ function mapCategoryToSummary(category: CategoryWithActiveProducts): CollectionS
     slug: category.slug,
     description,
     image: heroImage,
-    itemCount: sortedProducts.length,
+    itemCount: products.length,
     featuredRegions,
     artisanCount,
     subcategories,
+    childCategories: children.map((child) => ({
+      slug: child.slug,
+      name: child.name,
+    })),
     heroTitle: category.name,
     heroDescription: description,
     heroImage,
     longDescription: description,
-    highlights: buildHighlights(sortedProducts.length, artisanCount, featuredRegions),
-    spotlight: buildSpotlightFromCategoryProducts(sortedProducts),
+    highlights: buildHighlights(products.length, artisanCount, featuredRegions),
+    spotlight: buildSpotlightFromProductCards(products),
     ctas: buildDefaultCtas(category.name),
-    featuredProductIds: sortedProducts.slice(0, 3).map((product) => product.id),
+    featuredProductIds: products.slice(0, 3).map((product) => product.id),
   }
 }
 
@@ -227,18 +320,6 @@ function mapProductCardsToSummary({
     spotlight: buildSpotlightFromProductCards(products),
     ctas: buildDefaultCtas(name),
     featuredProductIds: products.slice(0, 3).map((product) => product.id),
-  }
-}
-
-function buildSpotlightFromCategoryProducts(products: CategoryWithActiveProducts["products"]): CollectionSpotlight | undefined {
-  const productWithArtisan = products.find((product) => product.artisan)
-  if (!productWithArtisan?.artisan) return undefined
-
-  return {
-    quote: productWithArtisan.artisan.quote,
-    name: productWithArtisan.artisan.name,
-    role: productWithArtisan.artisan.regionLabel,
-    image: productWithArtisan.artisan.portrait,
   }
 }
 

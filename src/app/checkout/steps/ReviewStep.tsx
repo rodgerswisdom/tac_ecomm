@@ -4,6 +4,11 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import type { PaymentMethod } from "./PaymentStep";
 import type { AppliedCoupon } from "../OrderSummarySidebar";
+import {
+  calculateShippingKsh,
+  DELIVERY_LABELS,
+  type DeliveryMethod,
+} from "@/lib/delivery";
 
 const paymentLabel: Record<PaymentMethod, string> = {
   TUMA: "M-Pesa",
@@ -12,18 +17,28 @@ const paymentLabel: Record<PaymentMethod, string> = {
   CARD: "Credit / Debit Card"
 };
 
-const deliveryLabel: Record<string, string> = {
-  standard: "Standard Delivery (3-5 days)",
-  pickup: "In-Store Pickup",
-};
-
-export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlaceOrder, isSubmitting }: ReviewStepProps) {
+export function ReviewStep({
+  shipping,
+  delivery,
+  payment,
+  appliedCoupon,
+  onPlaceOrder,
+  isSubmitting,
+}: ReviewStepProps) {
   const { cart, getCartTotal } = useCart();
   const { formatPrice } = useCurrency();
 
   const subtotal = getCartTotal();
   const discount = appliedCoupon?.discount ?? 0;
-  const total = Math.max(0, subtotal - discount);
+  const freeShippingFromCoupon = appliedCoupon?.type === "FREE_SHIPPING";
+  const shippingQuote = calculateShippingKsh({
+    country: shipping.country,
+    deliveryMethod: delivery as DeliveryMethod,
+    merchandiseSubtotalKsh: subtotal,
+    freeShippingFromCoupon,
+  });
+  const shippingCost = shippingQuote.shippingKsh;
+  const total = Math.max(0, subtotal - discount + shippingCost);
 
   return (
     <div>
@@ -40,7 +55,9 @@ export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlace
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Delivery Method</h3>
-        <div className="text-sm text-muted-foreground">{deliveryLabel[delivery] ?? delivery}</div>
+        <div className="text-sm text-muted-foreground">
+          {DELIVERY_LABELS[delivery as DeliveryMethod] ?? delivery}
+        </div>
       </div>
       <div className="mb-6">
         <h3 className="font-semibold mb-2">Payment</h3>
@@ -75,6 +92,16 @@ export function ReviewStep({ shipping, delivery, payment, appliedCoupon, onPlace
             <span>-{formatPrice(discount)}</span>
           </div>
         )}
+        <div className="flex justify-end gap-4 text-base font-normal text-muted-foreground">
+          <span>Shipping</span>
+          <span>
+            {shippingCost === 0 ? (
+              <span className="text-brand-teal">Free</span>
+            ) : (
+              formatPrice(shippingCost)
+            )}
+          </span>
+        </div>
         <div className="flex justify-end gap-4 pt-1">
           <span>Total</span>
           <span>{formatPrice(total)}</span>

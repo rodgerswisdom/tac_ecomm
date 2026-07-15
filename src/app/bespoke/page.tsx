@@ -6,6 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { ImageUploader } from "@/components/ImageUploader";
 import {
   Palette,
@@ -13,6 +14,7 @@ import {
   Sparkles,
   HandHeart,
 } from "lucide-react";
+import { getBespokeCategoryOptions } from "@/lib/category-taxonomy";
 
 const bespokeProcess = [
   {
@@ -42,19 +44,15 @@ const categoryTimelines: Record<string, { standard: string; express: string }> =
     standard: "4-6 weeks",
     express: "2-3 weeks",
   },
-  rings: {
+  "bracelets-bangles": {
     standard: "6-8 weeks",
     express: "3-4 weeks",
   },
-  bracelets: {
-    standard: "6-8 weeks",
-    express: "3-4 weeks",
-  },
-  necklaces: {
+  "necklaces-chains": {
     standard: "8-12 weeks",
     express: "4-6 weeks",
   },
-  "hair-accessories": {
+  "arm-bands": {
     standard: "4-6 weeks",
     express: "2-3 weeks",
   },
@@ -65,12 +63,15 @@ const categoryTimelines: Record<string, { standard: string; express: string }> =
 };
 
 const categories = [
-  { value: "earrings", label: "Earrings" },
-  { value: "rings", label: "Rings" },
-  { value: "bracelets", label: "Bracelets & Bangles" },
-  { value: "necklaces", label: "Necklaces & Chains" },
-  { value: "hair-accessories", label: "Hair Accessories" },
+  ...getBespokeCategoryOptions(),
   { value: "matching-sets", label: "Matching Sets" },
+];
+
+const budgetOptions = [
+  { value: "500-1000", label: "$500 - $1,000" },
+  { value: "1000-2500", label: "$1,000 - $2,500" },
+  { value: "2500-5000", label: "$2,500 - $5,000" },
+  { value: "5000+", label: "$5,000+" },
 ];
 
 export default function BespokeStudioPage() {
@@ -92,6 +93,10 @@ export default function BespokeStudioPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError("");
+    if (!formData.category || !formData.budget) {
+      setSubmitError("Please select a category and budget range.");
+      return;
+    }
     const submissionData = {
       ...formData,
       photos: uploadedPhotos,
@@ -337,19 +342,14 @@ export default function BespokeStudioPage() {
                       <label className="block text-sm font-medium text-brand-umber mb-2">
                         Product Category <span className="text-brand-coral">*</span>
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={categories}
                         value={formData.category}
-                        onChange={(e) => handleCategoryChange(e.target.value)}
-                        className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                        required
-                      >
-                        <option value="">Select a category</option>
-                        {categories.map((cat) => (
-                          <option key={cat.value} value={cat.value}>
-                            {cat.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={handleCategoryChange}
+                        placeholder="Select a category"
+                        className="[&>button]:border-brand-umber/20 [&>button]:bg-white [&>button]:text-brand-umber [&>button_span]:text-brand-umber [&>button_svg]:text-brand-umber/60"
+                        ariaLabel="Product category"
+                      />
                       {formData.category && selectedCategoryTimeline && (
                         <p className="text-xs text-brand-umber/60 mt-1">
                           Standard timeline for {categories.find((c) => c.value === formData.category)?.label}: {selectedCategoryTimeline.standard}
@@ -414,18 +414,14 @@ export default function BespokeStudioPage() {
                       <label className="block text-sm font-medium text-brand-umber mb-2">
                         Budget Range
                       </label>
-                      <select
+                      <CustomDropdown
+                        options={budgetOptions}
                         value={formData.budget}
-                        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-                        className="w-full px-3 py-2 border border-brand-umber/20 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-teal"
-                        required
-                      >
-                        <option value="">Select budget range</option>
-                        <option value="500-1000">$500 - $1,000</option>
-                        <option value="1000-2500">$1,000 - $2,500</option>
-                        <option value="2500-5000">$2,500 - $5,000</option>
-                        <option value="5000+">$5,000+</option>
-                      </select>
+                        onChange={(budget) => setFormData({ ...formData, budget })}
+                        placeholder="Select budget range"
+                        className="[&>button]:border-brand-umber/20 [&>button]:bg-white [&>button]:text-brand-umber [&>button_span]:text-brand-umber [&>button_svg]:text-brand-umber/60"
+                        ariaLabel="Budget range"
+                      />
                       {formData.isExpress && (
                         <p className="text-xs text-brand-umber/60 mt-1">
                           Note: Express delivery adds 20% to your selected budget range

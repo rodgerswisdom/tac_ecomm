@@ -1,66 +1,21 @@
 "use client";
 
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { ProductCard } from "@/components/ProductCard";
 import {
   Building2,
   Users,
   Gift,
   Heart,
   Globe,
-  CheckCircle,
   ArrowRight,
   Award,
   HandHeart,
   Sparkles,
   Mail,
 } from "lucide-react";
-import Link from "next/link";
-import type { ProductCardData } from "@/types/product";
-
-const corporateCollections = [
-  {
-    id: 1,
-    name: "Executive Collection",
-    description: "Premium pieces for C-suite gifting and high-level client appreciation.",
-    price: "From $2,500",
-    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?auto=format&fit=crop&w=600&q=80",
-    features: ["Handcrafted by master artisans", "Custom packaging", "Certificate of authenticity", "Corporate branding options"],
-    idealFor: "C-suite executives, VIP clients, board members",
-  },
-  {
-    id: 2,
-    name: "Team Appreciation Sets",
-    description: "Thoughtful collections for employee recognition and team milestones.",
-    price: "From $150",
-    image: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=600&q=80",
-    features: ["Bulk pricing available", "Custom team messaging", "Gift boxes included", "Bulk shipping"],
-    idealFor: "Employee recognition, team achievements, company anniversaries",
-  },
-  {
-    id: 3,
-    name: "Client Gift Collection",
-    description: "Professional yet personal gifts that strengthen business relationships.",
-    price: "From $300",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?auto=format&fit=crop&w=600&q=80",
-    features: ["Professional presentation", "Custom thank you notes", "Bulk discounts", "Fast turnaround"],
-    idealFor: "Client appreciation, partnership milestones, holiday gifting",
-  },
-  {
-    id: 4,
-    name: "Wedding Corporate Gifts",
-    description: "Elegant pieces for corporate wedding gifts and special occasions.",
-    price: "From $500",
-    image: "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=600&q=80",
-    features: ["Wedding-themed packaging", "Custom engraving", "Gift registry integration", "Bulk orders welcome"],
-    idealFor: "Employee weddings, client celebrations, special occasions",
-  },
-];
 
 const impactMetrics = [
   {
@@ -89,35 +44,7 @@ const impactMetrics = [
   },
 ];
 
-const testimonials = [
-  {
-    company: "TechCorp International",
-    name: "Sarah Johnson",
-    role: "VP of Partnerships",
-    quote: "Our clients were amazed by the authentic craftsmanship and the story behind each piece. It elevated our gifting to a whole new level.",
-    image: "https://images.unsplash.com/photo-1494790108755-2616b612b786?auto=format&fit=crop&w=100&q=80",
-  },
-  {
-    company: "Global Finance Group",
-    name: "Michael Chen",
-    role: "Head of Client Relations",
-    quote: "The corporate gifts helped us stand out in a crowded market. Our clients appreciated the cultural authenticity and quality.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=100&q=80",
-  },
-  {
-    company: "Innovation Labs",
-    name: "Aisha Patel",
-    role: "CEO",
-    quote: "Supporting artisan communities while strengthening our business relationships - it's a win-win that aligns with our values.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80",
-  },
-];
-
-interface CorporateGiftsClientProps {
-  corporateProducts: ProductCardData[];
-}
-
-export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClientProps) {
+export function CorporateGiftsClient() {
   const [showContactForm, setShowContactForm] = useState(false);
   const [contactForm, setContactForm] = useState({
     companyName: "",
@@ -204,125 +131,6 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
         </div>
       </section>
 
-      <section className="section-spacing bg-brand-jade/10">
-        <div className="gallery-container">
-          <div className="text-center mb-16">
-            <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
-              Corporate Collections
-            </span>
-            <h2 className="font-heading text-4xl text-brand-umber mb-6">
-              Curated for Every Business Need
-            </h2>
-            <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto">
-              From executive gifts to team appreciation, we have collections designed for every corporate occasion.
-            </p>
-          </div>
-
-          <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto px-4 sm:px-0">
-            {corporateCollections.map((collection, index) => (
-              <motion.div
-                key={collection.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="overflow-hidden border-brand-umber/10 bg-white/80 backdrop-blur-sm h-full">
-                  <div className="aspect-video relative">
-                    <Image
-                      src={collection.image}
-                      alt={collection.name}
-                      fill
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 to-transparent" />
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h3 className="font-heading text-2xl mb-1">{collection.name}</h3>
-                      <p className="text-lg font-semibold">{collection.price}</p>
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    <p className="text-brand-umber/70 mb-6">
-                      {collection.description}
-                    </p>
-
-                    <div className="space-y-3 mb-6">
-                      <h4 className="font-semibold text-brand-umber">Features:</h4>
-                      {collection.features.map((feature, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-brand-teal" />
-                          <span className="text-sm text-brand-umber/70">{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mb-6">
-                      <h4 className="font-semibold text-brand-umber mb-2">Ideal for:</h4>
-                      <p className="text-sm text-brand-umber/70">{collection.idealFor}</p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3 mt-auto">
-                      <Button size="lg" className="flex-1 py-7.5 text-lg shadow-[0_18px_36px_rgba(74,43,40,0.12)]">
-                        Request Quote
-                      </Button>
-                      <Button size="lg" variant="outline" className="flex-1 py-7.5 text-lg">
-                        View Details
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-spacing bg-white">
-        <div className="gallery-container">
-          <div className="text-center mb-16">
-            <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
-              Client Testimonials
-            </span>
-            <h2 className="font-heading text-4xl text-brand-umber mb-6">
-              Trusted by Leading Companies
-            </h2>
-          </div>
-
-          <div className="grid gap-8 md:grid-cols-3">
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={testimonial.company}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="border-brand-umber/10 bg-white/80 backdrop-blur-sm h-full">
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Image
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        width={48}
-                        height={48}
-                        className="h-12 w-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h4 className="font-semibold text-brand-umber">{testimonial.name}</h4>
-                        <p className="text-sm text-brand-umber/70">{testimonial.role}</p>
-                        <p className="text-xs text-brand-teal">{testimonial.company}</p>
-                      </div>
-                    </div>
-                    <blockquote className="text-brand-umber/80 italic">
-                      &ldquo;{testimonial.quote}&rdquo;
-                    </blockquote>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="section-spacing bg-gradient-to-br from-brand-gold/10 via-brand-jade/5 to-brand-coral/5">
         <div className="gallery-container">
           <div className="text-center mb-16">
@@ -388,48 +196,6 @@ export function CorporateGiftsClient({ corporateProducts }: CorporateGiftsClient
           </div>
         </div>
       </section>
-
-      {corporateProducts.length > 0 && (
-        <section className="section-spacing bg-white">
-          <div className="gallery-container">
-            <div className="text-center mb-16">
-              <span className="caps-spacing text-xs text-brand-teal mb-4 inline-block">
-                Featured Corporate Gifts
-              </span>
-              <h2 className="font-heading text-4xl text-brand-umber mb-6">
-                Handpicked Pieces for Corporate Gifting
-              </h2>
-              <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto">
-                Each piece is carefully selected for its quality, authenticity, and presentation value.
-              </p>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-              {corporateProducts.slice(0, 6).map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                >
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </div>
-
-            {corporateProducts.length > 6 && (
-              <div className="mt-12 text-center">
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="/collections/corporate-gifts">
-                    View All Corporate Gifts
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       <section className="section-spacing bg-white">
         <div className="gallery-container">

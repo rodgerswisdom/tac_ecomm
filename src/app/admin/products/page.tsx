@@ -1,15 +1,12 @@
 import Link from "next/link"
-import Image from "next/image"
-import { Download, Plus, Search } from "lucide-react"
+import { Archive, Download, Package, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { getProductList } from "@/server/admin/products"
-import { deleteProductAction } from "@/server/admin/product-actions"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
-import { RowActions } from "@/components/admin/row-actions"
 import { ProductTable } from "./ProductTable"
 
 interface ProductsPageProps {
@@ -58,30 +55,10 @@ function buildQueryString(base: URLSearchParams, overrides: Record<string, strin
   return params.toString()
 }
 
-function getPrimaryImage(p: ProductListItem) {
-  if (!p.images?.length) return undefined
-  return [...p.images].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0]
-}
+type ProductTab = "active" | "archived"
 
-function getDiscountPercent(p: ProductListItem) {
-  if (!p.comparePrice || p.comparePrice <= p.price) return null
-  return Math.round(((p.comparePrice - p.price) / p.comparePrice) * 100)
-}
-
-function getStatus(p: ProductListItem) {
-  if (p.isDraft) {
-    return {
-      label: "Draft",
-      dot: "bg-amber-500",
-      text: "text-amber-600",
-    }
-  }
-  const inStock = p.stock > 0 && p.isActive
-  return {
-    label: inStock ? "In stock" : "Out of stock",
-    dot: inStock ? "bg-emerald-500" : "bg-rose-500",
-    text: inStock ? "text-emerald-600" : "text-rose-600",
-  }
+function parseTab(value?: string): ProductTab {
+  return value === "archived" ? "archived" : "active"
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
@@ -92,21 +69,45 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const sortParam = parseParam(params.sort)
   const sort: SortOption = isValidSort(sortParam) ? sortParam : "recent"
   const pageSize = clampPageSize(parseParam(params.pageSize))
+  const tab = parseTab(parseParam(params.tab))
+  const isArchivedTab = tab === "archived"
 
-  const products = await getProductList({ page, search, sort, pageSize })
+  const products = await getProductList({
+    page,
+    search,
+    sort,
+    pageSize,
+    archived: isArchivedTab,
+  })
   const items = products.items as ProductListItem[]
 
   const baseParams = new URLSearchParams()
   if (search) baseParams.set("q", search)
   baseParams.set("sort", sort)
   baseParams.set("pageSize", String(pageSize))
+  if (isArchivedTab) baseParams.set("tab", "archived")
+
+  const tabHiddenFields = {
+    q: search || undefined,
+    sort,
+    pageSize: String(pageSize),
+    tab: isArchivedTab ? "archived" : undefined,
+  }
 
   const totalPages = Math.max(products.pageCount, 1)
+
+  const tabLink = (target: ProductTab) => {
+    const query = buildQueryString(baseParams, {
+      tab: target === "archived" ? "archived" : undefined,
+      page: 1,
+    })
+    return `/admin/products${query ? `?${query}` : ""}`
+  }
 
   return (
     <div className="space-y-8">
       <AdminPageHeader
-        title="All products"
+        title={isArchivedTab ? "Archived products" : "All products"}
         breadcrumb={[{ label: "products", href: "/admin/products" }]}
         actions={
           <>
@@ -133,6 +134,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               />
               <input type="hidden" name="sort" value={sort} />
               <input type="hidden" name="pageSize" value={pageSize} />
+              {isArchivedTab && <input type="hidden" name="tab" value="archived" />}
             </form>
 
             {/* Sort aligned right */}
@@ -141,7 +143,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               name="sort"
               defaultValue={sort}
               options={SORT_OPTIONS}
-              hiddenFields={{ q: search, pageSize }}
+              hiddenFields={tabHiddenFields}
               className="rounded-md border px-3 py-2"
               selectClassName="text-sm"
             />
@@ -150,15 +152,45 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       />
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Products ({products.total})</CardTitle>
-          <span className="text-sm text-muted-foreground">
-            Showing {items.length} of {products.total}
-          </span>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-row items-center justify-between gap-4">
+            <CardTitle className="text-base">
+              {isArchivedTab ? "Archived" : "Active"} products ({products.total})
+            </CardTitle>
+            <span className="text-sm text-muted-foreground">
+              Showing {items.length} of {products.total}
+            </span>
+          </div>
+          <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1">
+            <Link
+              href={tabLink("active")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                !isArchivedTab
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Package className="h-4 w-4" />
+              Active
+            </Link>
+            <Link
+              href={tabLink("archived")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-colors",
+                isArchivedTab
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Archive className="h-4 w-4" />
+              Archived
+            </Link>
+          </div>
         </CardHeader>
 
         <CardContent className="p-0">
-          <ProductTable products={items as any} />
+          <ProductTable products={items as any} view={tab} />
         </CardContent>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 border-t border-border px-6 py-4 text-sm text-muted-foreground">
           {/* Pagination restored */}
@@ -169,7 +201,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               name="pageSize"
               defaultValue={String(pageSize)}
               options={PAGE_SIZE_OPTIONS.map((n) => ({ label: String(n), value: n }))}
-              hiddenFields={{ q: search || undefined, sort, page: "1" }}
+              hiddenFields={{ ...tabHiddenFields, page: "1" }}
               selectClassName="rounded-md border border-border bg-transparent px-2 py-1"
             />
           </div>

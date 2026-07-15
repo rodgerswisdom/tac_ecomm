@@ -3,23 +3,16 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getEmailConfig } from '@/lib/email'
 import { EmailService } from '@/lib/email'
+import { BESPOKE_CATEGORY_VALUES } from '@/lib/category-taxonomy'
 
 const BUDGET_VALUES = ['500-1000', '1000-2500', '2500-5000', '5000+'] as const
-const CATEGORY_VALUES = [
-  'earrings',
-  'rings',
-  'bracelets',
-  'necklaces',
-  'hair-accessories',
-  'matching-sets',
-] as const
 
 const createBespokeSchema = z.object({
   name: z.string().min(1, 'Name is required').max(200),
   email: z.string().email('Invalid email'),
   phone: z.string().max(50).optional(),
   vision: z.string().min(1, 'Please describe your vision').max(5000),
-  category: z.enum(CATEGORY_VALUES),
+  category: z.enum(BESPOKE_CATEGORY_VALUES),
   categoryLabel: z.string().min(1).max(100),
   budget: z.enum(BUDGET_VALUES),
   timeline: z.string().min(1).max(50),

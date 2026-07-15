@@ -92,61 +92,58 @@ export function QuickViewModal({ product, isOpen, onClose }: QuickViewModalProps
 
         <div className="grid gap-0 sm:grid-cols-2">
           {/* Image Gallery */}
-          <div className="relative aspect-square bg-brand-beige/30 sm:order-1">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeImageIndex}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-                className="absolute inset-0"
-              >
-                <Image
-                  src={images[activeImageIndex]}
-                  alt={`${product.name} - View ${activeImageIndex + 1}`}
-                  fill
-                  sizes="50vw"
-                  className="object-cover"
-                />
-              </motion.div>
-            </AnimatePresence>
+          <div className="flex flex-col sm:order-1">
+            <div className="relative aspect-square bg-brand-beige/30">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeImageIndex}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.02 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0"
+                >
+                  <Image
+                    src={images[activeImageIndex]}
+                    alt={`${product.name} - View ${activeImageIndex + 1}`}
+                    fill
+                    sizes="50vw"
+                    className="object-cover"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-            {/* Navigation Arrows */}
             {hasMultipleImages && (
-              <>
+              <div className="flex items-center justify-center gap-4 border-t border-brand-teal/15 bg-brand-beige/40 px-4 py-3">
                 <button
                   onClick={prevImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-teal/20 bg-white transition-all hover:bg-brand-jade/20"
                   aria-label="Previous image"
                 >
                   <ChevronLeft className="h-5 w-5 text-brand-umber" />
                 </button>
+                <div className="flex items-center gap-2">
+                  {images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setActiveImageIndex(index)}
+                      className={`h-2 rounded-full transition-all ${
+                        activeImageIndex === index
+                          ? "w-8 bg-brand-teal"
+                          : "w-2 bg-brand-umber/25 hover:bg-brand-umber/40"
+                      }`}
+                      aria-label={`View image ${index + 1}`}
+                    />
+                  ))}
+                </div>
                 <button
                   onClick={nextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brand-teal/20 bg-white transition-all hover:bg-brand-jade/20"
                   aria-label="Next image"
                 >
                   <ChevronRight className="h-5 w-5 text-brand-umber" />
                 </button>
-              </>
-            )}
-
-            {/* Image Dots */}
-            {hasMultipleImages && (
-              <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-2">
-                {images.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImageIndex(index)}
-                    className={`h-2 rounded-full transition-all ${
-                      activeImageIndex === index
-                        ? "w-8 bg-white"
-                        : "w-2 bg-white/50 hover:bg-white/75"
-                    }`}
-                    aria-label={`View image ${index + 1}`}
-                  />
-                ))}
               </div>
             )}
           </div>
