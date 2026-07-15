@@ -1,10 +1,15 @@
 import "dotenv/config"
 
 import { prisma } from "../src/lib/prisma"
-import { runCategoryTaxonomySeed } from "../src/lib/seed-category-taxonomy"
+import { seedCategoryTaxonomy, migrateProductsToTaxonomy, removeDeprecatedEmptyCategories } from "../src/lib/seed-category-taxonomy"
 
 async function main() {
-  await runCategoryTaxonomySeed(prisma)
+  await seedCategoryTaxonomy(prisma)
+
+  if (process.env.SEED_MIGRATE_PRODUCTS === "true") {
+    await migrateProductsToTaxonomy(prisma)
+    await removeDeprecatedEmptyCategories(prisma)
+  }
 
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@tacaccessories.com" },

@@ -24,6 +24,8 @@
     "db:migrate:deploy": "npx prisma migrate deploy",
     "db:studio": "npx prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:restore-categories": "tsx scripts/restore-product-categories.ts",
+    "db:restore-categories:apply": "tsx scripts/restore-product-categories.ts --apply",
     "admin:create": "tsx scripts/bootstrapAdmin.ts",
     "db:backfill-skus": "tsx scripts/backfill-product-skus.ts",
     "test:stock": "tsx scripts/test-stock.ts",

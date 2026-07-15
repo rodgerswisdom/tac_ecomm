@@ -42,6 +42,8 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
           description: category.description,
           image: category.image,
           parent: category.parent,
+          showOnHomepage: category.showOnHomepage,
+          homepageOrder: category.homepageOrder,
         }}
         parentOptions={parentOptions}
       />

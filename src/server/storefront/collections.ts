@@ -2,7 +2,7 @@ import { ProductType } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
 import { getChildCategoriesForSlug } from "@/lib/category-tree"
-import { CATEGORY_TAXONOMY, TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
+import { TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
 import type { CollectionSummary, CollectionHighlight, CollectionSpotlight, CollectionCta } from "@/types/collection"
 import type { ProductCardData } from "@/types/product"
@@ -17,10 +17,11 @@ const activeProductWhere = {
 
 export type HomePageCategoryCard = Pick<CollectionSummary, "id" | "name" | "slug" | "image">
 
-/** Six main shop categories for the home page, in taxonomy order. Works before seed via taxonomy fallbacks. */
+/** Main shop categories selected in admin for the home page Curated Collections section. */
 export async function getHomePageMainCategories(): Promise<HomePageCategoryCard[]> {
   const dbCategories = await prisma.category.findMany({
-    where: { slug: { in: [...TOP_LEVEL_CATEGORY_SLUGS] }, parentId: null },
+    where: { parentId: null, showOnHomepage: true },
+    orderBy: [{ homepageOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,
       name: true,
@@ -41,23 +42,15 @@ export async function getHomePageMainCategories(): Promise<HomePageCategoryCard[
     },
   })
 
-  const bySlug = new Map(dbCategories.map((category) => [category.slug, category]))
-
-  return TOP_LEVEL_CATEGORY_SLUGS.map((slug) => {
-    const taxonomy = CATEGORY_TAXONOMY.find((category) => category.slug === slug)
-    const dbCategory = bySlug.get(slug)
-    const image =
-      dbCategory?.image ??
-      dbCategory?.products[0]?.images[0]?.url ??
-      FALLBACK_COLLECTION_IMAGE
-
-    return {
-      id: dbCategory?.id ?? slug,
-      name: dbCategory?.name ?? taxonomy?.name ?? slug,
-      slug,
-      image,
-    }
-  })
+  return dbCategories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    image:
+      category.image ??
+      category.products[0]?.images[0]?.url ??
+      FALLBACK_COLLECTION_IMAGE,
+  }))
 }
 
 type CollectionSummaryOptions = {

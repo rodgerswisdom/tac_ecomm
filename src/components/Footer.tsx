@@ -5,42 +5,47 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { patternAssets } from "@/lib/patterns";
+import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
+import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 
-const footerLinks = [
-  {
-    title: "Collections",
-    items: [
-      { label: "Maasai Shukas", href: "/collections#shukas" },
-      { label: "Bronze Jewelry", href: "/collections#bronze" },
-      { label: "Heritage Home", href: "/collections#home" },
-    ],
-  },
-  {
-    title: "Discover",
-    items: [
-      { label: "About TAC", href: "/about" },
-      { label: "Artisan Stories", href: "/stories" },
-      { label: "Our Legacy", href: "/about#legacy" },
-    ],
-  },
-  {
-    title: "Support",
-    items: [
-      { label: "Contact", href: "/contact" },
-      { label: "Shipping", href: "/shipping" },
-      { label: "Returns", href: "/returns" },
-      { label: "Privacy Policy", href: "/privacy-policy" },
-      { label: "Terms of Service", href: "/terms-of-service" },
-    ],
-  },
+const discoverLinks = [
+  { label: "About TAC", href: "/about" },
+  { label: "Artisan Stories", href: "/stories" },
+  { label: "Our Legacy", href: "/about#legacy" },
+];
+
+const supportLinks = [
+  { label: "Contact", href: "/contact" },
+  { label: "Shipping", href: "/shipping" },
+  { label: "Returns", href: "/returns" },
+  { label: "Privacy Policy", href: "/privacy-policy" },
+  { label: "Terms of Service", href: "/terms-of-service" },
 ];
 
 export const Footer = () => {
   const pathname = usePathname();
+  const shopCategories = useNavbarCategories();
 
   if (pathname?.startsWith("/admin")) {
     return null;
   }
+
+  const collectionLinks =
+    shopCategories.length > 0
+      ? shopCategories.map((category) => ({
+          label: category.name,
+          href: `/collections/${category.slug}`,
+        }))
+      : CATEGORY_TAXONOMY.map((category) => ({
+          label: category.name,
+          href: `/collections/${category.slug}`,
+        }));
+
+  const footerLinkGroups = [
+    { title: "Collections", items: collectionLinks },
+    { title: "Discover", items: discoverLinks },
+    { title: "Support", items: supportLinks },
+  ];
 
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-brand-umber/50 bg-brand-umber text-white/85">
@@ -70,7 +75,7 @@ export const Footer = () => {
             </h3>
           </motion.div>
 
-          {footerLinks.map((group) => (
+          {footerLinkGroups.map((group) => (
             <motion.div
               key={group.title}
               initial={{ opacity: 0, y: 16 }}

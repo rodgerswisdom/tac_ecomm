@@ -7,6 +7,7 @@ import { deleteCategoryAction, getCategories } from "@/server/admin/categories"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { AutoSubmitSelect } from "../products/AutoSubmitSelect"
 import { RowActions } from "@/components/admin/row-actions"
+import { CategoryHomepageToggle } from "./CategoryHomepageToggle"
 
 interface CategoriesPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -176,13 +177,14 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                 <th className="px-4 py-3 text-left text-xs">Slug</th>
                 <th className="px-4 py-3 text-left text-xs">Number of products</th>
                 <th className="px-4 py-3 text-left text-xs">Parent category</th>
+                <th className="px-4 py-3 text-left text-xs">Homepage</th>
                 <th className="px-4 py-3 text-left text-xs">Actions</th>
               </tr>
             </thead>
             <tbody>
               {visibleCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
                     No categories match the current filters.
                   </td>
                 </tr>
@@ -205,6 +207,16 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                     <td className="px-4 py-4">{category.slug}</td>
                     <td className="px-4 py-4">{category._count.products}</td>
                     <td className="px-4 py-4">{category.parent?.name ?? "—"}</td>
+                    <td className="px-4 py-4">
+                      {category.parentId ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <CategoryHomepageToggle
+                          categoryId={category.id}
+                          enabled={category.showOnHomepage}
+                        />
+                      )}
+                    </td>
                     <td className="px-4 py-4">
                       <RowActions
                         viewHref={`/admin/categories/${category.id}`}

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx prisma migrate deploy && npm run build",
+  "buildCommand": "PRISMA_MIGRATE_ADVISORY_LOCK_TIMEOUT=60000 npx prisma migrate deploy && npm run build",
   "outputDirectory": ".next",
   "framework": "nextjs",
   "installCommand": "npm install --legacy-peer-deps",

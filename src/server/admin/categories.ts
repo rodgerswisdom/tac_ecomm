@@ -14,6 +14,8 @@ const categorySchema = z.object({
     description: z.string().optional().nullable(),
     image: z.string().url().optional().nullable(),
     parentId: z.string().cuid().optional().nullable(),
+    showOnHomepage: z.coerce.boolean().optional().default(false),
+    homepageOrder: z.coerce.number().int().min(0).optional().default(0),
     slug: z
         .string()
         .min(2)
@@ -22,6 +24,17 @@ const categorySchema = z.object({
         .optional()
         .nullable(),
 })
+
+function parseShowOnHomepage(value: FormDataEntryValue | null) {
+    return value === "on" || value === "true"
+}
+
+function resolveHomepageFields(parentId: string | null | undefined, showOnHomepage: boolean, homepageOrder: number) {
+    if (parentId) {
+        return { showOnHomepage: false, homepageOrder: 0 }
+    }
+    return { showOnHomepage, homepageOrder }
+}
 
 function normalizeSlug(value: FormDataEntryValue | null) {
     const raw = value?.toString().trim().toLowerCase()
@@ -140,6 +153,8 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
         description: formData.get("description")?.toString(),
         image: normalizeImage(formData.get("image")),
         parentId: formData.get("parentId")?.toString() || undefined,
+        showOnHomepage: parseShowOnHomepage(formData.get("showOnHomepage")),
+        homepageOrder: formData.get("homepageOrder")?.toString() ?? "0",
         slug: normalizeSlug(formData.get("slug")),
     })
 
@@ -148,11 +163,17 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined)
+    const homepageFields = resolveHomepageFields(
+        parsed.data.parentId,
+        parsed.data.showOnHomepage ?? false,
+        parsed.data.homepageOrder ?? 0,
+    )
 
     try {
         const created = await prisma.category.create({
             data: {
                 ...parsed.data,
+                ...homepageFields,
                 slug,
             },
         })
@@ -176,6 +197,8 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
         description: formData.get("description")?.toString(),
         image: normalizeImage(formData.get("image")),
         parentId: formData.get("parentId")?.toString() || undefined,
+        showOnHomepage: parseShowOnHomepage(formData.get("showOnHomepage")),
+        homepageOrder: formData.get("homepageOrder")?.toString() ?? "0",
         slug: normalizeSlug(formData.get("slug")),
     })
 
@@ -184,12 +207,18 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined, parsed.data.id)
+    const homepageFields = resolveHomepageFields(
+        parsed.data.parentId,
+        parsed.data.showOnHomepage ?? false,
+        parsed.data.homepageOrder ?? 0,
+    )
 
     try {
         await prisma.category.update({
             where: { id: parsed.data.id },
             data: {
                 ...parsed.data,
+                ...homepageFields,
                 slug,
             },
         })
@@ -237,4 +266,41 @@ export async function deleteCategoryAction(formData: FormData) {
     }
 
     revalidateCategoryPaths(category.slug, categoryId)
+}
+
+export async function toggleCategoryHomepageAction(
+    _prev: ActionResult | undefined,
+    formData: FormData,
+): Promise<ActionResult> {
+    await assertAdmin()
+
+    const categoryId = formData.get("categoryId")?.toString()
+    if (!categoryId) {
+        return { error: "Category id is required" }
+    }
+
+    const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+        select: { id: true, slug: true, parentId: true, showOnHomepage: true },
+    })
+
+    if (!category) {
+        return { error: "Category not found" }
+    }
+
+    if (category.parentId) {
+        return { error: "Only main categories can appear on the homepage" }
+    }
+
+    try {
+        await prisma.category.update({
+            where: { id: categoryId },
+            data: { showOnHomepage: !category.showOnHomepage },
+        })
+        revalidateCategoryPaths(category.slug, categoryId)
+    } catch {
+        return { error: "Failed to update homepage visibility" }
+    }
+
+    return { success: true }
 }

@@ -23,6 +23,7 @@ export function HomePageClient({ featuredProducts, mainCategories }: HomePageCli
       <Navbar />
       <Hero featuredProducts={featuredProducts} />
 
+      {mainCategories.length > 0 ? (
       <section className="section-spacing" id="collection">
         <div className="gallery-container">
           <motion.div
@@ -67,6 +68,7 @@ export function HomePageClient({ featuredProducts, mainCategories }: HomePageCli
           </motion.div>
         </div>
       </section>
+      ) : null}
 
       <section className="section-spacing bg-white">
         <div className="gallery-container space-y-12">
