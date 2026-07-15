@@ -1,4 +1,4 @@
-import { ProductCardData } from "@/types/product";
+import { ProductCardData, ProductGalleryImage } from "@/types/product";
 export interface ArtisanProfile {
   id: number;
   name: string;
@@ -9,6 +9,14 @@ export interface ArtisanProfile {
   portrait: string;
 }
 import { LegacyMilestone } from "@/components/LegacyTimeline";
+
+function toGalleryImages(productId: string, gallery: string[]): ProductGalleryImage[] {
+  return gallery.map((url, order) => ({
+    id: `${productId}-gallery-${order}`,
+    url,
+    order,
+  }))
+}
 
 export const featuredProducts: ProductCardData[] = [
   {
@@ -24,6 +32,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1516637090014-cb1ab0d08fc7?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("1", [
+      "https://images.unsplash.com/photo-1603188470169-6f7e80e2e6c2?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1516637090014-cb1ab0d08fc7?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "A sculpted bronze collar inspired by Chagga armor, hand-burnished for a molten glow and finished with Maasai bead inlays.",
     origin: "Kenya",
@@ -57,6 +70,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("2", [
+      "https://images.unsplash.com/photo-1543294001-f7cd5d7fb516?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1611591437281-460bfbe1220a?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "Hand-carved signet ring featuring the Sankofa glyph surrounded by hammered gold, symbolising wisdom reclaimed.",
     origin: "Ghana",
@@ -90,6 +108,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1518544889280-4e3b0c6b1a61?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("3", [
+      "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1518544889280-4e3b0c6b1a61?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "Stackable bangles from hand-poured Tuareg bronze, etched with celestial maps of the Sahara caravan routes.",
     origin: "Mali",
@@ -122,6 +145,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("4", [
+      "https://images.unsplash.com/photo-1562157873-818bc0726f2e?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "Lightweight hoop earrings woven with recycled glass beads from KwaZulu artisans, trimmed in brushed gold.",
     origin: "South Africa",
@@ -155,6 +183,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1518544889280-4e3b0c6b1a61?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("5", [
+      "https://images.unsplash.com/photo-1530023367847-a683933f4177?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1518544889280-4e3b0c6b1a61?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "Architectural cuff inspired by Ndebele mural geometry, finished in a matte sand texture with gold leaf edges.",
     origin: "Zimbabwe",
@@ -187,6 +220,11 @@ export const featuredProducts: ProductCardData[] = [
       "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
       "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=900&q=80",
     ],
+    galleryImages: toGalleryImages("6", [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+      "https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&w=900&q=80",
+    ]),
     description:
       "Hand-loomed merino shawl dyed with desert saffron and henna, finished with leather tassels from Marrakech.",
     origin: "Morocco",

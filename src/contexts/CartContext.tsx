@@ -4,10 +4,13 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 import { trackAddToCart, trackRemoveFromCart, trackBeginCheckout } from '@/lib/analytics'
+import { buildCartLineKey, formatProductImageLabel } from '@/lib/product-image-selection'
 
-interface CartItem {
-  /** Product id (string cuid from DB); used as key and for API sync */
+export interface CartItem {
+  /** Product id (string cuid from DB) */
   id: number | string
+  /** Stable line identity for merge/remove/qty */
+  cartLineKey: string
   name: string
   price: number
   originalPrice?: number
@@ -15,17 +18,19 @@ interface CartItem {
   quantity: number
   size?: string
   color?: string
-  /** Preserved from API so we always send valid productId when saving */
   productId?: string
+  productImageId?: string
+  selectedImageLabel?: string
 }
 
 interface CartContextType {
   cart: CartItem[]
-  addToCart: (item: Omit<CartItem, 'quantity'>) => void
-  removeFromCart: (id: number | string) => void
-  updateQuantity: (id: number | string, quantity: number) => void
+  addToCart: (item: Omit<CartItem, 'quantity' | 'cartLineKey'> & { cartLineKey?: string }) => void
+  addItemsToCart: (items: Array<Omit<CartItem, 'quantity' | 'cartLineKey'> & { cartLineKey?: string; quantity: number }>) => void
+  removeFromCart: (cartLineKey: string) => void
+  updateQuantity: (cartLineKey: string, quantity: number) => void
   clearCart: () => void
-  isInCart: (id: number | string) => boolean
+  isInCart: (cartLineKey: string) => boolean
   getCartTotal: () => number
   getCartItemCount: () => number
 }
@@ -34,6 +39,17 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 interface CartProviderProps {
   children: ReactNode
+}
+
+function normalizeCartItem(item: Omit<CartItem, 'quantity' | 'cartLineKey'> & { cartLineKey?: string }): Omit<CartItem, 'quantity'> {
+  const productId = item.productId ?? String(item.id)
+  const cartLineKey = item.cartLineKey ?? buildCartLineKey(productId, item.productImageId)
+  return {
+    ...item,
+    id: productId,
+    productId,
+    cartLineKey,
+  }
 }
 
 export function CartProvider({ children }: CartProviderProps) {
@@ -46,27 +62,57 @@ export function CartProvider({ children }: CartProviderProps) {
   const user = session?.user
   const userEmail = user?.email ?? null
 
-  // Fetch user's server cart (production-ready)
   const fetchUserCart = async () => {
     try {
       const res = await fetch('/api/cart', { credentials: 'include' })
       if (!res.ok) return []
       const data = await res.json()
-      // API returns { cart: [...] }
       if (Array.isArray(data.cart)) {
-        // Map API cart items; keep productId (string) as id so we send valid FK when saving
-        return data.cart.map((item: Partial<CartItem> & { product?: Partial<CartItem>; productId?: string | number }) => {
-          const productId = item.productId != null ? String(item.productId) : (item.id != null ? String(item.id) : '')
+        return data.cart.map((item: {
+          productId?: string | number
+          quantity?: number
+          productImageId?: string | null
+          product?: {
+            name?: string
+            price?: number
+            comparePrice?: number | null
+            images?: Array<{ id: string; url: string; order: number }>
+          }
+          productImage?: { id: string; url: string; alt?: string | null; order: number } | null
+          selectedImageLabel?: string
+        }) => {
+          const productId = item.productId != null ? String(item.productId) : ''
+          const productImageId = item.productImageId ?? undefined
+          const sortedImages = [...(item.product?.images ?? [])].sort((a, b) => a.order - b.order)
+          const fallbackImage = sortedImages[0]?.url ?? ''
+          const imageUrl = item.productImage?.url ?? fallbackImage
+          const imageIndex = productImageId
+            ? sortedImages.findIndex((image) => image.id === productImageId)
+            : -1
+          const selectedImageLabel =
+            item.selectedImageLabel ??
+            (imageIndex >= 0
+              ? formatProductImageLabel(
+                  {
+                    id: sortedImages[imageIndex].id,
+                    url: sortedImages[imageIndex].url,
+                    order: sortedImages[imageIndex].order,
+                  },
+                  imageIndex,
+                )
+              : undefined)
+
           return {
             id: productId,
             productId,
-            name: item.product?.name ?? item.name ?? '',
-            price: Number(item.product?.price ?? item.price) ?? 0,
-            originalPrice: item.product?.originalPrice ?? item.originalPrice,
-            image: item.product?.image ?? item.image ?? '',
+            cartLineKey: buildCartLineKey(productId, productImageId),
+            productImageId,
+            selectedImageLabel,
+            name: item.product?.name ?? '',
+            price: Number(item.product?.price) || 0,
+            originalPrice: item.product?.comparePrice ?? undefined,
+            image: imageUrl,
             quantity: Number(item.quantity) || 1,
-            size: item.size,
-            color: item.color
           }
         })
       }
@@ -76,7 +122,6 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }
 
-  // Save merged cart to server (production-ready)
   const saveUserCart = async (mergedCart: CartItem[]) => {
     try {
       const productId = (item: CartItem) => item.productId ?? (typeof item.id === 'string' ? item.id : null)
@@ -89,7 +134,8 @@ export function CartProvider({ children }: CartProviderProps) {
           cartItems: validItems.map(item => ({
             productId: productId(item),
             quantity: item.quantity,
-            variantId: null
+            variantId: null,
+            productImageId: item.productImageId ?? null,
           }))
         })
       })
@@ -98,7 +144,6 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }
 
-  // Load cart from localStorage on mount (for guests)
   useEffect(() => {
     if (typeof window !== 'undefined' && !user) {
       if (hasClearedGuestCartRef.current) {
@@ -111,7 +156,25 @@ export function CartProvider({ children }: CartProviderProps) {
       try {
         const savedCart = localStorage.getItem('tac-cart')
         if (savedCart && !hasClearedGuestCartRef.current) {
-          setCart(JSON.parse(savedCart))
+          const parsed = JSON.parse(savedCart) as Array<Partial<CartItem>>
+          setCart(
+            parsed.map((item) => {
+              const normalized = normalizeCartItem({
+                id: item.id ?? item.productId ?? '',
+                productId: item.productId ?? (item.id != null ? String(item.id) : undefined),
+                cartLineKey: item.cartLineKey,
+                productImageId: item.productImageId,
+                selectedImageLabel: item.selectedImageLabel,
+                name: item.name ?? '',
+                price: Number(item.price) || 0,
+                originalPrice: item.originalPrice,
+                image: item.image ?? '',
+                size: item.size,
+                color: item.color,
+              })
+              return { ...normalized, quantity: Number(item.quantity) || 1 }
+            }),
+          )
         }
       } catch (error) {
         console.error('Error loading cart from localStorage:', error)
@@ -122,12 +185,10 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }, [user])
 
-  // Reset sync flag whenever the authenticated user changes
   useEffect(() => {
     setHasSyncedServerCart(false)
   }, [userEmail])
 
-  // On login only: merge local cart with server cart and save (not on every cart change — avoids blink)
   useEffect(() => {
     if (!userEmail || !isLoaded || hasSyncedServerCart) return
     let cancelled = false
@@ -163,7 +224,6 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }, [userEmail, isLoaded, hasSyncedServerCart])
 
-  // Save cart to localStorage whenever it changes (for guests)
   useEffect(() => {
     if (isLoaded && typeof window !== 'undefined' && !user) {
       if (isHydratingGuestCartRef.current) return
@@ -181,33 +241,15 @@ export function CartProvider({ children }: CartProviderProps) {
     }
   }, [cart, isLoaded, user])
 
-  const addToCart = (item: Omit<CartItem, 'quantity'>) => {
-    if (!user) {
-      hasClearedGuestCartRef.current = false
-    }
+  const showAddToCartToast = (designCount: number, itemCount: number) => {
+    const message =
+      designCount > 1
+        ? `Added ${designCount} designs (${itemCount} items)`
+        : itemCount > 1
+          ? `Added ${itemCount} items to cart`
+          : 'Added to cart'
 
-    setCart(prevCart => {
-      const existingItem = prevCart.find(cartItem => cartItem.id === item.id)
-      const next = existingItem
-        ? prevCart.map(cartItem =>
-            cartItem.id === item.id
-              ? { ...cartItem, quantity: cartItem.quantity + 1 }
-              : cartItem
-          )
-        : [...prevCart, { ...item, quantity: 1 }]
-      if (user) queueMicrotask(() => saveUserCart(next))
-      
-      // Track add to cart event
-      trackAddToCart({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        originalPrice: item.originalPrice,
-      }, 1)
-      
-      return next
-    })
-    toast.success('Added to cart', {
+    toast.success(message, {
       action: {
         label: 'Checkout',
         onClick: () => { window.location.href = '/checkout' }
@@ -219,31 +261,87 @@ export function CartProvider({ children }: CartProviderProps) {
     })
   }
 
-  const removeFromCart = (id: number | string) => {
-    setCart(prevCart => {
-      // Find the item being removed for tracking
-      const itemToRemove = prevCart.find(item => item.id === id)
-      
-      const next = prevCart.filter(item => item.id !== id)
+  const addItemsToCart = (
+    items: Array<Omit<CartItem, 'quantity' | 'cartLineKey'> & { cartLineKey?: string; quantity: number }>,
+  ) => {
+    const validItems = items.filter((item) => item.quantity > 0)
+    if (validItems.length === 0) return
+
+    if (!user) {
+      hasClearedGuestCartRef.current = false
+    }
+
+    const normalizedItems = validItems.map((item) => ({
+      normalized: normalizeCartItem(item),
+      quantity: item.quantity,
+    }))
+
+    setCart((prevCart) => {
+      const next = [...prevCart]
+
+      normalizedItems.forEach(({ normalized, quantity }) => {
+        const existingIndex = next.findIndex(
+          (cartItem) => cartItem.cartLineKey === normalized.cartLineKey,
+        )
+
+        if (existingIndex >= 0) {
+          next[existingIndex] = {
+            ...next[existingIndex],
+            quantity: next[existingIndex].quantity + quantity,
+          }
+        } else {
+          next.push({ ...normalized, quantity })
+        }
+      })
+
       if (user) queueMicrotask(() => saveUserCart(next))
-      
-      // Track remove from cart event
+
+      normalizedItems.forEach(({ normalized, quantity }) => {
+        trackAddToCart(
+          {
+            id: normalized.id,
+            name: normalized.name,
+            price: normalized.price,
+            originalPrice: normalized.originalPrice,
+          },
+          quantity,
+        )
+      })
+
+      return next
+    })
+
+    const itemCount = normalizedItems.reduce((total, item) => total + item.quantity, 0)
+    showAddToCartToast(normalizedItems.length, itemCount)
+  }
+
+  const addToCart = (item: Omit<CartItem, 'quantity' | 'cartLineKey'> & { cartLineKey?: string }) => {
+    addItemsToCart([{ ...item, quantity: 1 }])
+  }
+
+  const removeFromCart = (cartLineKey: string) => {
+    setCart(prevCart => {
+      const itemToRemove = prevCart.find(item => item.cartLineKey === cartLineKey)
+
+      const next = prevCart.filter(item => item.cartLineKey !== cartLineKey)
+      if (user) queueMicrotask(() => saveUserCart(next))
+
       if (itemToRemove) {
         trackRemoveFromCart(itemToRemove, itemToRemove.quantity)
       }
-      
+
       return next
     })
   }
 
-  const updateQuantity = (id: number | string, quantity: number) => {
+  const updateQuantity = (cartLineKey: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(id)
+      removeFromCart(cartLineKey)
       return
     }
     setCart(prevCart => {
       const next = prevCart.map(item =>
-        item.id === id ? { ...item, quantity } : item
+        item.cartLineKey === cartLineKey ? { ...item, quantity } : item
       )
       if (user) queueMicrotask(() => saveUserCart(next))
       return next
@@ -257,13 +355,11 @@ export function CartProvider({ children }: CartProviderProps) {
     }
 
     setCart([])
-    // Always attempt server sync. Auth is determined by cookies on the API route,
-    // and on payment redirect the session object may not be hydrated yet.
     queueMicrotask(() => saveUserCart([]))
   }
 
-  const isInCart = (id: number | string) => {
-    return cart.some(item => item.id === id)
+  const isInCart = (cartLineKey: string) => {
+    return cart.some(item => item.cartLineKey === cartLineKey)
   }
 
   const getCartTotal = () => {
@@ -277,6 +373,7 @@ export function CartProvider({ children }: CartProviderProps) {
   const value: CartContextType = {
     cart,
     addToCart,
+    addItemsToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
@@ -289,23 +386,25 @@ export function CartProvider({ children }: CartProviderProps) {
 }
 
 function mergeServerAndLocalCarts(serverCart: CartItem[], localCart: CartItem[]) {
-  const mergedMap = new Map<CartItem['id'], CartItem>()
+  const mergedMap = new Map<string, CartItem>()
   serverCart.forEach(item => {
-    mergedMap.set(item.id, { ...item })
+    mergedMap.set(item.cartLineKey, { ...item })
   })
 
   let needsSync = false
 
   localCart.forEach(item => {
-    const existing = mergedMap.get(item.id)
+    const lineKey = item.cartLineKey ?? buildCartLineKey(String(item.productId ?? item.id), item.productImageId)
+    const normalized = { ...item, cartLineKey: lineKey }
+    const existing = mergedMap.get(lineKey)
     if (!existing) {
-      mergedMap.set(item.id, { ...item })
+      mergedMap.set(lineKey, normalized)
       needsSync = true
       return
     }
 
-    if (item.quantity > existing.quantity) {
-      mergedMap.set(item.id, { ...existing, quantity: item.quantity })
+    if (normalized.quantity > existing.quantity) {
+      mergedMap.set(lineKey, { ...existing, quantity: normalized.quantity })
       needsSync = true
     }
   })

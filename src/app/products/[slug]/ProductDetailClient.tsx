@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
@@ -12,22 +12,55 @@ import { Breadcrumb } from "@/components/Breadcrumb";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
+import { ProductDesignPicker } from "@/components/ProductDesignPicker";
 import { ProductCardData } from "@/types/product";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 import { trackViewItem } from "@/lib/analytics";
+import {
+  buildCartLineKey,
+  formatProductImageLabel,
+  getDefaultGalleryImage,
+} from "@/lib/product-image-selection";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
   related: ProductCardData[];
 }
 
+function createEmptyQuantities(images: ProductCardData["galleryImages"]): Record<string, number> {
+  return Object.fromEntries(images.map((image) => [image.id, 0]));
+}
+
 export function ProductDetailClient({ product, related }: ProductDetailClientProps) {
-  const { addToCart } = useCart();
+  const { addToCart, addItemsToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const defaultImage = useMemo(() => getDefaultGalleryImage(product.galleryImages), [product.galleryImages]);
+  const [selectedImageId, setSelectedImageId] = useState(defaultImage.id);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [designQuantities, setDesignQuantities] = useState<Record<string, number>>(() =>
+    createEmptyQuantities(product.galleryImages),
+  );
+
+  const hasMultipleDesigns = product.galleryImages.length > 1;
+  const totalSelectedQty = useMemo(
+    () => Object.values(designQuantities).reduce((total, qty) => total + qty, 0),
+    [designQuantities],
+  );
+
+  const selectedImage = useMemo(() => {
+    const match = product.galleryImages.find((image) => image.id === selectedImageId);
+    return match ?? defaultImage;
+  }, [defaultImage, product.galleryImages, selectedImageId]);
 
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
+
+  useEffect(() => {
+    setSelectedImageId(defaultImage.id);
+    setSelectedImageIndex(0);
+    setDesignQuantities(createEmptyQuantities(product.galleryImages));
+  }, [defaultImage.id, product.id, product.galleryImages]);
 
   // Track product view when component mounts
   useEffect(() => {
@@ -43,13 +76,53 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
+
+    if (hasMultipleDesigns) {
+      const itemsToAdd = product.galleryImages
+        .map((image, index) => ({
+          image,
+          index,
+          quantity: designQuantities[image.id] ?? 0,
+        }))
+        .filter((entry) => entry.quantity > 0)
+        .map(({ image, index, quantity }) => ({
+          id: product.id,
+          productId: product.id,
+          cartLineKey: buildCartLineKey(product.id, image.id),
+          productImageId: image.id,
+          selectedImageLabel: formatProductImageLabel(image, index),
+          name: product.name,
+          price: product.price,
+          image: image.url || product.image,
+          quantity,
+        }));
+
+      if (itemsToAdd.length === 0) return;
+
+      addItemsToCart(itemsToAdd);
+      setDesignQuantities(createEmptyQuantities(product.galleryImages));
+      return;
+    }
+
+    const imageId = selectedImage.id || defaultImage.id;
     addToCart({
       id: product.id,
+      productId: product.id,
+      cartLineKey: buildCartLineKey(product.id, imageId),
+      productImageId: imageId || undefined,
+      selectedImageLabel: formatProductImageLabel(selectedImage, selectedImageIndex),
       name: product.name,
       price: product.price,
-      image: product.image,
+      image: selectedImage.url || product.image,
     });
   };
+
+  const addButtonLabel = hasMultipleDesigns
+    ? totalSelectedQty > 0
+      ? `Add ${totalSelectedQty} to Basket`
+      : "Add to Basket"
+    : "Add to Basket";
+  const isAddDisabled = isOutOfStock || (hasMultipleDesigns && totalSelectedQty === 0);
 
   // Generate breadcrumb items
   const breadcrumbItems = [
@@ -70,19 +143,20 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   });
 
   return (
-    <main className="relative overflow-hidden bg-brand-beige">
+    <main className="relative overflow-x-hidden bg-brand-beige">
       <Navbar />
-      <section className="nav-clearance section-spacing pb-0">
+      <section className="nav-clearance section-spacing pb-8 sm:pb-0">
         <div className="gallery-container">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <Breadcrumb items={breadcrumbItems} />
-            <span className="caps-spacing text-xs text-brand-umber/60">
+          <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+            <Breadcrumb items={breadcrumbItems} className="hidden sm:flex" />
+            <span className="caps-spacing text-xs text-brand-umber/60 sm:text-right">
               Crafted in {product.origin}
             </span>
           </div>
 
-          <div className="grid gap-8 lg:gap-16 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid min-w-0 grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
             <motion.div
+              className="relative z-0 min-w-0 w-full"
               initial={{ opacity: 0, y: 32 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
@@ -91,25 +165,34 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 images={product.gallery}
                 productName={product.name}
                 fallbackImage={product.image}
+                activeIndex={selectedImageIndex}
+                hideThumbnailsOnMobile={hasMultipleDesigns}
+                onIndexChange={(index) => {
+                  setSelectedImageIndex(index);
+                  const image = product.galleryImages[index];
+                  if (image) {
+                    setSelectedImageId(image.id);
+                  }
+                }}
               />
             </motion.div>
 
             <motion.div
-              className="space-y-8 rounded-[1.5rem] sm:rounded-[2.5rem] border border-brand-teal/20 bg-brand-beige/85 p-5 sm:p-8 lg:p-10 backdrop-blur-sm shadow-[0_28px_70px_rgba(74,43,40,0.16)]"
+              className="relative z-10 min-w-0 w-full space-y-6 rounded-2xl border border-brand-teal/20 bg-brand-beige/85 p-4 shadow-[0_18px_40px_rgba(74,43,40,0.12)] backdrop-blur-sm sm:space-y-8 sm:rounded-[2.5rem] sm:p-8 sm:shadow-[0_28px_70px_rgba(74,43,40,0.16)] lg:p-10"
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.9, ease: [0.33, 1, 0.68, 1], delay: 0.1 }}
             >
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 <span className="caps-spacing text-xs text-brand-coral">Limited Release</span>
-                <h1 className="font-heading text-3xl sm:text-4xl md:text-5xl text-brand-umber">{product.name}</h1>
-                <p className="text-base text-brand-umber/75">{product.description}</p>
+                <h1 className="font-heading text-2xl text-brand-umber sm:text-4xl md:text-5xl">{product.name}</h1>
+                <p className="text-sm leading-relaxed text-brand-umber/75 sm:text-base">{product.description}</p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-6 border-y border-brand-umber/15 py-6">
-                <div>
+              <div className="flex flex-wrap items-center gap-3 border-y border-brand-umber/15 py-4 sm:gap-6 sm:py-6">
+                <div className="w-full sm:w-auto">
                   <p className="caps-spacing text-xs text-brand-umber/50">Investment</p>
-                  <p className="text-3xl font-heading text-brand-coral">{formatPrice(product.price)}</p>
+                  <p className="text-2xl font-heading text-brand-coral sm:text-3xl">{formatPrice(product.price)}</p>
                 </div>
                 {isDiscounted && product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
@@ -131,8 +214,8 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 )}
               </div>
 
-              <div className="space-y-4">
-                <h2 className="font-heading text-2xl text-brand-umber">Materials</h2>
+              <div className="space-y-3 sm:space-y-4">
+                <h2 className="font-heading text-xl text-brand-umber sm:text-2xl">Materials</h2>
                 <div className="flex flex-wrap gap-2">
                   {product.materials.map((material) => (
                     <span
@@ -145,11 +228,28 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 </div>
               </div>
 
-              <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isOutOfStock}>
-                <ShoppingBag className="mr-2 h-5 w-5" /> Add to Basket
+              {hasMultipleDesigns ? (
+                <ProductDesignPicker
+                  images={product.galleryImages}
+                  quantities={designQuantities}
+                  onQuantityChange={(imageId, quantity) => {
+                    setDesignQuantities((prev) => ({ ...prev, [imageId]: quantity }));
+                  }}
+                  onPreview={(index) => {
+                    setSelectedImageIndex(index);
+                    const image = product.galleryImages[index];
+                    if (image) {
+                      setSelectedImageId(image.id);
+                    }
+                  }}
+                />
+              ) : null}
+
+              <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isAddDisabled}>
+                <ShoppingBag className="mr-2 h-5 w-5" /> {addButtonLabel}
               </Button>
 
-              <div className="flex flex-col gap-3 rounded-3xl bg-brand-jade/25 p-6 text-sm text-brand-umber/70">
+              <div className="flex flex-col gap-3 rounded-2xl bg-brand-jade/25 p-4 text-sm text-brand-umber/70 sm:rounded-3xl sm:p-6">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />
                   Insured delivery.

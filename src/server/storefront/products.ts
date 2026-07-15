@@ -189,7 +189,13 @@ export async function getRelatedProductCards({
 
 function mapProductToCard(product: ProductWithRelations): ProductCardData {
   const sortedImages = [...product.images].sort((a, b) => a.order - b.order)
-  const gallery = sortedImages.map((image) => image.url)
+  const galleryImages = sortedImages.map((image) => ({
+    id: image.id,
+    url: image.url,
+    alt: image.alt ?? undefined,
+    order: image.order,
+  }))
+  const gallery = galleryImages.map((image) => image.url)
   const image = gallery[0] ?? FALLBACK_IMAGE
   const reviewCount = product.reviews.length
   const ratingAverage = reviewCount
@@ -218,6 +224,9 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     originalPrice: product.comparePrice ?? undefined,
     image,
     gallery: gallery.length > 0 ? gallery : [FALLBACK_IMAGE],
+    galleryImages: galleryImages.length > 0
+      ? galleryImages
+      : [{ id: "fallback", url: FALLBACK_IMAGE, order: 0 }],
     description: product.shortDescription ?? product.description,
     origin: product.origin ?? artisan.regionLabel,
     materials: product.materials ?? [],

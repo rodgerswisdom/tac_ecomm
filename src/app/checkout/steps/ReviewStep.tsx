@@ -75,8 +75,9 @@ export function ReviewStep({
         <h3 className="font-semibold mb-2">Cart Items</h3>
         <ul className="text-sm">
           {cart.map(item => (
-            <li key={item.id}>
-              {item.name} x{item.quantity} - {formatPrice(item.price * item.quantity)}
+            <li key={item.cartLineKey}>
+              {item.name}
+              {item.selectedImageLabel ? ` (${item.selectedImageLabel})` : ""} x{item.quantity} - {formatPrice(item.price * item.quantity)}
             </li>
           ))}
         </ul>

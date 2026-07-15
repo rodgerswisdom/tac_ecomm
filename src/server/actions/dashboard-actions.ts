@@ -68,6 +68,8 @@ export type OrderDetail = {
     id: string
     quantity: number
     price: number
+    selectedImageUrl?: string | null
+    selectedImageLabel?: string | null
     product: {
       id: string
       name: string
@@ -252,6 +254,7 @@ export async function getOrderByNumber(
                 images: { select: { url: true }, orderBy: { order: 'asc' } },
               },
             },
+            productImage: { select: { url: true } },
           },
         },
       },
@@ -291,6 +294,8 @@ export async function getOrderByNumber(
         id: item.id,
         quantity: item.quantity,
         price: item.price,
+        selectedImageUrl: item.selectedImageUrl,
+        selectedImageLabel: item.selectedImageLabel,
         product: item.product
           ? {
               id: item.product.id,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -10,18 +10,35 @@ interface Product360ViewerProps {
   images: string[];
   productName: string;
   fallbackImage?: string;
+  activeIndex?: number;
+  onIndexChange?: (index: number) => void;
+  /** Hide the thumbnail strip on small screens (e.g. when a design picker is shown below). */
+  hideThumbnailsOnMobile?: boolean;
 }
 
 export function Product360Viewer({
   images,
   productName,
   fallbackImage,
+  activeIndex,
+  onIndexChange,
+  hideThumbnailsOnMobile = false,
 }: Product360ViewerProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [internalIndex, setInternalIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [rotation, setRotation] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const isControlled = activeIndex !== undefined;
+  const currentIndex = isControlled ? activeIndex : internalIndex;
+
+  const setCurrentIndex = (index: number) => {
+    if (!isControlled) {
+      setInternalIndex(index);
+    }
+    onIndexChange?.(index);
+  };
 
   // Use gallery images if available, otherwise fallback
   const displayImages = images.length > 0 ? images : fallbackImage ? [fallbackImage] : [];
@@ -29,6 +46,12 @@ export function Product360Viewer({
   // Calculate rotation based on image index
   const totalImages = displayImages.length;
   const anglePerImage = totalImages > 1 ? 360 / totalImages : 0;
+
+  useEffect(() => {
+    if (!isControlled || totalImages <= 1) return;
+    const normalized = ((activeIndex % totalImages) + totalImages) % totalImages;
+    setRotation((normalized / totalImages) * 360);
+  }, [activeIndex, isControlled, totalImages]);
 
   // Handle mouse/touch drag
   const handleStart = (clientX: number) => {
@@ -40,14 +63,13 @@ export function Product360Viewer({
     if (!isDragging || totalImages <= 1) return;
 
     const deltaX = clientX - startX;
-    const sensitivity = 2; // Adjust rotation sensitivity
+    const sensitivity = 2;
     const containerWidth = containerRef.current?.offsetWidth ?? 1;
     const deltaRotation = (deltaX / containerWidth) * 360 * sensitivity;
 
     let newRotation = rotation + deltaRotation;
-    newRotation = ((newRotation % 360) + 360) % 360; // Normalize to 0-360
+    newRotation = ((newRotation % 360) + 360) % 360;
 
-    // Calculate which image to show based on rotation
     const imageIndex = Math.round((newRotation / 360) * totalImages) % totalImages;
     setCurrentIndex(imageIndex);
     setRotation(newRotation);
@@ -57,7 +79,6 @@ export function Product360Viewer({
     setIsDragging(false);
   };
 
-  // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     handleStart(e.clientX);
@@ -73,7 +94,6 @@ export function Product360Viewer({
     handleEnd();
   };
 
-  // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
     handleStart(e.touches[0].clientX);
   };
@@ -88,16 +108,15 @@ export function Product360Viewer({
     handleEnd();
   };
 
-  // If we don't have enough images for 360 view, show static image
   if (totalImages <= 1) {
     return (
-      <div className="relative overflow-hidden rounded-[2.5rem] border border-brand-teal/20 bg-white shadow-[0_35px_80px_rgba(74,43,40,0.18)]">
+      <div className="relative isolate w-full max-w-full overflow-hidden rounded-2xl border border-brand-teal/20 bg-white shadow-lg sm:rounded-[2.5rem] sm:shadow-[0_35px_80px_rgba(74,43,40,0.18)]">
         <Image
           src={displayImages[0] || "/placeholder.png"}
           alt={productName}
           width={960}
           height={720}
-          className="h-[340px] w-full rounded-[2.5rem] object-cover sm:h-[420px] lg:h-[520px]"
+          className="aspect-[4/5] w-full object-cover sm:aspect-auto sm:h-[420px] lg:h-[520px]"
           priority
         />
       </div>
@@ -105,10 +124,10 @@ export function Product360Viewer({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full max-w-full space-y-3 sm:space-y-4">
       <div
         ref={containerRef}
-        className="relative overflow-hidden rounded-[2.5rem] border border-brand-teal/20 bg-white shadow-[0_35px_80px_rgba(74,43,40,0.18)] cursor-grab active:cursor-grabbing select-none"
+        className="relative isolate w-full max-w-full overflow-hidden rounded-2xl border border-brand-teal/20 bg-white shadow-lg sm:rounded-[2.5rem] sm:shadow-[0_35px_80px_rgba(74,43,40,0.18)] cursor-grab active:cursor-grabbing select-none touch-pan-y"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -117,7 +136,7 @@ export function Product360Viewer({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        <div className="relative h-[340px] w-full overflow-hidden sm:h-[420px] lg:h-[520px]">
+        <div className="relative aspect-[4/5] w-full overflow-hidden sm:aspect-auto sm:h-[420px] lg:h-[520px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -139,27 +158,26 @@ export function Product360Viewer({
           </AnimatePresence>
         </div>
 
-        {/* Drag hint */}
         {!isDragging && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute top-4 right-4 bg-brand-umber/80 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm"
+            className="absolute right-3 top-3 bg-brand-umber/80 text-white text-[10px] px-2.5 py-1 rounded-full backdrop-blur-sm sm:right-4 sm:top-4 sm:text-xs sm:px-3 sm:py-1.5"
           >
-            Drag to rotate
+            Swipe to rotate
           </motion.div>
         )}
       </div>
 
-      {/* Rotation controls — below image so they don't cover the product */}
       <div className="flex items-center justify-center gap-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={() => {
-            setCurrentIndex((prev) => (prev - 1 + totalImages) % totalImages);
+            const nextIndex = (currentIndex - 1 + totalImages) % totalImages;
+            setCurrentIndex(nextIndex);
             setRotation((prev) => (prev - anglePerImage + 360) % 360);
           }}
           className="h-10 w-10 rounded-full p-0"
@@ -175,7 +193,8 @@ export function Product360Viewer({
           variant="outline"
           size="sm"
           onClick={() => {
-            setCurrentIndex((prev) => (prev + 1) % totalImages);
+            const nextIndex = (currentIndex + 1) % totalImages;
+            setCurrentIndex(nextIndex);
             setRotation((prev) => (prev + anglePerImage) % 360);
           }}
           className="h-10 w-10 rounded-full p-0"
@@ -185,8 +204,11 @@ export function Product360Viewer({
         </Button>
       </div>
 
-      {/* Thumbnail navigation */}
-      <div className="flex gap-3 overflow-x-auto pb-2 sm:gap-4">
+      <div
+        className={`flex gap-2 overflow-x-auto pb-1 sm:gap-4 sm:pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          hideThumbnailsOnMobile ? "hidden sm:flex" : "flex"
+        }`}
+      >
         {displayImages.map((image, index) => (
           <button
             key={`thumb-${index}`}
@@ -195,7 +217,7 @@ export function Product360Viewer({
               setCurrentIndex(index);
               setRotation((index / totalImages) * 360);
             }}
-            className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-2xl border transition sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
+            className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border transition sm:h-24 sm:w-24 sm:rounded-2xl lg:h-28 lg:w-28 ${
               currentIndex === index
                 ? "border-brand-gold shadow-[0_12px_30px_rgba(223,160,83,0.28)]"
                 : "border-brand-teal/20"
@@ -214,4 +236,3 @@ export function Product360Viewer({
     </div>
   );
 }
-

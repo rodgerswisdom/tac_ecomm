@@ -12,6 +12,7 @@ import { AdminPageHeader } from "@/components/admin/page-header"
 import { RowActions } from "@/components/admin/row-actions"
 import { formatPrice } from "@/lib/utils"
 import { CopyToClipboardButton } from "@/components/admin/CopyToClipboardButton"
+import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -280,11 +281,15 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Order Items</p>
                                 </div>
                                 <div className="divide-y divide-slate-100 max-h-[200px] overflow-y-auto">
-                                  {order.items?.map((item: any) => (
+                                  {order.items?.map((item: any) => {
+                                    const imageUrl = getOrderItemImageUrl(item)
+                                    const imageLabel = getOrderItemImageLabel(item)
+
+                                    return (
                                     <div key={item.id} className="px-4 py-3 flex items-center gap-4 text-sm">
                                       <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
-                                        {item.product?.images?.[0] ? (
-                                          <img src={item.product.images[0].url} alt={item.product.name} className="h-full w-full object-cover" />
+                                        {imageUrl ? (
+                                          <img src={imageUrl} alt={item.product?.name} className="h-full w-full object-cover" />
                                         ) : (
                                           <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-slate-200 uppercase">
                                             {item.product?.name?.slice(0, 2)}
@@ -293,13 +298,17 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                       </div>
                                       <div className="flex-1 min-w-0 mr-4">
                                         <p className="font-bold text-slate-900 truncate">{item.product?.name}</p>
+                                        {imageLabel ? (
+                                          <p className="text-[10px] text-brand-umber/70">{imageLabel}</p>
+                                        ) : null}
                                         <p className="text-[10px] text-slate-400 uppercase tracking-wide">Qty: {item.quantity} × <AdminFormattedPrice amount={item.price} amountCurrency={order.currency} /></p>
                                       </div>
                                       <p className="font-black text-slate-900 text-right">
                                         <AdminFormattedPrice amount={item.price * item.quantity} amountCurrency={order.currency} />
                                       </p>
                                     </div>
-                                  ))}
+                                    )
+                                  })}
                                 </div>
                                 <div className="bg-slate-50/50 px-4 py-3 space-y-1 text-xs">
                                   <div className="flex justify-between">

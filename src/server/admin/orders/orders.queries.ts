@@ -38,6 +38,17 @@ export async function getOrders(filters: OrderFilters = {}) {
             include: {
                 user: { select: { name: true, email: true } },
                 shippingAddress: true,
+                items: {
+                    include: {
+                        product: {
+                            select: {
+                                name: true,
+                                images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+                            },
+                        },
+                        productImage: { select: { url: true, alt: true, order: true } },
+                    },
+                },
                 _count: { select: { items: true } },
             },
         }),
@@ -61,7 +72,14 @@ export async function getOrderDetail(orderId: string) {
             shippingAddress: true,
             items: {
                 include: {
-                    product: { select: { name: true, sku: true } },
+                    product: {
+                        select: {
+                            name: true,
+                            sku: true,
+                            images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+                        },
+                    },
+                    productImage: { select: { url: true, alt: true, order: true } },
                 },
             },
             payments: { orderBy: { createdAt: "desc" } },

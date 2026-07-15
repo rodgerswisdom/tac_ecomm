@@ -75,6 +75,7 @@ import { NavbarCategoriesProvider } from "@/contexts/NavbarCategoriesContext";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { MaintenanceMode } from "@/components/MaintenanceMode";
+import { NavigationProgressRoot } from "@/components/NavigationProgressRoot";
 
 export const dynamic = "force-dynamic";
 
@@ -130,6 +131,7 @@ export default async function RootLayout({
             <CartProvider>
               <CurrencyProvider initialRates={{ kes: settings.usdToKesRate, eur: settings.usdToEurRate }}>
                 <NavbarCategoriesProvider categories={shopCategories}>
+                  <NavigationProgressRoot />
                   <div className="flex flex-col min-h-screen">
                     <main className="flex-grow">
                       {isMaintenanceActive ? <MaintenanceMode /> : children}

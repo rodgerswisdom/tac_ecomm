@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/admin/page-header"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { getOrderDetail } from "@/server/admin/orders"
+import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
 import { StatusUpdateForm } from "./StatusUpdateForm"
 
 interface OrderDetailPageProps {
@@ -153,12 +154,26 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               </div>
               <div className="mt-3 divide-y divide-border rounded-2xl border border-border bg-white">
                 {order.items.length > 0 ? (
-                  order.items.map((item) => (
+                  order.items.map((item) => {
+                    const imageUrl = getOrderItemImageUrl(item)
+                    const imageLabel = getOrderItemImageLabel(item)
+
+                    return (
                     <div key={item.id} className="flex flex-wrap items-center justify-between gap-4 p-4 text-sm">
-                      <div>
+                      <div className="flex min-w-0 items-start gap-3">
+                        {imageUrl ? (
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+                            <img src={imageUrl} alt={item.product?.name ?? "Product"} className="h-full w-full object-cover" />
+                          </div>
+                        ) : null}
+                        <div>
                         <p className="font-semibold">{item.product?.name ?? "Product"}</p>
+                        {imageLabel ? (
+                          <p className="text-xs text-brand-umber/70">{imageLabel}</p>
+                        ) : null}
                         <p className="text-xs text-muted-foreground">SKU {item.product?.sku ?? "—"}</p>
                         <p className="text-xs text-muted-foreground">Qty {item.quantity}</p>
+                        </div>
                       </div>
                       <div className="text-right text-sm">
                         <p className="text-xs text-muted-foreground">Unit</p>
@@ -167,7 +182,8 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                         <p className="font-semibold"><AdminFormattedPrice amount={item.price * item.quantity} amountCurrency={orderCurrency ?? undefined} /></p>
                       </div>
                     </div>
-                  ))
+                    )
+                  })
                 ) : (
                   <p className="p-4 text-sm text-muted-foreground">No line items recorded.</p>
                 )}

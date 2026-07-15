@@ -27,10 +27,15 @@ export function CartStep() {
         </thead>
         <tbody>
           {cart.map((item) => (
-            <tr key={item.id} className="border-b last:border-b-0">
+            <tr key={item.cartLineKey} className="border-b last:border-b-0">
               <td className="py-2 flex items-center gap-3">
                 <Image src={item.image} alt={item.name} width={48} height={48} className="rounded" />
-                <span>{item.name}</span>
+                <div>
+                  <span>{item.name}</span>
+                  {item.selectedImageLabel ? (
+                    <p className="text-xs text-muted-foreground">{item.selectedImageLabel}</p>
+                  ) : null}
+                </div>
               </td>
               <td className="py-2">{formatPrice(item.price)}</td>
               <td className="py-2">
@@ -38,13 +43,13 @@ export function CartStep() {
                   type="number"
                   min={1}
                   value={item.quantity}
-                  onChange={e => updateQuantity(item.id, Number(e.target.value))}
+                  onChange={e => updateQuantity(item.cartLineKey, Number(e.target.value))}
                   className="w-16 border rounded px-2 py-1"
                 />
               </td>
               <td className="py-2">{formatPrice(item.price * item.quantity)}</td>
               <td className="py-2">
-                <Button size="sm" variant="destructive" onClick={() => removeFromCart(item.id)}>
+                <Button size="sm" variant="destructive" onClick={() => removeFromCart(item.cartLineKey)}>
                   Remove
                 </Button>
               </td>

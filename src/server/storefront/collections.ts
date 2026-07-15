@@ -182,17 +182,26 @@ export async function getNavShopCategories(): Promise<{ slug: string; name: stri
     }),
   ])
 
-  const navItems = topLevel.map((category) => ({
-    slug: category.slug,
-    name: category.name,
-  }))
+  const navItems: { slug: string; name: string }[] = []
+  const seenSlugs = new Set<string>()
 
-  if (matchingSetCount > 0) {
-    navItems.push({ slug: "matching-sets", name: "Matching Sets" })
+  for (const category of topLevel) {
+    if (seenSlugs.has(category.slug)) continue
+    seenSlugs.add(category.slug)
+    navItems.push({
+      slug: category.slug,
+      name: category.name,
+    })
   }
 
-  if (corporateGiftCount > 0) {
+  if (matchingSetCount > 0 && !seenSlugs.has("matching-sets")) {
+    navItems.push({ slug: "matching-sets", name: "Matching Sets" })
+    seenSlugs.add("matching-sets")
+  }
+
+  if (corporateGiftCount > 0 && !seenSlugs.has("corporate-gifts")) {
     navItems.push({ slug: "corporate-gifts", name: "Corporate Gifts" })
+    seenSlugs.add("corporate-gifts")
   }
 
   return navItems

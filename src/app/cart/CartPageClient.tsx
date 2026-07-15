@@ -117,7 +117,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 <div className="space-y-6">
                   {cartItems.map((item) => (
                     <div
-                      key={`cart-${item.id}`}
+                      key={`cart-${item.cartLineKey}`}
                       className="grid grid-cols-[96px_1fr] gap-4 rounded-2xl border border-brand-teal/20 bg-white p-4 shadow-[0_12px_32px_rgba(74,43,40,0.08)]"
                     >
                       <div className="relative h-24 w-24 overflow-hidden rounded-2xl">
@@ -132,6 +132,9 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                       <div className="flex min-w-0 flex-col justify-between">
                         <div>
                           <p className="font-heading text-lg text-brand-umber line-clamp-2 break-words">{item.name}</p>
+                          {item.selectedImageLabel ? (
+                            <p className="text-xs text-brand-umber/55">{item.selectedImageLabel}</p>
+                          ) : null}
                           <span className="text-sm text-brand-coral">
                             {formatPrice(item.price)}
                           </span>
@@ -140,7 +143,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           <div className="inline-flex items-center gap-3 rounded-full border border-brand-teal/25 px-3 py-1 text-sm text-brand-umber/70">
                             <button
                               type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.cartLineKey, item.quantity - 1)}
                               className="rounded-full bg-brand-jade/40 p-1 text-brand-umber/70 transition hover:bg-brand-jade/55"
                             >
                               <Minus className="h-4 w-4" />
@@ -148,7 +151,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                             <span>{item.quantity}</span>
                             <button
                               type="button"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.cartLineKey, item.quantity + 1)}
                               className="rounded-full bg-brand-jade/40 p-1 text-brand-umber/70 transition hover:bg-brand-jade/55"
                             >
                               <Plus className="h-4 w-4" />
@@ -156,7 +159,7 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                           </div>
                           <button
                             type="button"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(item.cartLineKey)}
                             className="self-end rounded-full bg-brand-coral/10 p-2 text-brand-coral transition hover:bg-brand-coral/20 sm:self-auto"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -1,3 +1,10 @@
+export interface ProductGalleryImage {
+  id: string
+  url: string
+  alt?: string
+  order: number
+}
+
 export interface ProductCardData {
   id: string
   name: string
@@ -6,6 +13,7 @@ export interface ProductCardData {
   originalPrice?: number
   image: string
   gallery: string[]
+  galleryImages: ProductGalleryImage[]
   description: string
   origin: string
   materials: string[]

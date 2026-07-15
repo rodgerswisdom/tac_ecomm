@@ -91,8 +91,11 @@ export function OrderSummarySidebar({
       <h3 className="caps-spacing text-xs text-brand-teal mb-4">Order Summary</h3>
       <ul className="mb-4 space-y-2 text-sm text-brand-umber">
         {cart.map(item => (
-          <li key={item.id} className="flex justify-between gap-2">
-            <span className="truncate">{item.name} ×{item.quantity}</span>
+          <li key={item.cartLineKey} className="flex justify-between gap-2">
+            <span className="truncate">
+              {item.name} ×{item.quantity}
+              {item.selectedImageLabel ? ` (${item.selectedImageLabel})` : ""}
+            </span>
             <span className="shrink-0">{formatPrice(item.price * item.quantity)}</span>
           </li>
         ))}

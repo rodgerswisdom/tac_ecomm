@@ -31,6 +31,7 @@ import {
   canCancelOrder,
 } from "@/lib/order-utils"
 import { cn } from "@/lib/utils"
+import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
 
 interface OrderDetailClientProps {
   order: OrderDetail
@@ -133,16 +134,20 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {order.items.map((item) => (
+                    {order.items.map((item) => {
+                      const imageUrl = getOrderItemImageUrl(item)
+                      const imageLabel = getOrderItemImageLabel(item)
+
+                      return (
                       <div
                         key={item.id}
                         className="flex gap-4 p-4 rounded-lg border border-border/60 bg-muted/20"
                       >
                         {/* Product Image */}
-                        {item.product && item.product.images[0] && (
+                        {item.product && imageUrl && (
                           <div className="relative h-20 w-20 shrink-0 rounded-md overflow-hidden bg-muted">
                             <Image
-                              src={item.product.images[0]}
+                              src={imageUrl}
                               alt={item.product.name}
                               fill
                               className="object-cover"
@@ -164,6 +169,9 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
                               "Product"
                             )}
                           </h4>
+                          {imageLabel ? (
+                            <p className="text-xs text-brand-umber/70 mb-1">{imageLabel}</p>
+                          ) : null}
                           <p className="text-sm text-muted-foreground mb-2">
                             Quantity: {item.quantity}
                           </p>
@@ -179,7 +187,8 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
                           </p>
                         </div>
                       </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   <Separator className="my-6" />

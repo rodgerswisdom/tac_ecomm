@@ -9,17 +9,17 @@ import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 
 const discoverLinks = [
-  { label: "About TAC", href: "/about" },
-  { label: "Artisan Stories", href: "/stories" },
-  { label: "Our Legacy", href: "/about#legacy" },
+  { key: "about", label: "About TAC", href: "/about" },
+  { key: "stories", label: "Artisan Stories", href: "/stories" },
+  { key: "legacy", label: "Our Legacy", href: "/about#legacy" },
 ];
 
 const supportLinks = [
-  { label: "Contact", href: "/contact" },
-  { label: "Shipping", href: "/shipping" },
-  { label: "Returns", href: "/returns" },
-  { label: "Privacy Policy", href: "/privacy-policy" },
-  { label: "Terms of Service", href: "/terms-of-service" },
+  { key: "contact", label: "Contact", href: "/contact" },
+  { key: "shipping", label: "Shipping", href: "/shipping" },
+  { key: "returns", label: "Returns", href: "/returns" },
+  { key: "privacy", label: "Privacy Policy", href: "/privacy-policy" },
+  { key: "terms", label: "Terms of Service", href: "/terms-of-service" },
 ];
 
 export const Footer = () => {
@@ -33,10 +33,12 @@ export const Footer = () => {
   const collectionLinks =
     shopCategories.length > 0
       ? shopCategories.map((category) => ({
+          key: category.slug,
           label: category.name,
           href: `/collections/${category.slug}`,
         }))
       : CATEGORY_TAXONOMY.map((category) => ({
+          key: category.slug,
           label: category.name,
           href: `/collections/${category.slug}`,
         }));
@@ -89,7 +91,7 @@ export const Footer = () => {
               </h4>
               <ul className="space-y-2 text-sm text-white/70">
                 {group.items.map((item) => (
-                  <li key={item.label}>
+                  <li key={item.key}>
                     <Link
                       href={item.href}
                       className="group relative inline-flex items-center gap-2 transition-colors hover:text-brand-teal"

@@ -13,6 +13,29 @@ import {
 } from '@/lib/delivery'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
+import { formatProductImageLabel } from '@/lib/product-image-selection'
+
+type CheckoutCartItem = {
+  id: string
+  variantId?: string | null
+  productImageId?: string | null
+  selectedImageLabel?: string | null
+  image?: string | null
+  name: string
+  price: number
+  quantity: number
+}
+
+type ValidatedOrderItem = {
+  productId: string
+  variantId?: string | null
+  productImageId?: string | null
+  selectedImageUrl?: string | null
+  selectedImageLabel?: string | null
+  quantity: number
+  price: number
+  name: string
+}
 
 export async function POST(req: NextRequest) {
   if (!passesCsrfProtection(req)) {
@@ -52,40 +75,84 @@ export async function POST(req: NextRequest) {
   const countryTrim = String(country).trim()
 
   // Fetch cart for logged-in user from DB, else use clientCartItems for guest
-  let cartItems: Array<{ id: string; variantId?: string | null; name: string; price: number; quantity: number }> = []
+  let cartItems: CheckoutCartItem[] = []
   if (session?.user?.email) {
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      include: { cart: { include: { product: true } } }
+      include: {
+        cart: {
+          include: {
+            product: {
+              include: {
+                images: { orderBy: { order: 'asc' } },
+              },
+            },
+            productImage: true,
+          },
+        },
+      },
     })
     if (!user || !user.cart?.length) {
       return NextResponse.json({ error: 'Your cart is empty' }, { status: 400 })
     }
-    cartItems = user.cart.map(item => ({
-      id: item.productId,
-      variantId: item.variantId ?? null,
-      name: item.product.name,
-      price: item.product.price,
-      quantity: item.quantity
-    }))
+    cartItems = user.cart.map((item) => {
+      const imageIndex = item.productImageId
+        ? item.product.images.findIndex((image) => image.id === item.productImageId)
+        : -1
+      const selectedImageLabel =
+        item.productImageId && imageIndex >= 0
+          ? formatProductImageLabel(
+              {
+                id: item.product.images[imageIndex].id,
+                url: item.product.images[imageIndex].url,
+                alt: item.product.images[imageIndex].alt ?? undefined,
+                order: item.product.images[imageIndex].order,
+              },
+              imageIndex,
+            )
+          : null
+
+      return {
+        id: item.productId,
+        variantId: item.variantId ?? null,
+        productImageId: item.productImageId ?? null,
+        selectedImageLabel,
+        image: item.productImage?.url ?? null,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+      }
+    })
   } else {
     const items = Array.isArray(clientCartItems) ? clientCartItems : []
     if (items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 })
     }
-    cartItems = items.map((item: { id: string | number; variantId?: string; name?: string; price?: number; quantity?: number }) => ({
-      id: String(item.id),
+    cartItems = items.map((item: {
+      id: string | number
+      productId?: string | number
+      variantId?: string
+      productImageId?: string
+      selectedImageLabel?: string
+      image?: string
+      name?: string
+      price?: number
+      quantity?: number
+    }) => ({
+      id: String(item.productId ?? item.id),
       variantId: item.variantId ?? null,
+      productImageId: item.productImageId ?? null,
+      selectedImageLabel: item.selectedImageLabel ?? null,
+      image: item.image ?? null,
       name: item.name ?? '',
       price: Number(item.price) ?? 0,
-      quantity: Number(item.quantity) || 1
+      quantity: Number(item.quantity) || 1,
     }))
   }
 
   // Validate cart items: product exists, active, and in stock
-  // When a variantId is present we check the variant's own stock; otherwise the product-level stock.
   let subtotal = 0
-  const validatedItems: Array<{ productId: string; variantId?: string | null; quantity: number; price: number; name: string }> = []
+  const validatedItems: ValidatedOrderItem[] = []
   for (const item of cartItems) {
     const productId = String(item.id)
     const qty = item.quantity || 1
@@ -112,9 +179,45 @@ export async function POST(req: NextRequest) {
 
     const price = product.price
     subtotal += price * qty
+
+    let productImageId: string | null = item.productImageId ?? null
+    let selectedImageUrl: string | null = item.image ?? null
+    let selectedImageLabel: string | null = item.selectedImageLabel ?? null
+
+    if (productImageId) {
+      const productImage = await prisma.productImage.findFirst({
+        where: { id: productImageId, productId: product.id },
+      })
+      if (!productImage) {
+        return NextResponse.json({ error: `Selected image unavailable for: ${product.name}` }, { status: 400 })
+      }
+      selectedImageUrl = productImage.url
+      if (!selectedImageLabel) {
+        const images = await prisma.productImage.findMany({
+          where: { productId: product.id },
+          orderBy: { order: 'asc' },
+        })
+        const imageIndex = images.findIndex((image) => image.id === productImageId)
+        if (imageIndex >= 0) {
+          selectedImageLabel = formatProductImageLabel(
+            {
+              id: images[imageIndex].id,
+              url: images[imageIndex].url,
+              alt: images[imageIndex].alt ?? undefined,
+              order: images[imageIndex].order,
+            },
+            imageIndex,
+          )
+        }
+      }
+    }
+
     validatedItems.push({
       productId: product.id,
       variantId: item.variantId ?? null,
+      productImageId,
+      selectedImageUrl,
+      selectedImageLabel,
       quantity: qty,
       price,
       name: product.name
@@ -278,11 +381,14 @@ export async function POST(req: NextRequest) {
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
       items: {
-        create: validatedItems.map(({ productId, variantId, quantity, price }) => ({
+        create: validatedItems.map(({ productId, variantId, quantity, price, productImageId, selectedImageUrl, selectedImageLabel }) => ({
           productId,
           variantId: variantId ?? undefined,
           quantity,
-          price
+          price,
+          productImageId: productImageId ?? undefined,
+          selectedImageUrl: selectedImageUrl ?? undefined,
+          selectedImageLabel: selectedImageLabel ?? undefined,
         }))
       }
     }
@@ -298,6 +404,18 @@ export async function POST(req: NextRequest) {
   const sendOpsNotification = async () => {
     const emailService = new EmailService(getEmailConfig())
     const subject = `New order received: ${order.orderNumber}`
+    const itemLinesHtml = validatedItems
+      .map((item) => {
+        const label = item.selectedImageLabel ? ` — ${item.selectedImageLabel}` : ''
+        return `<li>${item.name}${label} × ${item.quantity}</li>`
+      })
+      .join('')
+    const itemLinesText = validatedItems
+      .map((item) => {
+        const label = item.selectedImageLabel ? ` — ${item.selectedImageLabel}` : ''
+        return `- ${item.name}${label} × ${item.quantity}`
+      })
+      .join('\n')
     const html = `
       <div style="font-family: Arial, sans-serif; line-height: 1.5;">
         <h2 style="margin: 0 0 12px 0;">New order received</h2>
@@ -307,6 +425,8 @@ export async function POST(req: NextRequest) {
         <p style="margin: 0 0 12px 0;"><strong>Phone:</strong> ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}</p>
         <p style="margin: 0 0 12px 0;"><strong>Total:</strong> KES ${Math.round(total).toLocaleString()}</p>
         <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${normalizedPaymentMethod ?? "Not specified"}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Items</strong></p>
+        <ul style="margin: 0 0 12px 0; padding-left: 18px;">${itemLinesHtml}</ul>
         <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
         <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
         <p style="margin: 0;">
@@ -325,6 +445,7 @@ export async function POST(req: NextRequest) {
       `Phone: ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}\n` +
       `Total: KES ${Math.round(total).toLocaleString()}\n` +
       `Payment method: ${normalizedPaymentMethod ?? "Not specified"}\n\n` +
+      `Items:\n${itemLinesText}\n\n` +
       `Shipping:\n` +
       `${firstNameTrim} ${lastNameTrim}\n` +
       `${addressTrim}\n` +
