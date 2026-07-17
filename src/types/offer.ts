@@ -5,4 +5,7 @@ export type OfferOfTheMonth = {
   image: string
   ctaLabel: string
   ctaHref: string
+  price: number
+  originalPrice: number | null
+  discountPercent: number | null
 }

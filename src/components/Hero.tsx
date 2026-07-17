@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatFreeShippingThreshold } from "@/lib/delivery";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import type { OfferOfTheMonth } from "@/types/offer";
 
 const heritageSlide = {
@@ -29,6 +29,10 @@ interface Slide {
   subtitle: string;
   description: string;
   cta: { label: string; href: string };
+  price?: number;
+  originalPrice?: number | null;
+  discountPercent?: number | null;
+  isOffer?: boolean;
 }
 
 interface HeroProps {
@@ -55,6 +59,10 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
               label: offerOfTheMonth.ctaLabel,
               href: offerOfTheMonth.ctaHref,
             },
+            price: offerOfTheMonth.price,
+            originalPrice: offerOfTheMonth.originalPrice,
+            discountPercent: offerOfTheMonth.discountPercent,
+            isOffer: true,
           },
         ]
       : []),
@@ -78,7 +86,14 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
   }, [activeIndex, allSlides.length]);
 
   return (
-    <section className="nav-clearance relative overflow-hidden bg-brand-beige pb-10 text-brand-umber md:pb-16">
+    <section
+      className="nav-clearance relative overflow-hidden pb-10 text-brand-umber md:pb-16"
+      style={{
+        backgroundImage: `linear-gradient(120deg, rgba(255, 255, 255, 0.92), rgba(218, 191, 143, 0.55))`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
       <div className="relative z-10 gallery-container">
         <div className="grid items-center gap-10 lg:gap-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
           <div className="space-y-6 text-center lg:text-left sm:space-y-8">
@@ -118,6 +133,35 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
                 >
                   {activeSlide.description}
                 </motion.p>
+
+                {activeSlide.isOffer && typeof activeSlide.price === "number" ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8, delay: 0.3 }}
+                    className="flex flex-wrap items-center justify-center gap-3 lg:justify-start"
+                  >
+                    <div className="text-left">
+                      <p className="caps-spacing text-xs text-brand-umber/60">Price</p>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-heading text-brand-umber">
+                          {formatPrice(activeSlide.price)}
+                        </p>
+                        {activeSlide.originalPrice ? (
+                          <span className="text-base text-brand-umber/45 line-through">
+                            {formatPrice(activeSlide.originalPrice)}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    {activeSlide.discountPercent ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-coral px-3 py-1.5 text-xs font-semibold text-white">
+                        <Sparkles className="h-3 w-3" />
+                        -{activeSlide.discountPercent}%
+                      </span>
+                    ) : null}
+                  </motion.div>
+                ) : null}
 
                 <motion.div
                   initial={{ opacity: 0, scale: 0.96 }}
@@ -173,7 +217,7 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
               <AnimatePresence mode="wait">
                 <Link
                   href={activeSlide.cta.href}
-                  aria-label={`Open ${activeSlide.title}`}
+                  aria-label={`Open ${activeSlide.subtitle}`}
                   className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/60"
                 >
                   <motion.div
@@ -186,14 +230,23 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
                   >
                     <Image
                       src={activeSlide.image}
-                      alt={activeSlide.title}
+                      alt={activeSlide.subtitle}
                       fill
                       sizes="(max-width: 640px) 320px, (max-width: 1024px) 420px, 520px"
                       quality={70}
                       priority={activeIndex === 0}
                       className="object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                     />
-                    <span className="sr-only">{activeSlide.title}</span>
+                    <span className="sr-only">{activeSlide.subtitle}</span>
+
+                    {activeSlide.isOffer && activeSlide.discountPercent ? (
+                      <div className="absolute left-6 top-6 z-20">
+                        <span className="inline-flex items-center gap-2 rounded-full bg-brand-coral px-4 py-2 text-xs font-semibold text-white shadow-lg">
+                          <Sparkles className="h-3 w-3" />
+                          -{activeSlide.discountPercent}% off
+                        </span>
+                      </div>
+                    ) : null}
                   </motion.div>
                 </Link>
               </AnimatePresence>

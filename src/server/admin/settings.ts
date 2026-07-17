@@ -8,7 +8,7 @@ import { logAdminAction } from "./audit"
 
 export async function getAdminSettingsData() {
     // Keep concurrency low: Neon free-tier cold starts + a small pg pool
-    // (max 5) choke when too many queries run in parallel.
+    // choke when too many queries run in parallel.
     const [curatedProducts, globalSettings, auditLogs] = await Promise.all([
         prisma.product.findMany({
             where: {
@@ -37,6 +37,27 @@ export async function getAdminSettingsData() {
     const bespokeProducts = curatedProducts.filter((p) => p.isBespoke).slice(0, 10)
     const corporateGiftProducts = curatedProducts.filter((p) => p.isCorporateGift).slice(0, 10)
 
+    let offerProduct: OfferProductOption | null = null
+    if (globalSettings.offerProductId) {
+        const product = await prisma.product.findUnique({
+            where: { id: globalSettings.offerProductId },
+            select: {
+                id: true,
+                name: true,
+                sku: true,
+                images: { take: 1, orderBy: { order: "asc" }, select: { url: true } },
+            },
+        })
+        if (product) {
+            offerProduct = {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                image: product.images[0]?.url ?? null,
+            }
+        }
+    }
+
     return {
         featuredProducts,
         bespokeProducts,
@@ -44,7 +65,49 @@ export async function getAdminSettingsData() {
         coupons: [] as Awaited<ReturnType<typeof prisma.coupon.findMany>>,
         globalSettings,
         auditLogs,
+        offerProduct,
     }
+}
+
+export type OfferProductOption = {
+    id: string
+    name: string
+    sku: string
+    image: string | null
+}
+
+export async function searchOfferProductsAction(query: string): Promise<OfferProductOption[]> {
+    await assertAdmin()
+
+    const trimmed = query.trim()
+    if (trimmed.length < 2) {
+        return []
+    }
+
+    const products = await prisma.product.findMany({
+        where: {
+            isArchived: false,
+            OR: [
+                { name: { contains: trimmed, mode: "insensitive" } },
+                { sku: { contains: trimmed, mode: "insensitive" } },
+            ],
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 12,
+        select: {
+            id: true,
+            name: true,
+            sku: true,
+            images: { take: 1, orderBy: { order: "asc" }, select: { url: true } },
+        },
+    })
+
+    return products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        image: product.images[0]?.url ?? null,
+    }))
 }
 
 const settingsSchema = z.object({
@@ -65,12 +128,7 @@ const settingsSchema = z.object({
     baseShippingFee: z.coerce.number().min(0),
     smsSenderId: z.string().max(30),
     emailFromName: z.string().min(2),
-    offerTitle: z.string().optional().or(z.literal("")),
-    offerHeadline: z.string().optional().or(z.literal("")),
-    offerDescription: z.string().optional().or(z.literal("")),
-    offerImage: z.string().optional().or(z.literal("")),
-    offerCtaLabel: z.string().optional().or(z.literal("")),
-    offerCtaHref: z.string().optional().or(z.literal("")),
+    offerProductId: z.string().optional().or(z.literal("")),
     offerIsActive: z.preprocess((val) => val === "true" || val === true, z.boolean()),
 })
 
@@ -103,16 +161,52 @@ export async function updateGlobalSettingsAction(
             where: { id: "singleton" }
         })
 
+        const offerProductId = parsed.data.offerProductId?.trim() || null
+
+        if (offerProductId) {
+            const productExists = await prisma.product.findUnique({
+                where: { id: offerProductId },
+                select: { id: true },
+            })
+            if (!productExists) {
+                return {
+                    status: "error",
+                    message: "Selected offer product was not found",
+                    errors: { offerProductId: ["Product not found"] },
+                }
+            }
+        }
+
+        if (parsed.data.offerIsActive && !offerProductId) {
+            return {
+                status: "error",
+                message: "Select a product to activate Offer of the Month",
+                errors: { offerProductId: ["Select a product"] },
+            }
+        }
+
         await prisma.settings.update({
             where: { id: "singleton" },
             data: {
-                ...parsed.data,
-                offerTitle: parsed.data.offerTitle || null,
-                offerHeadline: parsed.data.offerHeadline || null,
-                offerDescription: parsed.data.offerDescription || null,
-                offerImage: parsed.data.offerImage || null,
-                offerCtaLabel: parsed.data.offerCtaLabel || null,
-                offerCtaHref: parsed.data.offerCtaHref || null,
+                storeName: parsed.data.storeName,
+                storeTagline: parsed.data.storeTagline,
+                supportEmail: parsed.data.supportEmail,
+                salesEmail: parsed.data.salesEmail,
+                whatsappNumber: parsed.data.whatsappNumber,
+                address: parsed.data.address,
+                instagramUrl: parsed.data.instagramUrl || null,
+                facebookUrl: parsed.data.facebookUrl || null,
+                maintenanceMode: parsed.data.maintenanceMode,
+                autoSyncRates: parsed.data.autoSyncRates,
+                defaultCurrency: parsed.data.defaultCurrency,
+                usdToKesRate: parsed.data.usdToKesRate,
+                usdToEurRate: parsed.data.usdToEurRate,
+                taxRate: parsed.data.taxRate,
+                baseShippingFee: parsed.data.baseShippingFee,
+                smsSenderId: parsed.data.smsSenderId,
+                emailFromName: parsed.data.emailFromName,
+                offerProductId,
+                offerIsActive: parsed.data.offerIsActive,
             },
         })
         

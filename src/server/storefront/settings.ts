@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { getDiscountPercent, hasValidDiscount } from "@/lib/discount"
 import type { OfferOfTheMonth } from "@/types/offer"
 
 export type { OfferOfTheMonth }
@@ -8,36 +9,61 @@ export async function getOfferOfTheMonth(): Promise<OfferOfTheMonth | null> {
     where: { id: "singleton" },
     select: {
       offerIsActive: true,
-      offerTitle: true,
-      offerHeadline: true,
-      offerDescription: true,
-      offerImage: true,
-      offerCtaLabel: true,
-      offerCtaHref: true,
+      offerProductId: true,
     },
   })
 
-  if (!settings?.offerIsActive) {
+  if (!settings?.offerIsActive || !settings.offerProductId) {
     return null
   }
 
-  const title = settings.offerTitle?.trim()
-  const headline = settings.offerHeadline?.trim()
-  const description = settings.offerDescription?.trim()
-  const image = settings.offerImage?.trim()
-  const ctaLabel = settings.offerCtaLabel?.trim()
-  const ctaHref = settings.offerCtaHref?.trim()
+  const product = await prisma.product.findFirst({
+    where: {
+      id: settings.offerProductId,
+      isArchived: false,
+      isActive: true,
+      isDraft: false,
+    },
+    select: {
+      name: true,
+      slug: true,
+      description: true,
+      shortDescription: true,
+      price: true,
+      comparePrice: true,
+      images: {
+        take: 1,
+        orderBy: { order: "asc" },
+        select: { url: true },
+      },
+    },
+  })
 
-  if (!title || !headline || !description || !image || !ctaLabel || !ctaHref) {
+  const image = product?.images[0]?.url?.trim()
+  if (!product || !image) {
     return null
   }
+
+  const description =
+    product.shortDescription?.trim() ||
+    product.description.trim() ||
+    "A curated highlight from this month's atelier selection."
+
+  const isDiscounted = hasValidDiscount(product.price, product.comparePrice)
+  const originalPrice = isDiscounted ? product.comparePrice! : null
+  const discountPercent = isDiscounted
+    ? getDiscountPercent(product.price, product.comparePrice)
+    : null
 
   return {
-    title,
-    headline,
+    title: "Offer of the Month",
+    headline: product.name,
     description,
     image,
-    ctaLabel,
-    ctaHref,
+    ctaLabel: "Shop Now",
+    ctaHref: `/products/${product.slug}`,
+    price: product.price,
+    originalPrice,
+    discountPercent,
   }
 }

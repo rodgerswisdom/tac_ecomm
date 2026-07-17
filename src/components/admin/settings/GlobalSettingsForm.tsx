@@ -16,21 +16,23 @@ import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { ImageUploader } from "@/components/ImageUploader"
+import { OfferProductPicker } from "@/components/admin/settings/OfferProductPicker"
+import type { OfferProductOption } from "@/server/admin/settings"
 
 export function GlobalSettingsForm({ 
     initialData,
     featuredProducts = [],
     bespokeProducts = [],
     corporateGiftProducts = [],
-    auditLogs = []
+    auditLogs = [],
+    offerProduct = null,
 }: { 
     initialData: any,
     featuredProducts?: any[],
     bespokeProducts?: any[],
     corporateGiftProducts?: any[],
-    auditLogs?: any[]
+    auditLogs?: any[],
+    offerProduct?: OfferProductOption | null,
 }) {
     const [state, formAction] = useActionState(updateGlobalSettingsAction, { status: "idle" })
     const [showOlderLogs, setShowOlderLogs] = useState(false)
@@ -344,7 +346,7 @@ export function GlobalSettingsForm({
                                 <CardTitle className="text-xl">Offer of the Month</CardTitle>
                             </div>
                             <CardDescription>
-                                Controls the second homepage hero slide. Leave inactive to show only the heritage slide.
+                                Pick a product to feature as the second homepage hero slide.
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-6 grid gap-6 md:grid-cols-2">
@@ -352,7 +354,7 @@ export function GlobalSettingsForm({
                                 <div className="space-y-1">
                                     <p className="font-bold text-[#2d3b34]">Show on homepage</p>
                                     <p className="text-sm text-muted-foreground">
-                                        When enabled and all fields are filled, this becomes the second hero slide.
+                                        Turn on after selecting a product.
                                     </p>
                                 </div>
                                 <div className="relative inline-flex items-center cursor-pointer">
@@ -366,66 +368,12 @@ export function GlobalSettingsForm({
                                 </div>
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="offerTitle" className="font-semibold text-[#2d3b34]">Eyebrow title</Label>
-                                <Input
-                                    id="offerTitle"
-                                    name="offerTitle"
-                                    defaultValue={initialData.offerTitle || ""}
-                                    placeholder="Offer of the Month"
-                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="offerHeadline" className="font-semibold text-[#2d3b34]">Headline</Label>
-                                <Input
-                                    id="offerHeadline"
-                                    name="offerHeadline"
-                                    defaultValue={initialData.offerHeadline || ""}
-                                    placeholder="This month's featured offer"
-                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
-                                />
-                            </div>
                             <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="offerDescription" className="font-semibold text-[#2d3b34]">Description</Label>
-                                <Textarea
-                                    id="offerDescription"
-                                    name="offerDescription"
-                                    defaultValue={initialData.offerDescription || ""}
-                                    placeholder="Tell shoppers what makes this month's offer special."
-                                    className="min-h-[110px] rounded-xl border-[#2d3b34]/10 bg-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="offerCtaLabel" className="font-semibold text-[#2d3b34]">CTA label</Label>
-                                <Input
-                                    id="offerCtaLabel"
-                                    name="offerCtaLabel"
-                                    defaultValue={initialData.offerCtaLabel || ""}
-                                    placeholder="Shop the Offer"
-                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="offerCtaHref" className="font-semibold text-[#2d3b34]">CTA link</Label>
-                                <Input
-                                    id="offerCtaHref"
-                                    name="offerCtaHref"
-                                    defaultValue={initialData.offerCtaHref || ""}
-                                    placeholder="/collections"
-                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
-                                />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                                <Label className="font-semibold text-[#2d3b34]">Offer image</Label>
-                                <ImageUploader
-                                    mode="single"
-                                    name="offerImage"
-                                    defaultValue={initialData.offerImage || ""}
-                                    folder="homepage"
-                                    tags={["homepage", "offer", "admin"]}
-                                    helperText="PNG, JPG, WEBP, GIF or SVG (max 5MB)"
-                                />
+                                <Label className="font-semibold text-[#2d3b34]">Product</Label>
+                                <OfferProductPicker initialProduct={offerProduct} />
+                                {state.errors?.offerProductId && (
+                                    <p className="text-xs text-red-500 font-medium">{state.errors.offerProductId[0]}</p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

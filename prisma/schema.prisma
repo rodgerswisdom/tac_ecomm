@@ -441,6 +441,7 @@ model Settings {
   updatedAt       DateTime  @updatedAt
   emailFromName   String    @default("TAC Accessories")
   smsSenderId     String    @default("TAC Accessories")
+  offerProductId  String?
   offerTitle      String?
   offerHeadline   String?
   offerDescription String?  @db.Text

@@ -52,6 +52,7 @@ export default async function SettingsPage() {
             bespokeProducts={data.bespokeProducts}
             corporateGiftProducts={data.corporateGiftProducts}
             auditLogs={data.auditLogs}
+            offerProduct={data.offerProduct}
           />
         </main>
       </div>
