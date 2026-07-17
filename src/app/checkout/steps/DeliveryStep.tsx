@@ -92,8 +92,8 @@ export function DeliveryStep({
         })}
         {error && <div className="text-red-500">{error}</div>}
         <div className="flex justify-end">
-          <Button type="submit" className="w-full sm:w-auto">
-            Review order
+          <Button type="submit" className="h-12 w-full px-6 text-base sm:w-auto">
+            Review Order
           </Button>
         </div>
       </form>

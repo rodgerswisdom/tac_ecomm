@@ -16,6 +16,8 @@ export interface FilterState {
 export interface CategoryOption {
   slug: string;
   name: string;
+  /** Subcategory slugs under this main category (used for filter matching). */
+  childSlugs?: string[];
 }
 
 interface ProductFiltersProps {

@@ -441,6 +441,13 @@ model Settings {
   updatedAt       DateTime  @updatedAt
   emailFromName   String    @default("TAC Accessories")
   smsSenderId     String    @default("TAC Accessories")
+  offerTitle      String?
+  offerHeadline   String?
+  offerDescription String?  @db.Text
+  offerImage      String?
+  offerCtaLabel   String?
+  offerCtaHref    String?
+  offerIsActive   Boolean   @default(false)
 }
 
 // ============================================

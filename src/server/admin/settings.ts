@@ -7,23 +7,44 @@ import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
 
 export async function getAdminSettingsData() {
-    const [featuredProducts, bespokeProducts, corporateGiftProducts, coupons, globalSettings, auditLogs] = await Promise.all([
-        prisma.product.findMany({ where: { isFeatured: true }, orderBy: { updatedAt: "desc" }, take: 10, include: { images: { take: 1 } } }),
-        prisma.product.findMany({ where: { isBespoke: true }, orderBy: { updatedAt: "desc" }, take: 10, include: { images: { take: 1 } } }),
-        prisma.product.findMany({ where: { isCorporateGift: true }, orderBy: { updatedAt: "desc" }, take: 10, include: { images: { take: 1 } } }),
-        prisma.coupon.findMany({ orderBy: { createdAt: "desc" } }),
-        (prisma as any).settings.upsert({
+    // Keep concurrency low: Neon free-tier cold starts + a small pg pool
+    // (max 5) choke when too many queries run in parallel.
+    const [curatedProducts, globalSettings, auditLogs] = await Promise.all([
+        prisma.product.findMany({
+            where: {
+                OR: [
+                    { isFeatured: true },
+                    { isBespoke: true },
+                    { isCorporateGift: true },
+                ],
+            },
+            orderBy: { updatedAt: "desc" },
+            take: 40,
+            include: { images: { take: 1 } },
+        }),
+        prisma.settings.upsert({
             where: { id: "singleton" },
             update: {},
             create: { id: "singleton" },
         }),
         prisma.auditLog.findMany({
             orderBy: { createdAt: "desc" },
-            take: 20
-        })
+            take: 20,
+        }),
     ])
 
-    return { featuredProducts, bespokeProducts, corporateGiftProducts, coupons, globalSettings, auditLogs }
+    const featuredProducts = curatedProducts.filter((p) => p.isFeatured).slice(0, 10)
+    const bespokeProducts = curatedProducts.filter((p) => p.isBespoke).slice(0, 10)
+    const corporateGiftProducts = curatedProducts.filter((p) => p.isCorporateGift).slice(0, 10)
+
+    return {
+        featuredProducts,
+        bespokeProducts,
+        corporateGiftProducts,
+        coupons: [] as Awaited<ReturnType<typeof prisma.coupon.findMany>>,
+        globalSettings,
+        auditLogs,
+    }
 }
 
 const settingsSchema = z.object({
@@ -44,6 +65,13 @@ const settingsSchema = z.object({
     baseShippingFee: z.coerce.number().min(0),
     smsSenderId: z.string().max(30),
     emailFromName: z.string().min(2),
+    offerTitle: z.string().optional().or(z.literal("")),
+    offerHeadline: z.string().optional().or(z.literal("")),
+    offerDescription: z.string().optional().or(z.literal("")),
+    offerImage: z.string().optional().or(z.literal("")),
+    offerCtaLabel: z.string().optional().or(z.literal("")),
+    offerCtaHref: z.string().optional().or(z.literal("")),
+    offerIsActive: z.preprocess((val) => val === "true" || val === true, z.boolean()),
 })
 
 export type SettingsFormState = {
@@ -71,23 +99,31 @@ export async function updateGlobalSettingsAction(
     }
 
     try {
-        const currentSettings = await (prisma as any).settings.findUnique({
+        const currentSettings = await prisma.settings.findUnique({
             where: { id: "singleton" }
         })
 
-        await (prisma as any).settings.update({
+        await prisma.settings.update({
             where: { id: "singleton" },
-            data: parsed.data,
+            data: {
+                ...parsed.data,
+                offerTitle: parsed.data.offerTitle || null,
+                offerHeadline: parsed.data.offerHeadline || null,
+                offerDescription: parsed.data.offerDescription || null,
+                offerImage: parsed.data.offerImage || null,
+                offerCtaLabel: parsed.data.offerCtaLabel || null,
+                offerCtaHref: parsed.data.offerCtaHref || null,
+            },
         })
         
         // Detailed change tracking
         const changedFields: string[] = []
         if (currentSettings) {
-            Object.keys(parsed.data).forEach(key => {
-                const oldValue = currentSettings[key]
-                const newValue = (parsed.data as any)[key]
-                
-                // Compare values (handling basic types and dates)
+            const previous = currentSettings as Record<string, unknown>
+            Object.keys(parsed.data).forEach((key) => {
+                const oldValue = previous[key]
+                const newValue = (parsed.data as Record<string, unknown>)[key]
+
                 if (String(oldValue) !== String(newValue)) {
                     changedFields.push(`${key}: ${oldValue} → ${newValue}`)
                 }

@@ -11,11 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { adminToast } from "@/lib/admin/feedback"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink } from "lucide-react"
+import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink, Megaphone } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { Textarea } from "@/components/ui/textarea"
+import { ImageUploader } from "@/components/ImageUploader"
 
 export function GlobalSettingsForm({ 
     initialData,
@@ -105,6 +107,10 @@ export function GlobalSettingsForm({
                     <TabsTrigger value="curation" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
                         <Sparkles className="h-4 w-4" />
                         <span className="font-medium">Store Curation</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="homepage" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
+                        <Megaphone className="h-4 w-4" />
+                        <span className="font-medium">Offer of the Month</span>
                     </TabsTrigger>
                     <TabsTrigger value="audit" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
                         <History className="h-4 w-4" />
@@ -328,6 +334,101 @@ export function GlobalSettingsForm({
                             </CardContent>
                         </Card>
                     </div>
+                </TabsContent>
+
+                <TabsContent value="homepage" forceMount className="space-y-8 animate-in fade-in duration-300 data-[state=inactive]:hidden">
+                    <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="bg-[#b8d3c2]/10 border-b border-[#2d3b34]/5">
+                            <div className="flex items-center gap-2">
+                                <Megaphone className="h-5 w-5 text-[#2d3b34]/70" />
+                                <CardTitle className="text-xl">Offer of the Month</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Controls the second homepage hero slide. Leave inactive to show only the heritage slide.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 grid gap-6 md:grid-cols-2">
+                            <div className="flex items-center justify-between p-5 rounded-2xl bg-[#b8d3c2]/20 border border-[#2d3b34]/10 md:col-span-2">
+                                <div className="space-y-1">
+                                    <p className="font-bold text-[#2d3b34]">Show on homepage</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        When enabled and all fields are filled, this becomes the second hero slide.
+                                    </p>
+                                </div>
+                                <div className="relative inline-flex items-center cursor-pointer">
+                                    <input type="hidden" name="offerIsActive" value="false" />
+                                    <Checkbox
+                                        id="offerIsActive"
+                                        name="offerIsActive"
+                                        defaultChecked={Boolean(initialData.offerIsActive)}
+                                        value="true"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="offerTitle" className="font-semibold text-[#2d3b34]">Eyebrow title</Label>
+                                <Input
+                                    id="offerTitle"
+                                    name="offerTitle"
+                                    defaultValue={initialData.offerTitle || ""}
+                                    placeholder="Offer of the Month"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="offerHeadline" className="font-semibold text-[#2d3b34]">Headline</Label>
+                                <Input
+                                    id="offerHeadline"
+                                    name="offerHeadline"
+                                    defaultValue={initialData.offerHeadline || ""}
+                                    placeholder="This month's featured offer"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="offerDescription" className="font-semibold text-[#2d3b34]">Description</Label>
+                                <Textarea
+                                    id="offerDescription"
+                                    name="offerDescription"
+                                    defaultValue={initialData.offerDescription || ""}
+                                    placeholder="Tell shoppers what makes this month's offer special."
+                                    className="min-h-[110px] rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="offerCtaLabel" className="font-semibold text-[#2d3b34]">CTA label</Label>
+                                <Input
+                                    id="offerCtaLabel"
+                                    name="offerCtaLabel"
+                                    defaultValue={initialData.offerCtaLabel || ""}
+                                    placeholder="Shop the Offer"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="offerCtaHref" className="font-semibold text-[#2d3b34]">CTA link</Label>
+                                <Input
+                                    id="offerCtaHref"
+                                    name="offerCtaHref"
+                                    defaultValue={initialData.offerCtaHref || ""}
+                                    placeholder="/collections"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="font-semibold text-[#2d3b34]">Offer image</Label>
+                                <ImageUploader
+                                    mode="single"
+                                    name="offerImage"
+                                    defaultValue={initialData.offerImage || ""}
+                                    folder="homepage"
+                                    tags={["homepage", "offer", "admin"]}
+                                    helperText="PNG, JPG, WEBP, GIF or SVG (max 5MB)"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="curation" className="space-y-8 animate-in fade-in duration-300">

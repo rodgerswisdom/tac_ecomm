@@ -14,7 +14,7 @@ interface CategoryCardProps {
 const CategoryCardComponent = ({ category }: CategoryCardProps) => {
   return (
     <motion.div
-      className="group flex flex-col items-center text-center"
+      className="group flex w-full flex-col items-center text-center"
       initial={{ opacity: 0, y: 32 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -22,14 +22,14 @@ const CategoryCardComponent = ({ category }: CategoryCardProps) => {
     >
       <Link
         href={`/collections/${category.slug}`}
-        className="flex flex-col items-center gap-4"
+        className="flex w-full flex-col items-center gap-4"
       >
-        <div className="relative h-40 w-40 overflow-hidden rounded-full border border-brand-teal/30 bg-brand-beige shadow-[0_18px_36px_rgba(74,43,40,0.16)] transition-all duration-300 group-hover:shadow-[0_26px_50px_rgba(74,43,40,0.24)] sm:h-48 sm:w-48">
+        <div className="relative aspect-square w-full overflow-hidden rounded-sm border border-brand-teal/30 bg-brand-beige shadow-[0_18px_36px_rgba(74,43,40,0.16)] transition-all duration-300 group-hover:shadow-[0_26px_50px_rgba(74,43,40,0.24)]">
           <Image
             src={category.image}
             alt={category.name}
             fill
-            sizes="(max-width: 640px) 160px, 192px"
+            sizes="(max-width: 640px) 100vw, 33vw"
             quality={65}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             priority={false}

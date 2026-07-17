@@ -12,9 +12,21 @@ type ShippingStepProps = {
   /** When true, show "Save this address for next time" and call onSaveAddress on submit when checked */
   canSaveAddress?: boolean;
   onSaveAddress?: (data: ShippingFormData) => Promise<void>;
+  /** Live form updates (e.g. country for delivery options). */
+  onChange?: (data: ShippingFormData) => void;
+  /** Hide the bottom CTA — used when delivery step owns "Review Order". */
+  hideSubmit?: boolean;
 };
 
-export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onSaveAddress }: ShippingStepProps) {
+export function ShippingStep({
+  onNext,
+  initialData,
+  loading,
+  canSaveAddress,
+  onSaveAddress,
+  onChange,
+  hideSubmit = false,
+}: ShippingStepProps) {
   const controlClassName = "h-12 text-base";
   const [form, setForm] = useState<ShippingFormData>({
     firstName: "",
@@ -34,13 +46,24 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
     if (initialData) {
       setForm(initialData);
       setSaveForNextTime(true);
+      onChange?.(initialData);
+    } else {
+      onChange?.(form);
     }
-  }, [initialData]);
+  }, [initialData]); // eslint-disable-line react-hooks/exhaustive-deps -- sync when saved address loads
 
   const [error, setError] = useState("");
 
+  function updateForm(patch: Partial<ShippingFormData>) {
+    setForm((prev) => {
+      const next = { ...prev, ...patch };
+      onChange?.(next);
+      return next;
+    });
+  }
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    updateForm({ [e.target.name]: e.target.value });
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,7 +92,12 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
       <p className="mb-6 text-sm text-brand-umber/65">
         Enter your shipping details. If you have a saved address, it is shown below — you can edit any field.
       </p>
-      <form className="space-y-5" onSubmit={handleSubmit} autoComplete="on">
+      <form
+        id="checkout-shipping-form"
+        className="space-y-5"
+        onSubmit={handleSubmit}
+        autoComplete="on"
+      >
         <section className="rounded-2xl border border-brand-teal/20 bg-brand-beige/55 p-4 sm:p-5">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-brand-umber/70">
             Contact
@@ -138,7 +166,7 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
               <CustomDropdown
                 options={countries.map(c => ({ value: c.code, label: c.name }))}
                 value={form.country}
-                onChange={country => setForm(f => ({ ...f, country }))}
+                onChange={country => updateForm({ country })}
                 placeholder="Select Country"
                 searchable
                 className="w-full [&>button]:h-12 [&>button]:rounded-full [&>button]:border-brand-umber/20 [&>button]:bg-white [&>button]:px-4 [&>button]:py-0 [&>button]:text-brand-umber [&>button]:shadow-[0_6px_18px_rgba(74,43,40,0.08)] [&>button]:focus:ring-brand-teal [&>button_span]:text-brand-umber [&>button_span]:text-base [&>button_svg]:text-brand-umber/60 [&>div]:w-full [&>div]:border-brand-umber/20 [&>div]:bg-white"
@@ -164,11 +192,13 @@ export function ShippingStep({ onNext, initialData, loading, canSaveAddress, onS
         )}
         {error && <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">{error}</div>}
 
-        <div className="pt-1">
-          <Button type="submit" disabled={loading || saving} className="h-12 w-full px-6 text-base">
-            {loading ? "Loading..." : saving ? "Saving..." : "Continue to Delivery"}
-          </Button>
-        </div>
+        {!hideSubmit && (
+          <div className="pt-1">
+            <Button type="submit" disabled={loading || saving} className="h-12 w-full px-6 text-base">
+              {loading ? "Loading..." : saving ? "Saving..." : "Review Order"}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );

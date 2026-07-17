@@ -1,123 +1,113 @@
 "use client";
 
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { CategoryCard } from "@/components/CategoryCard";
-import { ProductCard } from "@/components/ProductCard";
-import { Button } from "@/components/ui/button";
 import type { HomePageCategoryCard } from "@/server/storefront/collections";
-import { ProductCardData } from "@/types/product";
+import type { OfferOfTheMonth } from "@/types/offer";
 
 interface HomePageClientProps {
-  featuredProducts: ProductCardData[];
   mainCategories: HomePageCategoryCard[];
+  offerOfTheMonth?: OfferOfTheMonth | null;
 }
 
-export function HomePageClient({ featuredProducts, mainCategories }: HomePageClientProps) {
-  const featuredShowcase = featuredProducts.slice(0, 4);
+export function HomePageClient({
+  mainCategories,
+  offerOfTheMonth = null,
+}: HomePageClientProps) {
+  const firstCategoryRow = mainCategories.slice(0, 3);
+  const secondCategoryRow = mainCategories.slice(3, 6);
 
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
-      <Hero featuredProducts={featuredProducts} />
+      <Hero offerOfTheMonth={offerOfTheMonth} />
 
       {mainCategories.length > 0 ? (
-      <section className="section-spacing" id="collection">
-        <div className="gallery-container">
-          <motion.div
-            className="flex flex-col items-center gap-4 text-center"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
-          >
-            <span className="caps-spacing text-xs text-brand-teal">
-              Curated Collections
-            </span>
-            <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber sm:text-4xl md:text-5xl">
-              Discover our carefully curated categories of Craftsmanship.
-            </h2>
-          </motion.div>
-
-          <motion.div
-            className="mt-14 grid grid-cols-2 place-items-center gap-4 sm:mt-14 sm:gap-6 md:grid-cols-2 lg:grid-cols-3"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-120px" }}
-            variants={{
-              hidden: {},
-              visible: {
-                transition: {
-                  staggerChildren: 0.12,
-                },
-              },
-            }}
-          >
-            {mainCategories.map((category) => (
-              <motion.div
-                key={category.slug}
-                variants={{ hidden: { opacity: 0, y: 32 }, visible: { opacity: 1, y: 0 } }}
-                transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
-                className="w-full"
-              >
-                <CategoryCard category={category} />
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-      ) : null}
-
-      <section className="section-spacing bg-white">
-        <div className="gallery-container space-y-12">
-          <motion.div
-            className="flex flex-col items-center gap-4 text-center"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
-          >
-            <span className="caps-spacing text-xs text-brand-teal">
-              Featured Pieces
-            </span>
-            <h2 className="max-w-3xl font-heading text-3xl leading-tight text-brand-umber sm:text-4xl md:text-5xl">
-              Curated highlights from this month&apos;s gallery drop.
-            </h2>
-          </motion.div>
-
-          <motion.div
-            className="grid gap-4 grid-cols-2 sm:gap-6 md:grid-cols-2 lg:grid-cols-4"
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-120px" }}
-            transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
-          >
-            {featuredShowcase.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 26 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: index * 0.08 }}
-              >
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </motion.div>
-
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              className="px-10 py-6"
-              asChild
+        <section className="section-spacing bg-white" id="collection">
+          <div className="gallery-container">
+            <motion.div
+              className="flex flex-col items-center gap-4 text-center"
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-120px" }}
+              transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
             >
-              <Link href="/collections">Shop All Products</Link>
-            </Button>
+              <span className="caps-spacing text-xs text-brand-teal">
+                Curated Collections
+              </span>
+              <h2 className="max-w-3xl font-heading text-4xl leading-tight text-brand-umber sm:text-4xl md:text-5xl">
+                Discover our carefully curated categories of Craftsmanship.
+              </h2>
+            </motion.div>
+
+            <div className="mt-14 space-y-16 sm:mt-16 sm:space-y-20">
+              {firstCategoryRow.length > 0 ? (
+                <motion.div
+                  className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8"
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-120px" }}
+                  variants={{
+                    hidden: {},
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.12,
+                      },
+                    },
+                  }}
+                >
+                  {firstCategoryRow.map((category) => (
+                    <motion.div
+                      key={category.slug}
+                      variants={{
+                        hidden: { opacity: 0, y: 32 },
+                        visible: { opacity: 1, y: 0 },
+                      }}
+                      transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
+                      className="w-full"
+                    >
+                      <CategoryCard category={category} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : null}
+
+              {secondCategoryRow.length > 0 ? (
+                <motion.div
+                  className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8"
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-120px" }}
+                  variants={{
+                    hidden: {},
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.12,
+                      },
+                    },
+                  }}
+                >
+                  {secondCategoryRow.map((category) => (
+                    <motion.div
+                      key={category.slug}
+                      variants={{
+                        hidden: { opacity: 0, y: 32 },
+                        visible: { opacity: 1, y: 0 },
+                      }}
+                      transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
+                      className="w-full"
+                    >
+                      <CategoryCard category={category} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
     </main>
   );
 }

@@ -22,17 +22,22 @@ export default function ShopifyCheckout() {
   const { data: session } = useSession();
   const [currentStep, setCurrentStep] = useState(1);
   const [shipping, setShipping] = useState<ShippingFormData | null>(null);
+  const [shippingDraft, setShippingDraft] = useState<ShippingFormData | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   useEffect(() => {
     setShippingLoading(true);
     fetch("/api/user/shipping")
       .then(res => res.json())
       .then(data => {
-        if (data.shipping) setShipping(data.shipping);
+        if (data.shipping) {
+          setShipping(data.shipping);
+          setShippingDraft(data.shipping);
+        }
       })
       .finally(() => setShippingLoading(false));
   }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
+  const pendingDeliveryRef = useRef<DeliveryMethod | null>(null);
   const defaultPayment = { method: "TUMA" as const };
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
   const appliedCouponRef = useRef(appliedCoupon);
@@ -145,7 +150,7 @@ export default function ShopifyCheckout() {
                 <OrderSummarySidebar
                   appliedCoupon={appliedCoupon}
                   onAppliedCouponChange={setAppliedCoupon}
-                  country={shipping?.country}
+                  country={shippingDraft?.country ?? shipping?.country}
                   deliveryMethod={delivery}
                   className="md:hidden"
                 />
@@ -172,7 +177,20 @@ export default function ShopifyCheckout() {
                     {currentStep === 1 && (
                       <div className="space-y-8">
                         <ShippingStep
-                          onNext={data => setShipping(data)}
+                          hideSubmit
+                          onChange={setShippingDraft}
+                          onNext={(data) => {
+                            const method = pendingDeliveryRef.current;
+                            if (!method) {
+                              setError("Please select a delivery method.");
+                              return;
+                            }
+                            setShipping(data);
+                            setShippingDraft(data);
+                            setDelivery(method);
+                            setError("");
+                            handleNextStep();
+                          }}
                           initialData={shipping}
                           loading={shippingLoading}
                           canSaveAddress={!!session?.user}
@@ -188,20 +206,21 @@ export default function ShopifyCheckout() {
                             }
                           }}
                         />
-                        {shipping && (
-                          <DeliveryStep
-                            country={shipping.country}
-                            merchandiseSubtotal={cart.reduce(
-                              (sum, item) => sum + item.price * item.quantity,
-                              0
-                            )}
-                            freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
-                            onNext={method => {
-                              setDelivery(method);
-                              handleNextStep();
-                            }}
-                          />
-                        )}
+                        <DeliveryStep
+                          country={shippingDraft?.country ?? shipping?.country ?? "KE"}
+                          merchandiseSubtotal={cart.reduce(
+                            (sum, item) => sum + item.price * item.quantity,
+                            0
+                          )}
+                          freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
+                          onNext={(method) => {
+                            pendingDeliveryRef.current = method;
+                            const form = document.getElementById(
+                              "checkout-shipping-form",
+                            ) as HTMLFormElement | null;
+                            form?.requestSubmit();
+                          }}
+                        />
                       </div>
                     )}
                     {currentStep === 2 && shipping && delivery && (
@@ -237,7 +256,7 @@ export default function ShopifyCheckout() {
               <OrderSummarySidebar
                 appliedCoupon={appliedCoupon}
                 onAppliedCouponChange={setAppliedCoupon}
-                country={shipping?.country}
+                country={shippingDraft?.country ?? shipping?.country}
                 deliveryMethod={delivery}
               />
             </div>

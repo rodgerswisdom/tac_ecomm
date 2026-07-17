@@ -15,7 +15,11 @@ import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 
 const PRODUCTS_PER_PAGE = 12;
 
-function matchesCollection(product: ProductCardData, categorySlug: string) {
+function matchesCollection(
+  product: ProductCardData,
+  categorySlug: string,
+  categories: CategoryOption[],
+) {
   if (categorySlug === "matching-sets") {
     return product.productType === "MATCHING_SET";
   }
@@ -25,6 +29,11 @@ function matchesCollection(product: ProductCardData, categorySlug: string) {
   }
 
   if (product.category === categorySlug) {
+    return true;
+  }
+
+  const selected = categories.find((category) => category.slug === categorySlug);
+  if (selected?.childSlugs?.some((slug) => slug === product.category)) {
     return true;
   }
 
@@ -80,7 +89,9 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     let filtered = allProducts;
 
     if (filters.category !== "all") {
-      filtered = filtered.filter((product) => matchesCollection(product, filters.category));
+      filtered = filtered.filter((product) =>
+        matchesCollection(product, filters.category, categories),
+      );
     }
 
     if (filters.priceRange) {
@@ -108,7 +119,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     }
 
     return filtered;
-  }, [allProducts, filters]);
+  }, [allProducts, categories, filters]);
 
   const displayedProducts = useMemo(
     () => filteredProducts.slice(0, displayedCount),

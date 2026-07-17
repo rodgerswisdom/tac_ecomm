@@ -73,7 +73,7 @@ export const Navbar = () => {
   const isCheckoutPage = pathname.startsWith("/checkout");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
-  const [isFloatingNav, setIsFloatingNav] = useState(true);
+  const [isNavVisible, setIsNavVisible] = useState(true);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScrollYRef = useRef(0);
 
@@ -137,15 +137,14 @@ export const Navbar = () => {
     const onScroll = () => {
       const currentY = window.scrollY;
       const prevY = lastScrollYRef.current;
+      const delta = currentY - prevY;
 
       if (currentY <= 12) {
-        setIsFloatingNav(true);
-      } else if (currentY < prevY) {
-        // Scrolling up: dock navigation (non-floating look)
-        setIsFloatingNav(false);
-      } else if (currentY > prevY) {
-        // Scrolling down: bring back floating style
-        setIsFloatingNav(true);
+        setIsNavVisible(true);
+      } else if (delta < -4) {
+        setIsNavVisible(true);
+      } else if (delta > 4) {
+        setIsNavVisible(false);
       }
 
       lastScrollYRef.current = currentY;
@@ -201,20 +200,15 @@ export const Navbar = () => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full flex-col items-center transition-all duration-300",
-        isFloatingNav ? "px-3 pb-4 pt-4 sm:px-4 sm:pt-6" : "px-0 pb-0 pt-0"
+        "pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full flex-col items-center transition-transform duration-300 ease-out",
+        isNavVisible ? "translate-y-0" : "-translate-y-full"
       )}
     >
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className={cn(
-          "pointer-events-auto w-full border bg-white/90 backdrop-blur-xl transition-all duration-300",
-          isFloatingNav
-            ? "max-w-6xl rounded-full border-brand-umber/12 px-3 py-2.5 shadow-[0_20px_48px_rgba(74,43,40,0.12)] sm:px-6 sm:py-4 lg:px-8"
-            : "max-w-none rounded-none border-x-0 border-t-0 border-b-brand-umber/12 px-3 py-2 sm:px-4 sm:py-3 lg:px-8 shadow-[0_8px_22px_rgba(74,43,40,0.08)]"
-        )}
+        className="pointer-events-auto w-full max-w-none rounded-none border border-x-0 border-t-0 border-b-brand-umber/12 bg-white/90 px-3 py-2 shadow-[0_8px_22px_rgba(74,43,40,0.08)] backdrop-blur-xl sm:px-4 sm:py-3 lg:px-8"
       >
         <div className="flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
           <Link

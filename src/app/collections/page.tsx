@@ -6,8 +6,13 @@ import { prisma } from "@/lib/prisma";
 export default async function CollectionsPage() {
   const products = await getProductCardData();
   const categories = await prisma.category.findMany({
+    where: { parentId: null },
     orderBy: { name: "asc" },
-    select: { slug: true, name: true },
+    select: {
+      slug: true,
+      name: true,
+      children: { select: { slug: true } },
+    },
   });
   const collectionSummaries = await getCollectionSummaries({ includeVirtual: true });
   const categorySlugs = new Set(categories.map((category) => category.slug));
@@ -18,7 +23,11 @@ export default async function CollectionsPage() {
   return (
     <CollectionsPageClient
       initialProducts={products}
-      categories={categories}
+      categories={categories.map(({ slug, name, children }) => ({
+        slug,
+        name,
+        childSlugs: children.map((child) => child.slug),
+      }))}
       collections={collections}
     />
   );
