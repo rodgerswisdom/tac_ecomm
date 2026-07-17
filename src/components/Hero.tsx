@@ -39,7 +39,7 @@ interface HeroProps {
   offerOfTheMonth?: OfferOfTheMonth | null;
 }
 
-const DEFAULT_SLIDE_DURATION_MS = 1000;
+const DEFAULT_SLIDE_DURATION_MS = 10000;
 const FIRST_SLIDE_DURATION_MS = 15000;
 
 const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {

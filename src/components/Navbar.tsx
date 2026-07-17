@@ -208,9 +208,9 @@ export const Navbar = () => {
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className="pointer-events-auto w-full max-w-none rounded-none border border-x-0 border-t-0 border-b-brand-umber/12 bg-white/90 px-3 py-2 shadow-[0_8px_22px_rgba(74,43,40,0.08)] backdrop-blur-xl sm:px-4 sm:py-3 lg:px-8"
+        className="pointer-events-auto w-full max-w-none rounded-none border border-x-0 border-t-0 border-b-brand-umber/12 bg-white/90 py-2 shadow-[0_8px_22px_rgba(74,43,40,0.08)] backdrop-blur-xl sm:py-3"
       >
-        <div className="flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
+        <div className="gallery-container flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
           <Link
             href="/"
             className="caps-spacing inline-flex flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
