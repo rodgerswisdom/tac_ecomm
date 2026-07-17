@@ -39,8 +39,8 @@ interface HeroProps {
   offerOfTheMonth?: OfferOfTheMonth | null;
 }
 
-const DEFAULT_SLIDE_DURATION_MS = 5000;
-const FIRST_SLIDE_DURATION_MS = 10000;
+const DEFAULT_SLIDE_DURATION_MS = 1000;
+const FIRST_SLIDE_DURATION_MS = 15000;
 
 const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
   const { formatPrice } = useCurrency();
@@ -258,7 +258,7 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-12 sm:mt-24 flex flex-col items-center gap-4 text-center text-sm text-brand-umber sm:flex-row sm:justify-between"
+          className="mt-12 sm:mt-24 flex flex-col items-center gap-4 text-center text-sm text-brand-umber sm:flex-row sm:justify-center"
         >
           <span className="caps-spacing text-xs text-brand-umber">
             Scroll to enter the gallery
@@ -292,9 +292,6 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
               transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
             />
           </motion.svg>
-          <p className="caps-spacing text-xs text-brand-umber">
-            Exclusive releases drop every Thursday at 6pm EAT
-          </p>
         </motion.div>
       </div>
     </section>
