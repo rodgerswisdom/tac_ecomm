@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatFreeShippingThreshold } from "@/lib/delivery";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, Pause, Play } from "lucide-react";
 import type { OfferOfTheMonth } from "@/types/offer";
 
 const heritageSlide = {
@@ -69,10 +69,19 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
   ];
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const prefersReducedMotion = useRef(false);
   const activeSlide = allSlides[activeIndex] ?? heritageSlide;
 
+  // Detect prefers-reduced-motion on mount
   useEffect(() => {
-    if (allSlides.length <= 1) {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion.current = mq.matches;
+    if (mq.matches) setIsPaused(true);
+  }, []);
+
+  useEffect(() => {
+    if (allSlides.length <= 1 || isPaused) {
       return;
     }
 
@@ -83,7 +92,7 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
       duration
     );
     return () => clearTimeout(timer);
-  }, [activeIndex, allSlides.length]);
+  }, [activeIndex, allSlides.length, isPaused]);
 
   return (
     <section
@@ -93,6 +102,10 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
+      onMouseEnter={() => { if (!prefersReducedMotion.current) setIsPaused(true); }}
+      onMouseLeave={() => { if (!prefersReducedMotion.current) setIsPaused(false); }}
+      onFocus={() => { if (!prefersReducedMotion.current) setIsPaused(true); }}
+      onBlur={() => { if (!prefersReducedMotion.current) setIsPaused(false); }}
     >
       <div className="relative z-10 gallery-container">
         <div className="grid items-center gap-10 lg:gap-16 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
@@ -253,6 +266,18 @@ const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
             </div>
           </motion.div>
         </div>
+
+        {allSlides.length > 1 && (
+          <div className="absolute bottom-4 right-4 z-20">
+            <button
+              onClick={() => setIsPaused((p) => !p)}
+              aria-label={isPaused ? "Play slideshow" : "Pause slideshow"}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-brand-umber shadow-md backdrop-blur-sm transition hover:bg-white hover:scale-105"
+            >
+              {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            </button>
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}

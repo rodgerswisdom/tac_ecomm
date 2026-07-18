@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -40,6 +40,8 @@ const ProductCardComponent = ({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
+  // Tracks whether the API returned a valid session (determined on first fetch)
+  const isAuthenticated = useRef(false);
 
   // Calculate discount percentage
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
@@ -71,9 +73,6 @@ const ProductCardComponent = ({
     router.push(`/products/${product.slug}`);
   };
 
-  // Check if user is logged in (simple check for now)
-  const isLoggedIn = typeof window !== 'undefined' && !!localStorage.getItem('nextauth.token');
-
   const getGuestWishlist = () => {
     try {
       const stored = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
@@ -84,19 +83,22 @@ const ProductCardComponent = ({
     return [] as string[];
   };
 
-  // Load wishlist state on mount (for guest: localStorage, for user: API)
+  // Load wishlist state on mount — try API first, fall back to guest localStorage
   useEffect(() => {
     let ignore = false;
     async function fetchWishlist() {
-      if (isLoggedIn) {
-        try {
-          const res = await fetch('/api/wishlist');
+      try {
+        const res = await fetch('/api/wishlist');
+        if (res.ok) {
           const data = await res.json();
           if (!ignore && data.wishlist) {
+            isAuthenticated.current = true;
             setIsWishlisted(data.wishlist.some((w: any) => w.productId === product.id));
+            return;
           }
-        } catch { }
-      } else {
+        }
+      } catch { }
+      if (!ignore) {
         const guestWishlist = getGuestWishlist();
         setIsWishlisted(guestWishlist.includes(product.id));
       }
@@ -111,7 +113,7 @@ const ProductCardComponent = ({
     e.preventDefault();
     e.stopPropagation();
     setWishlistLoading(true);
-    if (isLoggedIn) {
+    if (isAuthenticated.current) {
       try {
         if (!isWishlisted) {
           await fetch('/api/wishlist', {

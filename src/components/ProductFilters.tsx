@@ -27,29 +27,23 @@ interface ProductFiltersProps {
   availableOrigins: string[];
   categories: CategoryOption[];
   collections: CategoryOption[];
-  resultsCount: number;
-  totalCount: number;
 }
 
-/** Price tier ceilings shown in the shopper's selected currency. */
-export const PRICE_RANGE_MAXES = [500, 1000, 2000, 5000] as const;
+/** Distinct, non-overlapping price tiers in display-currency units. */
+export const PRICE_RANGES = [
+  { label: "Under 500", min: 0, max: 500 },
+  { label: "500–1,000", min: 500, max: 1000 },
+  { label: "1,000–2,000", min: 1000, max: 2000 },
+  { label: "2,000–5,000", min: 2000, max: 5000 },
+  { label: "Over 5,000", min: 5000, max: Infinity },
+] as const;
 
 export function getPriceRangeLabel(
   range: [number, number] | null,
-  currency: CurrencyCode,
+  _currency: CurrencyCode,
   formatPrice: (amountBase: number) => string
 ): string {
   if (!range) return "";
-
-  const [, maxBase] = range;
-  const tier = PRICE_RANGE_MAXES.find(
-    (max) => Math.abs(convertToBase(max, currency) - maxBase) < 1
-  );
-
-  if (tier) {
-    return `Below ${tier.toLocaleString()}`;
-  }
-
   return formatPriceRangeLabel(range, formatPrice);
 }
 
@@ -61,9 +55,9 @@ export function formatPriceRangeLabel(
     return `Over ${formatPrice(min)}`;
   }
   if (min === 0) {
-    return `Below ${formatPrice(max)}`;
+    return `Under ${formatPrice(max)}`;
   }
-  return `${formatPrice(min)} - ${formatPrice(max)}`;
+  return `${formatPrice(min)}–${formatPrice(max)}`;
 }
 
 export function ProductFilters({
@@ -73,15 +67,16 @@ export function ProductFilters({
   availableOrigins,
   categories,
   collections,
-  resultsCount,
-  totalCount,
 }: ProductFiltersProps) {
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const { formatPrice, currency } = useCurrency();
 
-  const priceRanges = PRICE_RANGE_MAXES.map((max) => ({
-    label: `Below ${max.toLocaleString()}`,
-    value: [0, convertToBase(max, currency)] as [number, number],
+  const priceRanges = PRICE_RANGES.map((range) => ({
+    label: range.label,
+    value: [
+      range.min > 0 ? convertToBase(range.min, currency) : 0,
+      range.max === Infinity ? Infinity : convertToBase(range.max, currency),
+    ] as [number, number],
   }));
 
   const categoryOptions = [
@@ -129,10 +124,6 @@ export function ProductFilters({
 
   const filterContent = (
     <div className="space-y-6">
-      <div className="text-xs uppercase tracking-wide text-brand-umber/60">
-        Showing {resultsCount} of {totalCount} products
-      </div>
-
       {/* Category Filter */}
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-umber">

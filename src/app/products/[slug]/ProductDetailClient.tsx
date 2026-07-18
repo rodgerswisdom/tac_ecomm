@@ -21,6 +21,7 @@ import {
   formatProductImageLabel,
   getDefaultGalleryImage,
 } from "@/lib/product-image-selection";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface ProductDetailClientProps {
   product: ProductCardData;
@@ -132,7 +133,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 
   if (product.category) {
     breadcrumbItems.push({
-      name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
+      name: product.category.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
       url: `/collections/${product.category}`,
     });
   }
@@ -143,6 +144,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   });
 
   return (
+    <ErrorBoundary>
     <main className="relative overflow-x-hidden bg-brand-beige">
       <Navbar />
       <section className="nav-clearance section-spacing pb-8 sm:pb-0">
@@ -252,7 +254,15 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
               <div className="flex flex-col gap-3 rounded-2xl bg-brand-jade/25 p-4 text-sm text-brand-umber/70 sm:rounded-3xl sm:p-6">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Insured delivery.
+                  Insured delivery — ships in 3–5 business days.
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-brand-gold" />
+                  Free shipping on Kenya orders over Ksh 3,000.
+                </div>
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-brand-gold" />
+                  30-day hassle-free returns on unworn items.
                 </div>
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-brand-gold" />
@@ -283,6 +293,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
         </div>
       </section>
     </main>
+    </ErrorBoundary>
   );
 }
 

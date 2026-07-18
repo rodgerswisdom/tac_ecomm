@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle, MessageSquare, Heart, Award } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 
 interface ContactForm {
   name: string
@@ -16,6 +15,26 @@ interface ContactForm {
   subject: string
   message: string
   phone?: string
+}
+
+interface FormErrors {
+  name?: string
+  email?: string
+  subject?: string
+  message?: string
+}
+
+function validateForm(form: ContactForm): FormErrors {
+  const errors: FormErrors = {}
+  if (!form.name.trim()) errors.name = 'Full name is required.'
+  if (!form.email.trim()) {
+    errors.email = 'Email address is required.'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    errors.email = 'Please enter a valid email address.'
+  }
+  if (!form.subject.trim()) errors.subject = 'Subject is required.'
+  if (!form.message.trim()) errors.message = 'Message is required.'
+  return errors
 }
 
 export default function ContactPage() {
@@ -26,63 +45,76 @@ export default function ContactPage() {
     message: '',
     phone: ''
   })
+  const [errors, setErrors] = useState<FormErrors>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setForm(prev => ({ ...prev, [name]: value }))
+    // Clear field error on change
+    if (errors[name as keyof FormErrors]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitError(null)
+
+    const validationErrors = validateForm(form)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
     setIsSubmitting(true)
-
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setIsSubmitted(false)
-      setForm({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        phone: ''
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
       })
-    }, 3000)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to send message. Please try again.')
+      }
+      setIsSubmitting(false)
+      setIsSubmitted(true)
+      setTimeout(() => {
+        setIsSubmitted(false)
+        setForm({ name: '', email: '', subject: '', message: '', phone: '' })
+      }, 4000)
+    } catch (err) {
+      setIsSubmitting(false)
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    }
   }
 
   const contactInfo = [
     {
       icon: <Mail className="h-6 w-6 text-emerald-500" />,
       title: "Email Us",
-      details: "info@tacaccessories.co.ke",
+      details: { href: "mailto:info@tacaccessories.co.ke", label: "info@tacaccessories.co.ke" },
       description: "Send us an email anytime"
     },
     {
       icon: <Phone className="h-6 w-6 text-blue-500" />,
       title: "Call Us",
-      details: "+254 704 800866",
-      description: "Open Monday to Friday, 9am-5pm"
+      details: { href: "tel:+254704800866", label: "+254 704 800866" },
+      description: "Open Monday to Friday, 9am–5pm"
     },
     {
-      icon: <MapPin className="h-6 w-6 text-gold" />,
-      title: "Visit Us",
-      details: "Nairobi, Kenya",
-      description: "Our operations hub"
+      icon: <MapPin className="h-6 w-6 text-brand-gold" />,
+      title: "Our Location",
+      details: { href: null, label: "Nairobi, Kenya" },
+      description: "Based in Nairobi, Kenya — online studio only."
     },
     {
       icon: <Clock className="h-6 w-6 text-purple-500" />,
       title: "Business Hours",
-      details: "Monday to Friday: 9am-5pm",
+      details: { href: null, label: "Monday to Friday: 9am–5pm" },
       description: "Closed on weekends"
     }
   ]
@@ -175,7 +207,13 @@ export default function ContactPage() {
                       </p>
                     </motion.div>
                   ) : (
-                    <form onSubmit={handleSubmit} className="space-y-6">
+                    <form onSubmit={handleSubmit} noValidate className="space-y-6">
+                      {submitError && (
+                        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                          {submitError}
+                        </p>
+                      )}
+
                       <div className="grid md:grid-cols-2 gap-4">
                         <div>
                           <label htmlFor="name" className="block text-sm font-medium mb-2">
@@ -186,10 +224,14 @@ export default function ContactPage() {
                             name="name"
                             value={form.name}
                             onChange={handleInputChange}
-                            required
-                            className="h-12"
+                            aria-invalid={!!errors.name}
+                            aria-describedby={errors.name ? "name-error" : undefined}
+                            className={`h-12 ${errors.name ? 'border-red-500' : ''}`}
                             placeholder="Your full name"
                           />
+                          {errors.name && (
+                            <p id="name-error" role="alert" className="mt-1 text-xs text-red-600">{errors.name}</p>
+                          )}
                         </div>
                         <div>
                           <label htmlFor="email" className="block text-sm font-medium mb-2">
@@ -201,10 +243,14 @@ export default function ContactPage() {
                             type="email"
                             value={form.email}
                             onChange={handleInputChange}
-                            required
-                            className="h-12"
+                            aria-invalid={!!errors.email}
+                            aria-describedby={errors.email ? "email-error" : undefined}
+                            className={`h-12 ${errors.email ? 'border-red-500' : ''}`}
                             placeholder="your@email.com"
                           />
+                          {errors.email && (
+                            <p id="email-error" role="alert" className="mt-1 text-xs text-red-600">{errors.email}</p>
+                          )}
                         </div>
                       </div>
 
@@ -232,10 +278,14 @@ export default function ContactPage() {
                             name="subject"
                             value={form.subject}
                             onChange={handleInputChange}
-                            required
-                            className="h-12"
-                            placeholder="What&apos;s this about?"
+                            aria-invalid={!!errors.subject}
+                            aria-describedby={errors.subject ? "subject-error" : undefined}
+                            className={`h-12 ${errors.subject ? 'border-red-500' : ''}`}
+                            placeholder="What's this about?"
                           />
+                          {errors.subject && (
+                            <p id="subject-error" role="alert" className="mt-1 text-xs text-red-600">{errors.subject}</p>
+                          )}
                         </div>
                       </div>
 
@@ -248,11 +298,15 @@ export default function ContactPage() {
                           name="message"
                           value={form.message}
                           onChange={handleInputChange}
-                          required
+                          aria-invalid={!!errors.message}
+                          aria-describedby={errors.message ? "message-error" : undefined}
                           rows={6}
-                          className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                          className={`w-full h-auto px-3 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none text-sm ${errors.message ? 'border-red-500' : 'border-input'}`}
                           placeholder="Tell us more about your inquiry..."
                         />
+                        {errors.message && (
+                          <p id="message-error" role="alert" className="mt-1 text-xs text-red-600">{errors.message}</p>
+                        )}
                       </div>
 
                       <Button
@@ -285,7 +339,6 @@ export default function ContactPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="space-y-8"
             >
-              {/* Contact Info Cards */}
               <div className="space-y-6">
                 {contactInfo.map((info, index) => (
                   <motion.div
@@ -303,9 +356,15 @@ export default function ContactPage() {
                           <h3 className="text-lg font-semibold luxury-heading mb-1">
                             {info.title}
                           </h3>
-                          <p className="text-primary font-semibold mb-1">
-                            {info.details}
-                          </p>
+                          {info.details.href ? (
+                            <a href={info.details.href} className="text-primary font-semibold mb-1 hover:underline block">
+                              {info.details.label}
+                            </a>
+                          ) : (
+                            <p className="text-primary font-semibold mb-1">
+                              {info.details.label}
+                            </p>
+                          )}
                           <p className="text-muted-foreground luxury-text text-sm">
                             {info.description}
                           </p>
@@ -315,27 +374,6 @@ export default function ContactPage() {
                   </motion.div>
                 ))}
               </div>
-
-              {/* Map Placeholder */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 }}
-              >
-                <Card className="afro-card overflow-hidden">
-                  <div className="aspect-video relative bg-muted/20">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <MapPin className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
-                        <p className="text-muted-foreground">Interactive Map</p>
-                        <p className="text-sm text-muted-foreground/70">
-                          Nairobi, Kenya
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
             </motion.div>
           </div>
         </div>

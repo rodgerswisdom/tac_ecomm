@@ -126,6 +126,12 @@ export default async function RootLayout({
       <body
         className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar bg-texture-linen`}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-brand-teal focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <SessionProviderWrapper>
           <KeverdProviderWrapper>
             <CartProvider>
@@ -133,7 +139,7 @@ export default async function RootLayout({
                 <NavbarCategoriesProvider categories={shopCategories}>
                   <NavigationProgressRoot />
                   <div className="flex flex-col min-h-screen">
-                    <main className="flex-grow">
+                    <main id="main-content" className="flex-grow">
                       {isMaintenanceActive ? <MaintenanceMode /> : children}
                     </main>
                     {!isMaintenanceActive && <Footer />}

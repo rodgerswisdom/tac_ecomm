@@ -25,7 +25,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "*"
+          "value": "https://www.tacaccessories.co.ke"
         },
         {
           "key": "Access-Control-Allow-Methods",

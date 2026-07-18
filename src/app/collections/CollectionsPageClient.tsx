@@ -12,6 +12,7 @@ import { ProductComparison } from "@/components/ProductComparison";
 import { ProductCardData } from "@/types/product";
 import type { CategoryOption } from "@/components/ProductFilters";
 import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -63,6 +64,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
   const [displayedCount, setDisplayedCount] = useState(PRODUCTS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<"featured" | "newest" | "price-asc" | "price-desc">("featured");
 
   const availableMaterials = useMemo(() => {
     const materials = new Set<string>();
@@ -121,9 +123,22 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     return filtered;
   }, [allProducts, categories, filters]);
 
+  const sortedProducts = useMemo(() => {
+    const sorted = [...filteredProducts];
+    if (sortBy === "price-asc") {
+      sorted.sort((a, b) => a.price - b.price);
+    } else if (sortBy === "price-desc") {
+      sorted.sort((a, b) => b.price - a.price);
+    } else if (sortBy === "newest") {
+      sorted.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+    }
+    // "featured" keeps original order
+    return sorted;
+  }, [filteredProducts, sortBy]);
+
   const displayedProducts = useMemo(
-    () => filteredProducts.slice(0, displayedCount),
-    [filteredProducts, displayedCount]
+    () => sortedProducts.slice(0, displayedCount),
+    [sortedProducts, displayedCount]
   );
 
   const hasMore = displayedCount < filteredProducts.length;
@@ -209,6 +224,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
   }, []);
 
   return (
+    <ErrorBoundary>
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
 
@@ -232,7 +248,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
                 {filtersOpen ? "Hide Filters" : "Show Filters"}
               </button>
-              <span className="text-xs text-brand-umber/60">{filteredProducts.length} products</span>
+              <span aria-live="polite" className="text-xs text-brand-umber/60">{filteredProducts.length} products</span>
             </div>
             <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
               <ProductFilters
@@ -242,17 +258,31 @@ export function CollectionsPageClient({ initialProducts, categories, collections
                 availableOrigins={availableOrigins}
                 categories={categories}
                 collections={collections}
-                resultsCount={filteredProducts.length}
-                totalCount={allProducts.length}
               />
             </aside>
 
             <div className="flex-1">
-              <div className="mb-6">
-                <p className="text-sm text-brand-umber/70">
-                  Showing <span className="font-semibold text-brand-umber">{displayedProducts.length}</span> of{" "}
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p role="status" aria-live="polite" className="text-sm text-brand-umber/70">
+                  Showing <span className="font-semibold text-brand-umber">1–{displayedProducts.length}</span> of{" "}
                   <span className="font-semibold text-brand-umber">{filteredProducts.length}</span> products
                 </p>
+                <label className="flex items-center gap-2 text-sm text-brand-umber/70">
+                  <span className="shrink-0">Sort by</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => {
+                      setSortBy(e.target.value as typeof sortBy);
+                      setDisplayedCount(PRODUCTS_PER_PAGE);
+                    }}
+                    className="rounded-lg border border-brand-teal/25 bg-white px-3 py-1.5 text-sm text-brand-umber focus:outline-none focus:ring-2 focus:ring-brand-teal/40"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="newest">Newest</option>
+                    <option value="price-asc">Price: Low to High</option>
+                    <option value="price-desc">Price: High to Low</option>
+                  </select>
+                </label>
               </div>
 
               <ActiveFilterChips
@@ -336,5 +366,6 @@ export function CollectionsPageClient({ initialProducts, categories, collections
 
       {selectedProducts.length > 0 && <div className="h-24" />}
     </main>
+    </ErrorBoundary>
   );
 }
