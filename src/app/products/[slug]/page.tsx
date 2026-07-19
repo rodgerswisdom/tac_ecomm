@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 
   const seoService = new SEOService();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke/";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
   const productUrl = `${baseUrl}/products/${product.slug}`;
 
   // Determine availability status
@@ -120,7 +120,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   // Generate structured data for the product
   const seoService = new SEOService();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke/";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
   const productUrl = `${baseUrl}/products/${product.slug}`;
   const availability = product.isOutOfStock ? "out_of_stock" : "in_stock";
 

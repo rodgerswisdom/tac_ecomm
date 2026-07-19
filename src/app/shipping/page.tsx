@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { FreeShippingNote } from "@/components/FreeShippingNote";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/shipping",
+  },
+};
 
 export default function ShippingPage() {
   return (

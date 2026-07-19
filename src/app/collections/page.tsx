@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { CollectionsPageClient } from "./CollectionsPageClient";
 import { getProductCardData } from "@/server/storefront/products";
 import { getCollectionSummaries } from "@/server/storefront/collections";
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/collections",
+  },
+};
 
 export default async function CollectionsPage() {
   const products = await getProductCardData();

@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
     };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke/";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
   const collectionUrl = `${baseUrl}/collections/${collection.slug}`;
   const heroTitle = collection.heroTitle ?? collection.name;
   const heroDescription = collection.heroDescription ?? collection.description;
@@ -131,7 +131,7 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
   // Generate breadcrumb structured data
   const seoService = new SEOService();
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke/";
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
   const collectionUrl = `${baseUrl}/collections/${collection.slug}`;
 
   const breadcrumbs = [
