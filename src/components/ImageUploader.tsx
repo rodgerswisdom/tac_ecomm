@@ -27,6 +27,8 @@ interface SingleUploaderProps extends BaseUploaderProps {
   name?: string
   helperText?: string
   defaultValue?: string
+  value?: string
+  onValueChange?: (url: string) => void
 }
 
 interface MultipleUploaderProps extends BaseUploaderProps {
@@ -52,6 +54,8 @@ function SingleImageUploader({
   helperText = "SVG, PNG, JPG or GIF (max 800x400px)",
   maxSizeMb = 5,
   defaultValue = "",
+  value,
+  onValueChange,
   onChange,
   onUploadStateChange,
   folder = "categories",
@@ -62,6 +66,20 @@ function SingleImageUploader({
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const { uploadImage } = useCloudinary()
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setPreview(value)
+    }
+  }, [value])
+
+  const updatePreview = useCallback(
+    (next: string) => {
+      setPreview(next)
+      onValueChange?.(next)
+    },
+    [onValueChange],
+  )
 
   const handleFiles = useCallback(
     async (files?: FileList | null) => {
@@ -81,7 +99,7 @@ function SingleImageUploader({
       onUploadStateChange?.({ uploading: true, progress: 0 })
       try {
         const result = await uploadImage(file, { folder, tags })
-        setPreview(result.secure_url)
+        updatePreview(result.secure_url)
         onChange?.([file], [result.secure_url], [result])
         onUploadStateChange?.({ uploading: false, progress: 100 })
       } catch (error) {
@@ -94,7 +112,7 @@ function SingleImageUploader({
         setUploading(false)
       }
     },
-    [folder, maxSizeMb, onChange, onUploadStateChange, tags, uploadImage]
+    [folder, maxSizeMb, onChange, onUploadStateChange, tags, updatePreview, uploadImage]
   )
 
   const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
@@ -176,7 +194,7 @@ function SingleImageUploader({
             size="sm"
             className="h-8 gap-1 text-[#dd4c3a] hover:text-[#ff816e]"
             onClick={() => {
-              setPreview("")
+              updatePreview("")
               onChange?.([], [], [])
             }}
           >

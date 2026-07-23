@@ -264,3 +264,94 @@ export async function toggleCategoryHomepageAction(
 
     return { success: true }
 }
+
+export type CategoryImageProductOption = {
+    id: string
+    name: string
+    sku: string
+    thumbnail: string | null
+    imageCount: number
+}
+
+export type CategoryImageOption = {
+    id: string
+    url: string
+    alt: string | null
+    productName: string
+}
+
+export async function searchProductsForCategoryImageAction(
+    query: string,
+): Promise<CategoryImageProductOption[]> {
+    await assertAdmin()
+
+    const trimmed = query.trim()
+    if (trimmed.length < 2) {
+        return []
+    }
+
+    const products = await prisma.product.findMany({
+        where: {
+            isArchived: false,
+            OR: [
+                { name: { contains: trimmed, mode: "insensitive" } },
+                { sku: { contains: trimmed, mode: "insensitive" } },
+            ],
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 12,
+        select: {
+            id: true,
+            name: true,
+            sku: true,
+            images: {
+                orderBy: { order: "asc" },
+                select: { url: true },
+            },
+        },
+    })
+
+    return products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        thumbnail: product.images[0]?.url ?? null,
+        imageCount: product.images.length,
+    }))
+}
+
+export async function getProductImagesForCategoryAction(
+    productId: string,
+): Promise<CategoryImageOption[]> {
+    await assertAdmin()
+
+    if (!productId) {
+        return []
+    }
+
+    const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: {
+            name: true,
+            images: {
+                orderBy: { order: "asc" },
+                select: {
+                    id: true,
+                    url: true,
+                    alt: true,
+                },
+            },
+        },
+    })
+
+    if (!product) {
+        return []
+    }
+
+    return product.images.map((image) => ({
+        id: image.id,
+        url: image.url,
+        alt: image.alt,
+        productName: product.name,
+    }))
+}

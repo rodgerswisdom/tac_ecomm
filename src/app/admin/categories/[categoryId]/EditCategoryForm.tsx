@@ -85,7 +85,7 @@ export function EditCategoryForm({ category }: EditCategoryFormProps) {
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Category image</label>
             <p className="text-xs text-muted-foreground">
-              Upload a new image to replace the current one.
+              Upload a new image or choose one from an existing product gallery.
             </p>
             <EditCategoryImageField defaultImage={category.image} />
           </div>

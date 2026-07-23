@@ -3,7 +3,7 @@
 import { useActionState, type ReactNode } from "react"
 import { useFormStatus } from "react-dom"
 
-import { ImageUploader } from "@/components/ImageUploader"
+import { CategoryImageField } from "@/components/admin/CategoryImageField"
 import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -103,14 +103,8 @@ export function CreateCategoryForm({
             <CardTitle className="text-xl font-semibold text-[#7b4f28]">Category image</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-[#7d5b3b]">
-            <p>Click to upload or drag and drop. SVG, PNG, JPG or GIF (MAX: 800x400px).</p>
-            <ImageUploader
-              mode="single"
-              name="image"
-              helperText="SVG, PNG, JPG or GIF (max 800x400px)"
-              folder="categories"
-              tags={["categories", "admin"]}
-            />
+            <p>Upload a new image or choose one from an existing product gallery.</p>
+            <CategoryImageField helperText="SVG, PNG, JPG or GIF (max 800x400px)" />
           </CardContent>
         </Card>
       </div>
