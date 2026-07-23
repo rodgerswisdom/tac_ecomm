@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
+import type { ActionResult } from "@/lib/admin/action-result"
 import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
 
@@ -248,8 +249,12 @@ const productFlagSchema = z.object({
     value: z.coerce.boolean(),
 })
 
-export async function toggleProductFlagAction(formData: FormData) {
-    await assertAdmin()
+export async function toggleProductFlagAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const parsed = productFlagSchema.safeParse({
         productId: formData.get("productId")?.toString(),
@@ -258,23 +263,29 @@ export async function toggleProductFlagAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid toggle request")
+        return { error: parsed.error.issues[0]?.message ?? "Invalid toggle request" }
     }
 
-    await prisma.product.update({
-        where: { id: parsed.data.productId },
-        data: { [parsed.data.field]: parsed.data.value },
-    })
-    
-    await logAdminAction(
-        "TOGGLE_PRODUCT_FLAG",
-        "Product",
-        parsed.data.productId,
-        `Toggled ${parsed.data.field} to ${parsed.data.value}`
-    )
+    try {
+        await prisma.product.update({
+            where: { id: parsed.data.productId },
+            data: { [parsed.data.field]: parsed.data.value },
+        })
 
-    revalidatePath("/admin/settings")
-    revalidatePath("/admin/products")
+        await logAdminAction(
+            "TOGGLE_PRODUCT_FLAG",
+            "Product",
+            parsed.data.productId,
+            `Toggled ${parsed.data.field} to ${parsed.data.value}`,
+        )
+
+        revalidatePath("/admin/settings")
+        revalidatePath("/admin/products")
+        return { success: true }
+    } catch (error) {
+        console.error(error)
+        return { error: "Failed to update product flag" }
+    }
 }
 
 const couponToggleSchema = z.object({
@@ -282,8 +293,12 @@ const couponToggleSchema = z.object({
     isActive: z.coerce.boolean(),
 })
 
-export async function toggleCouponAction(formData: FormData) {
-    await assertAdmin()
+export async function toggleCouponAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const parsed = couponToggleSchema.safeParse({
         couponId: formData.get("couponId")?.toString(),
@@ -291,20 +306,27 @@ export async function toggleCouponAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid coupon update")
+        return { error: parsed.error.issues[0]?.message ?? "Invalid coupon update" }
     }
 
-    await prisma.coupon.update({
-        where: { id: parsed.data.couponId },
-        data: { isActive: parsed.data.isActive },
-    })
-    
-    await logAdminAction(
-        "TOGGLE_COUPON",
-        "Coupon",
-        parsed.data.couponId,
-        `Toggled coupon active status to ${parsed.data.isActive}`
-    )
+    try {
+        await prisma.coupon.update({
+            where: { id: parsed.data.couponId },
+            data: { isActive: parsed.data.isActive },
+        })
 
-    revalidatePath("/admin/settings")
+        await logAdminAction(
+            "TOGGLE_COUPON",
+            "Coupon",
+            parsed.data.couponId,
+            `Toggled coupon active status to ${parsed.data.isActive}`,
+        )
+
+        revalidatePath("/admin/settings")
+        revalidatePath("/admin/coupons")
+        return { success: true }
+    } catch (error) {
+        console.error(error)
+        return { error: "Failed to update coupon" }
+    }
 }

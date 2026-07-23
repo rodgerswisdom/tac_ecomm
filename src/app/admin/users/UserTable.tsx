@@ -212,10 +212,7 @@ export function UserTable({ users }: UserTableProps) {
                                                     </div>
                                                 }
                                                 deleteConfig={{
-                                                    action: async (formData) => {
-                                                        const result = await deleteUserAction(undefined, formData)
-                                                        if (result?.error) throw new Error(result.error)
-                                                    },
+                                                    action: (formData) => deleteUserAction(undefined, formData),
                                                     fields: { id: user.id },
                                                     resourceLabel: user.name ?? user.email ?? "User",
                                                     confirmTitle: `Delete ${user.name ?? "this user"}?`,

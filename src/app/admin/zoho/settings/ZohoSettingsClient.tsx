@@ -7,7 +7,7 @@ import { ExternalLink, AlertCircle } from "lucide-react"
 
 interface ConnectionStatus {
   connected: boolean
-  expiresAt?: Date
+  expiresAt?: string
   message: string
 }
 

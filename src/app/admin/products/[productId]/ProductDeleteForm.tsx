@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog"
 import { buildProductDeleteDescription } from "@/lib/admin/product-delete"
 import { adminToast } from "@/lib/admin/feedback"
+import type { ActionResult } from "@/lib/admin/action-result"
 import {
   archiveProductAction,
   deleteProductAction,
@@ -43,24 +44,27 @@ export function ProductDeleteForm({
     orderNumbers,
   })
 
-  const runAction = (action: (formData: FormData) => Promise<void>, successMessage: string, redirectToList = false) => {
+  const runAction = (
+    action: (formData: FormData) => Promise<ActionResult>,
+    successMessage: string,
+    redirectToList = false,
+  ) => {
     setError(null)
     startTransition(async () => {
-      try {
-        const formData = new FormData()
-        formData.append("productId", productId)
-        await action(formData)
-        adminToast.success(successMessage)
-        setOpen(false)
-        if (redirectToList) {
-          router.push("/admin/products")
-        } else {
-          router.refresh()
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Unable to complete action"
-        setError(message)
-        adminToast.error(message)
+      const formData = new FormData()
+      formData.append("productId", productId)
+      const result = await action(formData)
+      if (result.error) {
+        setError(result.error)
+        adminToast.error(result.error)
+        return
+      }
+      adminToast.success(successMessage)
+      setOpen(false)
+      if (redirectToList) {
+        router.push("/admin/products")
+      } else {
+        router.refresh()
       }
     })
   }

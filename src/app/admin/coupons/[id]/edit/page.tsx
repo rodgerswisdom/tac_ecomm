@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getCoupons, updateCouponAction, deleteCouponAction } from "@/server/admin/coupons"
+import { toIso } from "@/lib/serialize"
 import { notFound } from "next/navigation"
 import { CouponEditForms } from "./CouponEditForms"
 
@@ -9,14 +10,27 @@ export default async function EditCouponPage(props: { params: Promise<{ id: stri
   const coupon = coupons.find((c) => c.id === id)
   if (!coupon) return notFound()
 
+  const serializedCoupon = {
+    id: coupon.id,
+    code: coupon.code,
+    description: coupon.description,
+    type: coupon.type,
+    value: coupon.value,
+    minAmount: coupon.minAmount,
+    maxUses: coupon.maxUses,
+    isActive: coupon.isActive,
+    startsAt: toIso(coupon.startsAt),
+    expiresAt: toIso(coupon.expiresAt),
+  }
+
   async function updateCoupon(formData: FormData) {
     "use server"
-    await updateCouponAction(coupon!.id, formData)
+    return updateCouponAction(coupon!.id, formData)
   }
 
   async function deleteCoupon(_formData: FormData) {
     "use server"
-    await deleteCouponAction(coupon!.id)
+    return deleteCouponAction(coupon!.id)
   }
 
   return (
@@ -25,7 +39,7 @@ export default async function EditCouponPage(props: { params: Promise<{ id: stri
         <CardTitle>Edit Discount Code</CardTitle>
       </CardHeader>
       <CardContent>
-        <CouponEditForms coupon={coupon} updateAction={updateCoupon} deleteAction={deleteCoupon} />
+        <CouponEditForms coupon={serializedCoupon} updateAction={updateCoupon} deleteAction={deleteCoupon} />
       </CardContent>
     </Card>
   )

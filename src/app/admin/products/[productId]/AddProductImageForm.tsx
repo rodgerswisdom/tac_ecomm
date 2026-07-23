@@ -4,8 +4,9 @@ import { useState } from "react"
 import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { ImageUploader } from "@/components/ImageUploader"
 import { Button } from "@/components/ui/button"
+import type { ActionResult } from "@/lib/admin/action-result"
 
-type AddProductImageAction = (formData: FormData) => Promise<void>
+type AddProductImageAction = (formData: FormData) => Promise<void | ActionResult>
 
 export function AddProductImageForm({
   productId,

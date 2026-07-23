@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { generateSlug } from "@/lib/utils"
 import { assertAdmin } from "./auth"
-import type { ActionResult } from "./users"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 const categorySchema = z.object({
     id: z.string().cuid().optional(),
@@ -201,11 +201,15 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
     return { success: true }
 }
 
-export async function deleteCategoryAction(formData: FormData) {
-    await assertAdmin()
+export async function deleteCategoryAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const categoryId = formData.get("categoryId")?.toString()
-    if (!categoryId) throw new Error("Category id is required")
+    if (!categoryId) return { error: "Category id is required" }
 
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
@@ -213,23 +217,25 @@ export async function deleteCategoryAction(formData: FormData) {
     })
 
     if (!category) {
-        throw new Error("Category not found")
+        return { error: "Category not found" }
     }
 
     if (category._count.products > 0) {
-        throw new Error("Cannot delete a category that still has products")
+        return { error: "Cannot delete a category that still has products" }
     }
 
     try {
         await prisma.category.delete({ where: { id: categoryId } })
     } catch (error) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-            throw new Error("Category is still referenced and cannot be deleted")
+            return { error: "Category is still referenced and cannot be deleted" }
         }
-        throw error
+        console.error(error)
+        return { error: "Failed to delete category" }
     }
 
     revalidateCategoryPaths(category.slug, categoryId)
+    return { success: true }
 }
 
 export async function toggleCategoryHomepageAction(

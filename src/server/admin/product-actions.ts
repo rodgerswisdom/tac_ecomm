@@ -23,6 +23,7 @@ import {
   imageSchema,
 } from "./products"
 import type { CreateProductFormState } from "./products"
+import type { ActionResult } from "@/lib/admin/action-result"
 import { logAdminAction } from "./audit"
 import { queueProductSync } from "@/lib/zoho"
 import { archiveFieldsForStock, syncProductArchiveForStock } from "@/lib/admin/product-archive"
@@ -160,7 +161,7 @@ export async function createProductAction(
   )
 }
 
-export async function updateProductAction(formData: FormData) {
+export async function updateProductAction(formData: FormData): Promise<ActionResult> {
   await assertAdmin()
 
   const payload = {
@@ -179,7 +180,9 @@ export async function updateProductAction(formData: FormData) {
   const parsed = productUpdateSchema.safeParse(payload)
 
   if (!parsed.success || !parsed.data.id) {
-    throw new Error(parsed.success ? "Product id is required" : parsed.error.issues[0]?.message)
+    return {
+      error: parsed.success ? "Product id is required" : parsed.error.issues[0]?.message ?? "Invalid product data",
+    }
   }
 
   const slug = await resolveProductSlug(parsed.data.name, undefined, parsed.data.id)
@@ -189,10 +192,10 @@ export async function updateProductAction(formData: FormData) {
     sku = await resolveProductSku(parsed.data.name, parsed.data.sku, parsed.data.id)
   } catch (error) {
     if (error instanceof SkuConflictError) {
-      throw new Error(error.message)
+      return { error: error.message }
     }
     if (error instanceof Error && error.message === "Unable to generate product SKU") {
-      throw new Error("Enter a product name or SKU to continue.")
+      return { error: "Enter a product name or SKU to continue." }
     }
     throw error
   }
@@ -204,7 +207,7 @@ export async function updateProductAction(formData: FormData) {
     })
 
     if (!existing) {
-      throw new Error("Product not found")
+      return { error: "Product not found" }
     }
 
     const stockJustDepleted = existing.stock > 0 && parsed.data.stock <= 0
@@ -247,43 +250,53 @@ export async function updateProductAction(formData: FormData) {
     }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      throw new Error("SKU already exists. Please use a unique SKU.")
+      return { error: "SKU already exists. Please use a unique SKU." }
     }
     throw error
   }
 
   revalidateProductRoute(parsed.data.id)
+  return { success: true }
 }
 
-export async function deleteProductAction(formData: FormData) {
-  await assertAdmin()
+export async function deleteProductAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const productId = formData.get("productId")?.toString()
 
   if (!productId) {
-    throw new Error("Product id is required")
+    return { error: "Product id is required" }
   }
 
   try {
     await prisma.product.delete({ where: { id: productId } })
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
-      // Idempotent delete: product already removed (stale UI / double-submit).
       revalidateProductRoute(productId)
-      return
+      return { success: true }
     }
-    throw error
+    console.error(error)
+    return { error: "Failed to delete product" }
   }
   revalidateProductRoute(productId)
+  return { success: true }
 }
 
-export async function duplicateProductAction(formData: FormData) {
-  await assertAdmin()
+export async function duplicateProductAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const productId = formData.get("productId")?.toString()
 
   if (!productId) {
-    throw new Error("Product id is required")
+    return { error: "Product id is required" }
   }
 
   const product = await prisma.product.findUnique({
@@ -292,89 +305,113 @@ export async function duplicateProductAction(formData: FormData) {
   })
 
   if (!product) {
-    throw new Error("Product not found")
+    return { error: "Product not found" }
   }
 
-  const duplicateName = `${product.name} Copy`
-  const slug = await resolveProductSlug(duplicateName)
-  const sku = await generateDuplicateSku(product.sku)
+  try {
+    const duplicateName = `${product.name} Copy`
+    const slug = await resolveProductSlug(duplicateName)
+    const sku = await generateDuplicateSku(product.sku)
 
-  const duplicated = await prisma.product.create({
-    data: {
-      name: duplicateName,
-      slug,
-      description: product.description,
-      shortDescription: product.shortDescription,
-      price: product.price,
-      comparePrice: product.comparePrice,
-      sku,
-      stock: product.stock,
-      weight: product.weight,
-      dimensions: product.dimensions,
-      color: product.color,
-      size: product.size,
-      isActive: false,
-      isDraft: true,
-      isFeatured: product.isFeatured,
-      isDigital: product.isDigital,
-      isBespoke: product.isBespoke,
-      isCorporateGift: product.isCorporateGift,
-      productType: product.productType,
-      categoryId: product.categoryId,
-      artisanId: product.artisanId,
-      communityImpact: product.communityImpact,
-      sourcingStory: product.sourcingStory,
-      materials: product.materials,
-      origin: product.origin,
-    },
-  })
-
-  if (product.images.length > 0) {
-    await prisma.productImage.createMany({
-      data: product.images.map((image) => ({
-        productId: duplicated.id,
-        url: image.url,
-        alt: image.alt,
-        order: image.order,
-      })),
+    const duplicated = await prisma.product.create({
+      data: {
+        name: duplicateName,
+        slug,
+        description: product.description,
+        shortDescription: product.shortDescription,
+        price: product.price,
+        comparePrice: product.comparePrice,
+        sku,
+        stock: product.stock,
+        weight: product.weight,
+        dimensions: product.dimensions,
+        color: product.color,
+        size: product.size,
+        isActive: false,
+        isDraft: true,
+        isFeatured: product.isFeatured,
+        isDigital: product.isDigital,
+        isBespoke: product.isBespoke,
+        isCorporateGift: product.isCorporateGift,
+        productType: product.productType,
+        categoryId: product.categoryId,
+        artisanId: product.artisanId,
+        communityImpact: product.communityImpact,
+        sourcingStory: product.sourcingStory,
+        materials: product.materials,
+        origin: product.origin,
+      },
     })
-  }
 
-  revalidateProductRoute(duplicated.id)
+    if (product.images.length > 0) {
+      await prisma.productImage.createMany({
+        data: product.images.map((image) => ({
+          productId: duplicated.id,
+          url: image.url,
+          alt: image.alt,
+          order: image.order,
+        })),
+      })
+    }
+
+    revalidateProductRoute(duplicated.id)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to duplicate product" }
+  }
 }
 
-export async function archiveProductAction(formData: FormData) {
-  await assertAdmin()
+export async function archiveProductAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const productId = formData.get("productId")?.toString()
 
   if (!productId) {
-    throw new Error("Product id is required")
+    return { error: "Product id is required" }
   }
 
-  await prisma.product.update({
-    where: { id: productId },
-    data: { isArchived: true, isActive: false },
-  })
-
-  revalidateProductRoute(productId)
+  try {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { isArchived: true, isActive: false },
+    })
+    revalidateProductRoute(productId)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to archive product" }
+  }
 }
 
-export async function unarchiveProductAction(formData: FormData) {
-  await assertAdmin()
+export async function unarchiveProductAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const productId = formData.get("productId")?.toString()
 
   if (!productId) {
-    throw new Error("Product id is required")
+    return { error: "Product id is required" }
   }
 
-  await prisma.product.update({
-    where: { id: productId },
-    data: { isArchived: false, isActive: true },
-  })
-
-  revalidateProductRoute(productId)
+  try {
+    await prisma.product.update({
+      where: { id: productId },
+      data: { isArchived: false, isActive: true },
+    })
+    revalidateProductRoute(productId)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to restore product" }
+  }
 }
 
 export async function bulkArchiveProducts(
@@ -435,8 +472,12 @@ export async function bulkDeleteProducts(
   }
 }
 
-export async function addVariantAction(formData: FormData) {
-  await assertAdmin()
+export async function addVariantAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const parsed = variantSchema.safeParse({
     productId: formData.get("productId")?.toString(),
@@ -448,32 +489,48 @@ export async function addVariantAction(formData: FormData) {
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Invalid variant data")
+    return { error: parsed.error.issues[0]?.message ?? "Invalid variant data" }
   }
 
-  await prisma.productVariant.create({ data: parsed.data })
-  revalidateProductRoute(parsed.data.productId)
+  try {
+    await prisma.productVariant.create({ data: parsed.data })
+    revalidateProductRoute(parsed.data.productId)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to add variant" }
+  }
 }
 
-export async function deleteVariantAction(formData: FormData) {
-  await assertAdmin()
+export async function deleteVariantAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const variantId = formData.get("variantId")?.toString()
 
   if (!variantId) {
-    throw new Error("Variant id is required")
+    return { error: "Variant id is required" }
   }
 
-  const deleted = await prisma.productVariant.delete({ where: { id: variantId }, select: { productId: true } })
-  revalidateProductRoute(deleted.productId)
+  try {
+    const deleted = await prisma.productVariant.delete({ where: { id: variantId }, select: { productId: true } })
+    revalidateProductRoute(deleted.productId)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to delete variant" }
+  }
 }
 
-export async function addProductImageAction(formData: FormData) {
+export async function addProductImageAction(formData: FormData): Promise<ActionResult> {
   await assertAdmin()
 
   const url = formData.get("url")?.toString()?.trim() ?? ""
   if (!url) {
-    throw new Error("Please upload an image or enter an image URL.")
+    return { error: "Please upload an image or enter an image URL." }
   }
 
   const parsed = imageSchema.safeParse({
@@ -484,23 +541,25 @@ export async function addProductImageAction(formData: FormData) {
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Invalid image data")
+    return { error: parsed.error.issues[0]?.message ?? "Invalid image data" }
   }
 
   await prisma.productImage.create({ data: parsed.data })
   revalidateProductRoute(parsed.data.productId)
+  return { success: true }
 }
 
-export async function deleteProductImageAction(formData: FormData) {
+export async function deleteProductImageAction(formData: FormData): Promise<ActionResult> {
   await assertAdmin()
 
   const imageId = formData.get("imageId")?.toString()
   if (!imageId) {
-    throw new Error("Image id is required")
+    return { error: "Image id is required" }
   }
 
   const deleted = await prisma.productImage.delete({ where: { id: imageId }, select: { productId: true } })
   revalidateProductRoute(deleted.productId)
+  return { success: true }
 }
 
 export async function reorderImagesAction(productId: string, imageIds: string[]): Promise<void> {

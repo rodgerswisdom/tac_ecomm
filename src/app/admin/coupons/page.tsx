@@ -81,7 +81,10 @@ export default function AdminCouponsPage() {
           method: "POST",
           body: formData,
         });
-        if (!res.ok) throw new Error("Failed to create coupon");
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          throw new Error(data.error || "Failed to create coupon")
+        }
         adminToast.success("Coupon created successfully!");
         onSuccess();
       } catch (err: any) {
@@ -364,7 +367,8 @@ export default function AdminCouponsPage() {
                           })
                           fetchCoupons()
                           if (!res.ok) {
-                            throw new Error(`Failed to delete coupon ${coupon.code}.`)
+                            const data = await res.json().catch(() => ({}))
+                            throw new Error(data.error || `Failed to delete coupon ${coupon.code}.`)
                           }
                         },
                         fields: {},

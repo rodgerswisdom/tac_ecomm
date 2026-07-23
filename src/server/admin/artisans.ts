@@ -5,7 +5,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
-import { ActionResult } from "./users"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 const artisanSchema = z.object({
     id: z.string().cuid().optional(),
@@ -105,11 +105,15 @@ export async function updateArtisanAction(
     }
 }
 
-export async function deleteArtisanAction(formData: FormData) {
-    await assertAdmin()
+export async function deleteArtisanAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const id = formData.get("id")?.toString()
-    if (!id) throw new Error("Artisan ID is required")
+    if (!id) return { error: "Artisan ID is required" }
 
     try {
         const artisan = await prisma.artisan.delete({
@@ -119,9 +123,10 @@ export async function deleteArtisanAction(formData: FormData) {
         await logAdminAction("DELETE_ARTISAN", "Artisan", id, `Deleted artisan: ${artisan.name}`)
 
         revalidatePath("/admin/artisans")
+        return { success: true }
     } catch (error) {
         console.error("Failed to delete artisan:", error)
-        throw new Error("Failed to delete artisan. Ensure no products are linked.")
+        return { error: "Failed to delete artisan. Ensure no products are linked." }
     }
 }
 

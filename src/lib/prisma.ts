@@ -1,15 +1,14 @@
 import { PrismaClient } from "@prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
+import { getServerEnv } from "@/env.server"
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set")
-  }
+  const { DATABASE_URL } = getServerEnv()
+  const connectionString = DATABASE_URL
 
   // Neon serverless auto-suspends compute after ~5 min of inactivity and
   // terminates the TCP connection server-side. The pool must close idle

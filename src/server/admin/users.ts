@@ -4,6 +4,7 @@ import { Prisma, UserRole } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
+import type { ActionResult } from "@/lib/admin/action-result"
 import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
 import { EmailService, getEmailConfig } from "@/lib/email"
@@ -24,7 +25,7 @@ type UsersSummaryFilters = {
 
 const DEFAULT_PAGE_SIZE = 10
 
-export type ActionResult = { success?: boolean; error?: string; message?: string }
+export type { ActionResult } from "@/lib/admin/action-result"
 
 /**
  * ================================
@@ -234,8 +235,12 @@ export async function createUserAction(_prev: ActionResult | undefined, formData
 }
 
 // Update user role
-export async function updateUserRoleAction(formData: FormData) {
-    await assertAdmin()
+export async function updateUserRoleAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const parsed = roleSchema.safeParse({
         userId: formData.get("userId")?.toString(),
@@ -243,7 +248,7 @@ export async function updateUserRoleAction(formData: FormData) {
     })
 
     if (!parsed.success) {
-        throw new Error(parsed.error.issues[0]?.message ?? "Invalid role change request")
+        return { error: parsed.error.issues[0]?.message ?? "Invalid role change request" }
     }
 
     // Promoting to admin is always allowed
@@ -254,7 +259,7 @@ export async function updateUserRoleAction(formData: FormData) {
         })
 
         revalidatePath("/admin/users")
-        return
+        return { success: true }
     }
 
     // Prevent removing the last admin
@@ -267,11 +272,11 @@ export async function updateUserRoleAction(formData: FormData) {
     })
 
     if (!target) {
-        throw new Error("User not found")
+        return { error: "User not found" }
     }
 
     if (target.role === UserRole.ADMIN && adminCount <= 1) {
-        throw new Error("At least one admin user is required")
+        return { error: "At least one admin user is required" }
     }
 
     await prisma.user.update({
@@ -280,6 +285,7 @@ export async function updateUserRoleAction(formData: FormData) {
     })
 
     revalidatePath("/admin/users")
+    return { success: true }
 }
 
 // Delete user

@@ -2,6 +2,7 @@
 
 import { requireAdmin } from "./auth"
 import { prisma } from "@/lib/prisma"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 export type ZohoSyncStatus = "PENDING" | "SYNCED" | "FAILED" | "RETRYING"
 export type ZohoEntityType = "PRODUCT" | "CUSTOMER" | "ORDER" | "INVOICE" | "PAYMENT"
@@ -237,7 +238,7 @@ export async function getZohoStats(): Promise<ZohoStatsData> {
   }
 }
 
-export async function retryFailedSync(logId: string) {
+export async function retryFailedSync(logId: string): Promise<ActionResult> {
   await requireAdmin()
 
   const log = await prisma.zohoSyncLog.findUnique({
@@ -245,24 +246,27 @@ export async function retryFailedSync(logId: string) {
   })
 
   if (!log) {
-    throw new Error("Sync log not found")
+    return { error: "Sync log not found" }
   }
 
   if (log.status !== "FAILED") {
-    throw new Error("Only failed syncs can be retried")
+    return { error: "Only failed syncs can be retried" }
   }
 
-  // Reset the log to pending with incremented attempts
-  await prisma.zohoSyncLog.update({
-    where: { id: logId },
-    data: {
-      status: "PENDING",
-      retryCount: 0,
-      errorMessage: null,
-    },
-  })
-
-  return { success: true }
+  try {
+    await prisma.zohoSyncLog.update({
+      where: { id: logId },
+      data: {
+        status: "PENDING",
+        retryCount: 0,
+        errorMessage: null,
+      },
+    })
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to retry sync" }
+  }
 }
 
 export async function retryAllFailedSyncs(entityType?: ZohoEntityType) {
@@ -462,7 +466,7 @@ export async function getZohoConnectionStatus() {
 
   return {
     connected: !isExpired,
-    expiresAt: token.expiresAt,
+    expiresAt: token.expiresAt.toISOString(),
     message: isExpired
       ? "Zoho token expired. Please re-authenticate."
       : "Connected to Zoho Books",

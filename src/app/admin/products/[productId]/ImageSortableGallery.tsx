@@ -23,6 +23,7 @@ import { GripVertical, Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { adminToast } from "@/lib/admin/feedback"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 interface ProductImage {
     id: string
@@ -34,7 +35,7 @@ interface ProductImage {
 interface ImageSortableGalleryProps {
     productId: string
     initialImages: ProductImage[]
-    onDeleteAction: (formData: FormData) => Promise<void>
+    onDeleteAction: (formData: FormData) => Promise<void | ActionResult>
     onReorderAction: (productId: string, imageIds: string[]) => Promise<void>
     compact?: boolean
 }
@@ -126,7 +127,7 @@ function SortableImage({
     image: ProductImage
     index: number
     isPending: boolean
-    onDeleteAction: (formData: FormData) => Promise<void>
+    onDeleteAction: (formData: FormData) => Promise<void | ActionResult>
     compact?: boolean
 }) {
     const {

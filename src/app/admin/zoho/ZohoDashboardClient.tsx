@@ -15,7 +15,7 @@ import { syncAllExistingProducts, syncAllExistingCustomers, syncAllExistingOrder
 
 type ConnectionStatus = {
   connected: boolean
-  expiresAt?: Date
+  expiresAt?: string
   message: string
 }
 
@@ -58,7 +58,9 @@ export function ZohoDashboardClient({
         
         if (!response.ok) {
           const data = await response.json().catch(() => ({ error: response.statusText }))
-          throw new Error(data.error || "Network connection dropped mid-transit.")
+          adminToast.error(data.error || "Network connection dropped mid-transit.")
+          processing = false
+          break
         }
         
         const data = await response.json()

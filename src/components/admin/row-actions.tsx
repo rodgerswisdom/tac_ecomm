@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { adminToast } from "@/lib/admin/feedback"
+import type { ActionResult } from "@/lib/admin/action-result"
+
+type AdminFormActionResult = void | ActionResult
 
 interface DeleteConfig {
-  action: (formData: FormData) => Promise<void>
+  action: (formData: FormData) => Promise<AdminFormActionResult>
   fields: Record<string, string>
   resourceLabel?: string
   confirmTitle?: string
@@ -17,7 +20,7 @@ interface DeleteConfig {
   confirmButtonLabel?: string
   orderCount?: number
   showArchiveOption?: boolean
-  archiveAction?: (formData: FormData) => Promise<void>
+  archiveAction?: (formData: FormData) => Promise<AdminFormActionResult>
 }
 
 interface RowActionsProps {
@@ -58,13 +61,19 @@ export function RowActions({
         Object.entries(deleteConfig.fields).forEach(([key, value]) => {
           formData.append(key, value)
         })
-        await deleteConfig.action(formData)
+        const result = await deleteConfig.action(formData)
+        if (result?.error) {
+          setError(result.error)
+          adminToast.error(result.error)
+          return
+        }
         adminToast.success(`Deleted ${deleteConfig.resourceLabel ?? "item"}.`)
         setDialogOpen(false)
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unable to delete item"
+        const message = "Unable to delete item"
         setError(message)
         adminToast.error(message)
+        console.error(err)
       }
     })
   }
@@ -78,13 +87,19 @@ export function RowActions({
         Object.entries(deleteConfig.fields).forEach(([key, value]) => {
           formData.append(key, value)
         })
-        await deleteConfig.archiveAction!(formData)
+        const result = await deleteConfig.archiveAction!(formData)
+        if (result?.error) {
+          setError(result.error)
+          adminToast.error(result.error)
+          return
+        }
         adminToast.success(`Archived ${deleteConfig.resourceLabel ?? "item"}.`)
         setDialogOpen(false)
       } catch (err) {
-        const message = err instanceof Error ? err.message : "Unable to archive item"
+        const message = "Unable to archive item"
         setError(message)
         adminToast.error(message)
+        console.error(err)
       }
     })
   }

@@ -8,6 +8,7 @@ import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
 import { decrementStock, restoreStock, toStockLineItems } from "@/lib/stock"
 import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 // ─────────────────────────────────────────────
 // Schema
@@ -276,12 +277,22 @@ export async function updateOrderStatusAction(
     }
 }
 
-export async function deleteOrderAction(formData: FormData) {
-    await assertAdmin()
+export async function deleteOrderAction(formData: FormData): Promise<ActionResult> {
+    try {
+        await assertAdmin()
+    } catch {
+        return { error: "Unauthorized" }
+    }
 
     const orderId = formData.get("orderId")?.toString()
-    if (!orderId) throw new Error("Missing orderId")
+    if (!orderId) return { error: "Missing orderId" }
 
-    await prisma.order.delete({ where: { id: orderId } })
-    revalidatePath("/admin/orders")
+    try {
+        await prisma.order.delete({ where: { id: orderId } })
+        revalidatePath("/admin/orders")
+        return { success: true }
+    } catch (error) {
+        console.error(error)
+        return { error: "Failed to delete order" }
+    }
 }

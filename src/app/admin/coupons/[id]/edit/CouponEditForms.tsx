@@ -5,6 +5,7 @@ import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { CouponType } from "@prisma/client"
+import type { ActionResult } from "@/lib/admin/action-result"
 
 type CouponEditFormsProps = {
   coupon: {
@@ -16,11 +17,11 @@ type CouponEditFormsProps = {
     minAmount: number | null
     maxUses: number | null
     isActive: boolean
-    startsAt: Date | null
-    expiresAt: Date | null
+    startsAt: string | null
+    expiresAt: string | null
   }
-  updateAction: (formData: FormData) => Promise<void>
-  deleteAction: (formData: FormData) => Promise<void>
+  updateAction: (formData: FormData) => Promise<ActionResult>
+  deleteAction: (formData: FormData) => Promise<ActionResult>
 }
 
 export function CouponEditForms({ coupon, updateAction, deleteAction }: CouponEditFormsProps) {
@@ -54,12 +55,12 @@ export function CouponEditForms({ coupon, updateAction, deleteAction }: CouponEd
         <Input
           name="startsAt"
           type="date"
-          defaultValue={coupon.startsAt ? coupon.startsAt.toISOString().slice(0, 10) : ""}
+          defaultValue={coupon.startsAt ? coupon.startsAt.slice(0, 10) : ""}
         />
         <Input
           name="expiresAt"
           type="date"
-          defaultValue={coupon.expiresAt ? coupon.expiresAt.toISOString().slice(0, 10) : ""}
+          defaultValue={coupon.expiresAt ? coupon.expiresAt.slice(0, 10) : ""}
         />
         <Button type="submit" className="w-full">
           Update Coupon

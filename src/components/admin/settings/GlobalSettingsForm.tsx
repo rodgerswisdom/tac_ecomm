@@ -67,7 +67,11 @@ export function GlobalSettingsForm({
             formData.append("productId", productId)
             formData.append("field", field)
             formData.append("value", "false")
-            await toggleProductFlagAction(formData)
+            const result = await toggleProductFlagAction(formData)
+            if (result?.error) {
+                adminToast.error(result.error)
+                return
+            }
 
             if (field === "isFeatured") {
                 setFeaturedProductsState(prev => prev.filter((product: any) => product.id !== productId))

@@ -3,6 +3,7 @@
 import { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
+import type { ActionResult } from "@/lib/admin/action-result"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "@/server/admin/auth"
 
@@ -74,32 +75,35 @@ export async function updateOrderStatusAction(
   }
 }
 
-export async function deleteOrderAction(formData: FormData) {
-  await assertAdmin()
+export async function deleteOrderAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const parsed = deleteOrderSchema.safeParse({
     orderId: formData.get("orderId")?.toString(),
   })
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Invalid order delete request")
+    return { error: parsed.error.issues[0]?.message ?? "Invalid order delete request" }
   }
 
   try {
     await prisma.order.delete({ where: { id: parsed.data.orderId } })
+    revalidatePath("/admin/orders")
+    return { success: true }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === "P2025") {
-        throw new Error("Order not found or already deleted")
+        return { error: "Order not found or already deleted" }
       }
-
       if (error.code === "P2003") {
-        throw new Error("Cannot delete this order because it is linked to other records.")
+        return { error: "Cannot delete this order because it is linked to other records." }
       }
     }
-
-    throw error
+    console.error(error)
+    return { error: "Failed to delete order" }
   }
-
-  revalidatePath("/admin/orders")
 }

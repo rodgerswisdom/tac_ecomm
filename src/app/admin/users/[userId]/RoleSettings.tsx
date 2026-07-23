@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button"
 import { useAdminFormAction } from "@/hooks/use-admin-form-action"
 import { useFormStatus } from "react-dom"
 
+import type { ActionResult } from "@/lib/admin/action-result"
+
 type Props = {
   userId: string
   currentRole: UserRole
-  action: (formData: FormData) => Promise<void>
+  action: (formData: FormData) => Promise<void | ActionResult>
 }
 
 function SaveButton({ disabled }: { disabled: boolean }) {

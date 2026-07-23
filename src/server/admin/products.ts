@@ -26,8 +26,8 @@ export const productInputSchema = z
         dimensions: z.string().max(120).optional().nullable(),
     })
     .refine(
-        (data) => data.comparePrice == null || data.comparePrice > data.price,
-        { message: "Market price must be greater than selling price when set.", path: ["comparePrice"] },
+        (data) => data.comparePrice == null || data.comparePrice >= data.price,
+        { message: "Market price cannot be less than selling price when set.", path: ["comparePrice"] },
     )
 
 /** Fields editable on the simplified admin product detail form. */
@@ -45,8 +45,8 @@ export const productUpdateSchema = z
         dimensions: z.string().max(120).optional().nullable(),
     })
     .refine(
-        (data) => data.comparePrice == null || data.comparePrice > data.price,
-        { message: "Market price must be greater than selling price when set.", path: ["comparePrice"] },
+        (data) => data.comparePrice == null || data.comparePrice >= data.price,
+        { message: "Market price cannot be less than selling price when set.", path: ["comparePrice"] },
     )
 
 export const variantSchema = z.object({

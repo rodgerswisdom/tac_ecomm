@@ -34,10 +34,14 @@ export async function POST(req: NextRequest) {
         formData.set("expiresAt", d.toISOString())
       }
     }
-    await createCouponAction(formData)
+    const result = await createCouponAction(formData)
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
     return NextResponse.json({ success: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || "Failed to create coupon" }, { status: 400 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to create coupon"
+    return NextResponse.json({ error: message }, { status: 400 })
   }
 }
 
@@ -121,9 +125,13 @@ export async function DELETE(req: NextRequest) {
 
     const { couponId } = await req.json()
     if (!couponId) return NextResponse.json({ error: "Missing couponId" }, { status: 400 })
-    await deleteCouponAction(couponId)
+    const result = await deleteCouponAction(couponId)
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: 400 })
+    }
     return NextResponse.json({ success: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message || "Failed to delete coupon" }, { status: 500 })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Failed to delete coupon"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

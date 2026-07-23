@@ -2,6 +2,7 @@
 
 import { useCallback, useTransition } from "react"
 import { adminToast } from "@/lib/admin/feedback"
+import type { ActionResult } from "@/server/admin/users"
 
 type AdminFormActionMessages = {
   success?: string
@@ -9,8 +10,10 @@ type AdminFormActionMessages = {
   onSuccess?: () => void
 }
 
+type AdminFormAction = (formData: FormData) => Promise<void | ActionResult>
+
 export function useAdminFormAction(
-  action: (formData: FormData) => Promise<void>,
+  action: AdminFormAction,
   messages: AdminFormActionMessages = {}
 ) {
   const [isPending, startTransition] = useTransition()
@@ -19,13 +22,16 @@ export function useAdminFormAction(
     (formData: FormData) => {
       startTransition(async () => {
         try {
-          await action(formData)
-          adminToast.success(messages.success ?? "Saved successfully.")
+          const result = await action(formData)
+          if (result?.error) {
+            adminToast.error(result.error)
+            return
+          }
+          adminToast.success(result?.message ?? messages.success ?? "Saved successfully.")
           messages.onSuccess?.()
         } catch (error) {
-          adminToast.error(
-            error instanceof Error ? error.message : messages.error ?? "Something went wrong."
-          )
+          adminToast.error(messages.error ?? "Something went wrong. Please try again.")
+          console.error(error)
         }
       })
     },

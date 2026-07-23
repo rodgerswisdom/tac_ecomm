@@ -2,9 +2,10 @@
 
 import type { FormHTMLAttributes, ReactNode } from "react"
 import { useAdminFormAction } from "@/hooks/use-admin-form-action"
+import type { ActionResult } from "@/server/admin/users"
 
 type AdminActionFormProps = Omit<FormHTMLAttributes<HTMLFormElement>, "action"> & {
-  action: (formData: FormData) => Promise<void>
+  action: (formData: FormData) => Promise<void | ActionResult>
   successMessage?: string
   errorMessage?: string
   onSuccess?: () => void

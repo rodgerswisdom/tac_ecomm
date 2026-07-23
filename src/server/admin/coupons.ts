@@ -4,6 +4,7 @@ import { CouponType } from "@prisma/client"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
+import type { ActionResult } from "@/lib/admin/action-result"
 import { assertAdmin } from "./auth"
 import { logAdminAction } from "./audit"
 
@@ -40,51 +41,81 @@ function parseCouponData(formData: FormData) {
   }
 }
 
-export async function createCouponAction(formData: FormData) {
-  await assertAdmin()
+export async function createCouponAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const parsed = couponSchema.safeParse(parseCouponData(formData))
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Invalid coupon data")
+    return { error: parsed.error.issues[0]?.message ?? "Invalid coupon data" }
   }
 
-  const coupon = await prisma.coupon.create({ data: parsed.data })
+  try {
+    const coupon = await prisma.coupon.create({ data: parsed.data })
 
-  await logAdminAction("CREATE_COUPON", "Coupon", coupon.id, `Created coupon: ${coupon.code}`)
+    await logAdminAction("CREATE_COUPON", "Coupon", coupon.id, `Created coupon: ${coupon.code}`)
 
-  revalidatePath("/admin/coupons")
-  revalidatePath("/admin/settings")
+    revalidatePath("/admin/coupons")
+    revalidatePath("/admin/settings")
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to create coupon" }
+  }
 }
 
-export async function updateCouponAction(id: string, formData: FormData) {
-  await assertAdmin()
+export async function updateCouponAction(id: string, formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
   const parsed = couponSchema.safeParse(parseCouponData(formData))
 
   if (!parsed.success) {
-    throw new Error(parsed.error.issues[0]?.message ?? "Invalid coupon data")
+    return { error: parsed.error.issues[0]?.message ?? "Invalid coupon data" }
   }
 
-  const coupon = await prisma.coupon.update({
-    where: { id },
-    data: parsed.data
-  })
+  try {
+    const coupon = await prisma.coupon.update({
+      where: { id },
+      data: parsed.data,
+    })
 
-  await logAdminAction("UPDATE_COUPON", "Coupon", id, `Updated coupon: ${coupon.code}`)
+    await logAdminAction("UPDATE_COUPON", "Coupon", id, `Updated coupon: ${coupon.code}`)
 
-  revalidatePath("/admin/coupons")
-  revalidatePath("/admin/settings")
-  revalidatePath(`/admin/coupons/${id}/edit`)
+    revalidatePath("/admin/coupons")
+    revalidatePath("/admin/settings")
+    revalidatePath(`/admin/coupons/${id}/edit`)
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to update coupon" }
+  }
 }
 
-export async function deleteCouponAction(id: string) {
-  await assertAdmin()
+export async function deleteCouponAction(id: string): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
 
-  const coupon = await prisma.coupon.delete({ where: { id } })
+  try {
+    const coupon = await prisma.coupon.delete({ where: { id } })
 
-  await logAdminAction("DELETE_COUPON", "Coupon", id, `Deleted coupon: ${coupon.code}`)
+    await logAdminAction("DELETE_COUPON", "Coupon", id, `Deleted coupon: ${coupon.code}`)
 
-  revalidatePath("/admin/coupons")
-  revalidatePath("/admin/settings")
+    revalidatePath("/admin/coupons")
+    revalidatePath("/admin/settings")
+    return { success: true }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to delete coupon" }
+  }
 }
