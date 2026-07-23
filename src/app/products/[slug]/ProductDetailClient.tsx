@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Sparkles, Star, Eye } from "lucide-react";
+import { ShoppingBag, Eye } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { ProductDesignPicker } from "@/components/ProductDesignPicker";
 import { ProductCardData } from "@/types/product";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 import { trackViewItem } from "@/lib/analytics";
+import { getCollectionsHref } from "@/lib/collections-url";
 import {
   buildCartLineKey,
   formatProductImageLabel,
@@ -134,7 +135,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
   if (product.category) {
     breadcrumbItems.push({
       name: product.category.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-      url: `/collections/${product.category}`,
+      url: getCollectionsHref(product.category),
     });
   }
 
@@ -149,11 +150,8 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
       <Navbar />
       <section className="nav-clearance section-spacing pb-8 sm:pb-0">
         <div className="gallery-container">
-          <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+          <div className="mb-4 sm:mb-6">
             <Breadcrumb items={breadcrumbItems} className="hidden sm:flex" />
-            <span className="caps-spacing text-xs text-brand-umber/60 sm:text-right">
-              Crafted in {product.origin}
-            </span>
           </div>
 
           <div className="grid min-w-0 grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-16">
@@ -186,16 +184,12 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
               transition={{ duration: 0.9, ease: [0.33, 1, 0.68, 1], delay: 0.1 }}
             >
               <div className="space-y-3 sm:space-y-4">
-                <span className="caps-spacing text-xs text-brand-coral">Limited Release</span>
                 <h1 className="font-heading text-2xl text-brand-umber sm:text-4xl md:text-5xl">{product.name}</h1>
                 <p className="text-sm leading-relaxed text-brand-umber/75 sm:text-base">{product.description}</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 border-y border-brand-umber/15 py-4 sm:gap-6 sm:py-6">
-                <div className="w-full sm:w-auto">
-                  <p className="caps-spacing text-xs text-brand-umber/50">Investment</p>
-                  <p className="text-2xl font-heading text-brand-coral sm:text-3xl">{formatPrice(product.price)}</p>
-                </div>
+                <p className="text-2xl font-heading text-brand-coral sm:text-3xl">{formatPrice(product.price)}</p>
                 {isDiscounted && product.originalPrice && (
                   <span className="text-sm text-brand-umber/40 line-through">
                     {formatPrice(product.originalPrice)}
@@ -206,28 +200,11 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                     {discountPercent}% off
                   </span>
                 )}
-                <div className="flex items-center gap-2 rounded-full bg-brand-jade/30 px-3 py-1 text-sm text-brand-umber/70">
-                  <Star className="h-4 w-4 text-brand-gold" /> Collectors&apos; favourite
-                </div>
                 {isOutOfStock && (
                   <div className="rounded-full bg-red-100 px-3 py-1 text-sm font-semibold text-red-700">
                     Out of stock
                   </div>
                 )}
-              </div>
-
-              <div className="space-y-3 sm:space-y-4">
-                <h2 className="font-heading text-xl text-brand-umber sm:text-2xl">Materials</h2>
-                <div className="flex flex-wrap gap-2">
-                  {product.materials.map((material) => (
-                    <span
-                      key={material}
-                      className="rounded-full border border-brand-teal/25 bg-white/70 px-4 py-1 text-sm text-brand-umber/70"
-                    >
-                      {material}
-                    </span>
-                  ))}
-                </div>
               </div>
 
               {hasMultipleDesigns ? (
@@ -250,25 +227,6 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
               <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isAddDisabled}>
                 <ShoppingBag className="mr-2 h-5 w-5" /> {addButtonLabel}
               </Button>
-
-              <div className="flex flex-col gap-3 rounded-2xl bg-brand-jade/25 p-4 text-sm text-brand-umber/70 sm:rounded-3xl sm:p-6">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Insured delivery — ships in 3–5 business days.
-                </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Free shipping on Kenya orders over Ksh 3,000.
-                </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand-gold" />
-                  30-day hassle-free returns on unworn items.
-                </div>
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-brand-gold" />
-                  Every purchase supports Tac Accessories artisan scholarships.
-                </div>
-              </div>
             </motion.div>
           </div>
 

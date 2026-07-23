@@ -43,6 +43,7 @@ export async function getOrders(filters: OrderFilters = {}) {
                         product: {
                             select: {
                                 name: true,
+                                slug: true,
                                 images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
                             },
                         },
@@ -76,6 +77,7 @@ export async function getOrderDetail(orderId: string) {
                         select: {
                             name: true,
                             sku: true,
+                            slug: true,
                             images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
                         },
                     },

@@ -7,6 +7,7 @@ import {
   getRelatedProductCards,
 } from "@/server/storefront/products";
 import { SEOService } from "@/lib/seo";
+import { getCollectionsHref } from "@/lib/collections-url";
 
 import { ProductDetailClient } from "./ProductDetailClient";
 
@@ -71,7 +72,6 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     product.name,
     ...product.materials,
     product.category || "jewelry",
-    product.subcategory || "",
     "afrocentric jewelry",
     "african accessories",
     "handcrafted jewelry",
@@ -150,7 +150,7 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
   if (product.category) {
     breadcrumbs.push({
       name: product.category.charAt(0).toUpperCase() + product.category.slice(1),
-      url: `${baseUrl}/collections/${product.category}`,
+      url: `${baseUrl}${getCollectionsHref(product.category)}`,
     });
   }
 

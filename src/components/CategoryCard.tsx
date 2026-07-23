@@ -6,6 +6,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import type { CollectionSummary } from "@/types/collection";
+import { getCollectionsHref } from "@/lib/collections-url";
 
 interface CategoryCardProps {
   category: Pick<CollectionSummary, "id" | "name" | "slug" | "image">;
@@ -21,7 +22,7 @@ const CategoryCardComponent = ({ category }: CategoryCardProps) => {
       transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
     >
       <Link
-        href={`/collections/${category.slug}`}
+        href={getCollectionsHref(category.slug)}
         className="flex w-full flex-col items-center gap-4"
       >
         <div className="relative aspect-square w-full overflow-hidden rounded-sm border border-brand-teal/30 bg-brand-beige shadow-[0_18px_36px_rgba(74,43,40,0.16)] transition-all duration-300 group-hover:shadow-[0_26px_50px_rgba(74,43,40,0.24)]">

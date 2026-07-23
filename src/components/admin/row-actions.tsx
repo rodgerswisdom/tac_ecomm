@@ -15,6 +15,9 @@ interface DeleteConfig {
   confirmTitle?: string
   confirmDescription?: string
   confirmButtonLabel?: string
+  orderCount?: number
+  showArchiveOption?: boolean
+  archiveAction?: (formData: FormData) => Promise<void>
 }
 
 interface RowActionsProps {
@@ -66,6 +69,26 @@ export function RowActions({
     })
   }
 
+  const handleArchive = () => {
+    if (!deleteConfig?.archiveAction || isPending) return
+    setError(null)
+    startTransition(async () => {
+      try {
+        const formData = new FormData()
+        Object.entries(deleteConfig.fields).forEach(([key, value]) => {
+          formData.append(key, value)
+        })
+        await deleteConfig.archiveAction!(formData)
+        adminToast.success(`Archived ${deleteConfig.resourceLabel ?? "item"}.`)
+        setDialogOpen(false)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unable to archive item"
+        setError(message)
+        adminToast.error(message)
+      }
+    })
+  }
+
   const deleteButton = deleteConfig ? (
     <Dialog open={dialogOpen} onOpenChange={(next) => (!isPending ? setDialogOpen(next) : null)}>
       <DialogTrigger asChild>
@@ -79,21 +102,29 @@ export function RowActions({
           <Trash2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{deleteConfig.confirmTitle ?? "Delete item?"}</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="whitespace-pre-wrap">
             {deleteConfig.confirmDescription ??
               `This will permanently remove ${deleteConfig.resourceLabel ?? "this record"}.`}
           </DialogDescription>
         </DialogHeader>
         {error ? <p className="text-sm font-medium text-rose-600">{error}</p> : null}
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button type="button" variant="ghost" onClick={() => setDialogOpen(false)} disabled={isPending}>
             Cancel
           </Button>
+          {deleteConfig.showArchiveOption && deleteConfig.archiveAction ? (
+            <Button type="button" onClick={handleArchive} disabled={isPending}>
+              {isPending ? "Working..." : "Archive instead"}
+            </Button>
+          ) : null}
           <Button type="button" variant="destructive" onClick={handleDelete} disabled={isPending}>
-            {isPending ? "Deleting..." : deleteConfig.confirmButtonLabel ?? "Delete"}
+            {isPending
+              ? "Deleting..."
+              : deleteConfig.confirmButtonLabel ??
+                (deleteConfig.showArchiveOption ? "Delete anyway" : "Delete")}
           </Button>
         </DialogFooter>
       </DialogContent>

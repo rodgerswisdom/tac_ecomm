@@ -38,16 +38,23 @@ export async function createZohoSalesOrder(orderId: string): Promise<string> {
 
   // Ensure all products are synced to Zoho
   for (const item of order.items) {
+    if (!item.product) {
+      throw new Error(
+        `Product no longer available: ${item.productName ?? item.productId ?? "unknown item"}. Cannot sync order to Zoho.`,
+      )
+    }
     if (!item.product.zohoItemId) {
       throw new Error(
-        `Product not synced to Zoho: ${item.product.name} (${item.productId}). Please sync products first.`
+        `Product not synced to Zoho: ${item.productName ?? item.product.name} (${item.productId}). Please sync products first.`
       )
     }
   }
 
   // Prepare line items
-  const lineItems = order.items.map((item) => ({
-    item_id: item.product.zohoItemId!,
+  const lineItems = order.items
+    .filter((item) => item.product?.zohoItemId)
+    .map((item) => ({
+    item_id: item.product!.zohoItemId!,
     quantity: item.quantity,
     rate: item.price,
   }))

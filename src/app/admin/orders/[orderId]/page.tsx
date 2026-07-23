@@ -9,6 +9,7 @@ import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { StatusBadge } from "@/components/admin/status-badge"
 import { getOrderDetail } from "@/server/admin/orders"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
+import { getOrderItemProductName, getOrderItemProductSku } from "@/lib/order-item-display"
 import { StatusUpdateForm } from "./StatusUpdateForm"
 
 interface OrderDetailPageProps {
@@ -163,15 +164,15 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                       <div className="flex min-w-0 items-start gap-3">
                         {imageUrl ? (
                           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
-                            <img src={imageUrl} alt={item.product?.name ?? "Product"} className="h-full w-full object-cover" />
+                            <img src={imageUrl} alt={getOrderItemProductName(item)} className="h-full w-full object-cover" />
                           </div>
                         ) : null}
                         <div>
-                        <p className="font-semibold">{item.product?.name ?? "Product"}</p>
+                        <p className="font-semibold">{getOrderItemProductName(item)}</p>
                         {imageLabel ? (
                           <p className="text-xs text-brand-umber/70">{imageLabel}</p>
                         ) : null}
-                        <p className="text-xs text-muted-foreground">SKU {item.product?.sku ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground">SKU {getOrderItemProductSku(item)}</p>
                         <p className="text-xs text-muted-foreground">Qty {item.quantity}</p>
                         </div>
                       </div>

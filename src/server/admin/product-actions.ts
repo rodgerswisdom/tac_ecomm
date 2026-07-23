@@ -8,6 +8,7 @@ import { buildAdminFlashUrl } from "@/lib/admin/feedback"
 import { assertAdmin } from "./auth"
 import {
   productInputSchema,
+  productUpdateSchema,
   collectFormValues,
   optionalString,
   optionalNumber,
@@ -56,7 +57,6 @@ export async function createProductAction(
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
-    subcategory: optionalString(formData.get("subcategory")),
   }
 
   const parsed = productInputSchema.safeParse(payload)
@@ -167,24 +167,16 @@ export async function updateProductAction(formData: FormData) {
     id: formData.get("id")?.toString(),
     name: formData.get("name")?.toString() ?? "",
     description: formData.get("description")?.toString() ?? "",
-    shortDescription: optionalString(formData.get("shortDescription")),
     price: formData.get("price"),
     comparePrice: optionalString(formData.get("comparePrice")),
     stock: formData.get("stock"),
     sku: formData.get("sku")?.toString() ?? "",
     categoryId: formData.get("categoryId")?.toString() ?? "",
-    productType: (formData.get("productType") as ProductType) || ProductType.READY_TO_WEAR,
-    isActive: booleanFromForm(formData.get("isActive")),
-    isFeatured: booleanFromForm(formData.get("isFeatured")),
-    isBespoke: booleanFromForm(formData.get("isBespoke")),
-    isCorporateGift: booleanFromForm(formData.get("isCorporateGift")),
-    artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
-    subcategory: optionalString(formData.get("subcategory")),
   }
 
-  const parsed = productInputSchema.safeParse(payload)
+  const parsed = productUpdateSchema.safeParse(payload)
 
   if (!parsed.success || !parsed.data.id) {
     throw new Error(parsed.success ? "Product id is required" : parsed.error.issues[0]?.message)
@@ -223,7 +215,14 @@ export async function updateProductAction(formData: FormData) {
     const updated = await prisma.product.update({
       where: { id: parsed.data.id },
       data: {
-        ...parsed.data,
+        name: parsed.data.name,
+        description: parsed.data.description,
+        price: parsed.data.price,
+        comparePrice: parsed.data.comparePrice ?? null,
+        stock: parsed.data.stock,
+        categoryId: parsed.data.categoryId,
+        weight: parsed.data.weight ?? null,
+        dimensions: parsed.data.dimensions ?? null,
         ...archiveUpdate,
         sku,
         slug,
@@ -272,9 +271,6 @@ export async function deleteProductAction(formData: FormData) {
       // Idempotent delete: product already removed (stale UI / double-submit).
       revalidateProductRoute(productId)
       return
-    }
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      throw new Error("Product cannot be deleted while linked to orders or cart items")
     }
     throw error
   }
@@ -330,7 +326,6 @@ export async function duplicateProductAction(formData: FormData) {
       sourcingStory: product.sourcingStory,
       materials: product.materials,
       origin: product.origin,
-      subcategory: product.subcategory,
     },
   })
 
@@ -436,9 +431,6 @@ export async function bulkDeleteProducts(
     revalidatePath("/admin/products")
     return { success: true }
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
-      return { success: false, error: "Cannot delete products linked to orders or cart items" }
-    }
     return { success: false, error: error instanceof Error ? error.message : "Failed to delete" }
   }
 }

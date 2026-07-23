@@ -43,10 +43,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: "desc" },
     });
-    const collections = await prisma.category.findMany({
-      select: { slug: true, updatedAt: true },
-      orderBy: { updatedAt: "desc" },
-    });
 
     const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
       url: `${BASE_URL}/products/${product.slug}`,
@@ -55,12 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }));
 
-    const collectionRoutes: MetadataRoute.Sitemap = collections.map((collection) => ({
-      url: `${BASE_URL}/collections/${collection.slug}`,
-      lastModified: collection.updatedAt,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    }));
+    const collectionRoutes: MetadataRoute.Sitemap = [];
 
     return [...staticRoutes, ...collectionRoutes, ...productRoutes];
   } catch (error) {

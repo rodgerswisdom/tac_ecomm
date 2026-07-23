@@ -1,17 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { ProductFilters, FilterState } from "@/components/ProductFilters";
 import { ActiveFilterChips } from "@/components/ActiveFilterChips";
-import { QuickViewModal } from "@/components/QuickViewModal";
-import { ProductComparison } from "@/components/ProductComparison";
 import { ProductCardData } from "@/types/product";
 import type { CategoryOption } from "@/components/ProductFilters";
-import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 const PRODUCTS_PER_PAGE = 12;
@@ -19,7 +17,6 @@ const PRODUCTS_PER_PAGE = 12;
 function matchesCollection(
   product: ProductCardData,
   categorySlug: string,
-  categories: CategoryOption[],
 ) {
   if (categorySlug === "matching-sets") {
     return product.productType === "MATCHING_SET";
@@ -29,42 +26,75 @@ function matchesCollection(
     return Boolean(product.isCorporateGift);
   }
 
-  if (product.category === categorySlug) {
-    return true;
-  }
+  return product.category === categorySlug;
+}
 
-  const selected = categories.find((category) => category.slug === categorySlug);
-  if (selected?.childSlugs?.some((slug) => slug === product.category)) {
-    return true;
-  }
+function resolveInitialCategory(
+  slug: string | undefined,
+  categories: CategoryOption[],
+  collections: CategoryOption[],
+) {
+  if (!slug) return "all";
+  const options = [...categories, ...collections];
+  return options.some((option) => option.slug === slug) ? slug : "all";
+}
 
-  const parent = CATEGORY_TAXONOMY.find((category) => category.slug === categorySlug);
-  return parent?.children?.some((child) => child.slug === product.category) ?? false;
+function buildCollectionsUrl(filters: FilterState, searchQuery: string) {
+  const params = new URLSearchParams();
+  if (filters.category !== "all") params.set("category", filters.category);
+  if (searchQuery.trim()) params.set("q", searchQuery.trim());
+  const query = params.toString();
+  return query ? `/collections?${query}` : "/collections";
 }
 
 interface CollectionsPageClientProps {
   initialProducts: ProductCardData[];
   categories: CategoryOption[];
   collections: CategoryOption[];
+  initialCategory?: string;
+  initialSearch?: string;
 }
 
-export function CollectionsPageClient({ initialProducts, categories, collections }: CollectionsPageClientProps) {
+export function CollectionsPageClient({
+  initialProducts,
+  categories,
+  collections,
+  initialCategory,
+  initialSearch,
+}: CollectionsPageClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const allProducts = useMemo(() => initialProducts, [initialProducts]);
 
-  const [filters, setFilters] = useState<FilterState>({
-    category: "all",
+  const [searchQuery, setSearchQuery] = useState(initialSearch ?? "");
+  const [filters, setFilters] = useState<FilterState>(() => ({
+    category: resolveInitialCategory(initialCategory, categories, collections),
     priceRange: null,
     materials: [],
     origin: [],
-  });
+  }));
 
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [quickViewProduct, setQuickViewProduct] = useState<ProductCardData | null>(null);
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const [displayedCount, setDisplayedCount] = useState(PRODUCTS_PER_PAGE);
   const [isLoading, setIsLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [sortBy, setSortBy] = useState<"featured" | "newest" | "price-asc" | "price-desc">("featured");
+
+  const syncUrl = useCallback(
+    (nextFilters: FilterState, nextSearch: string) => {
+      router.replace(buildCollectionsUrl(nextFilters, nextSearch), { scroll: false });
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    const categoryParam = searchParams.get("category") ?? undefined;
+    const searchParam = searchParams.get("q") ?? "";
+    const nextCategory = resolveInitialCategory(categoryParam, categories, collections);
+
+    setSearchQuery(searchParam);
+    setFilters((prev) => ({ ...prev, category: nextCategory }));
+    setDisplayedCount(PRODUCTS_PER_PAGE);
+  }, [searchParams, categories, collections]);
 
   const availableMaterials = useMemo(() => {
     const materials = new Set<string>();
@@ -82,17 +112,32 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     return Array.from(origins).sort();
   }, [allProducts]);
 
-  const handleFiltersChange = useCallback((nextFilters: FilterState) => {
-    setFilters(nextFilters);
-    setDisplayedCount(PRODUCTS_PER_PAGE);
-  }, []);
+  const handleFiltersChange = useCallback(
+    (nextFilters: FilterState) => {
+      setFilters(nextFilters);
+      setDisplayedCount(PRODUCTS_PER_PAGE);
+      syncUrl(nextFilters, searchQuery);
+    },
+    [searchQuery, syncUrl],
+  );
 
   const filteredProducts = useMemo(() => {
     let filtered = allProducts;
 
     if (filters.category !== "all") {
       filtered = filtered.filter((product) =>
-        matchesCollection(product, filters.category, categories),
+        matchesCollection(product, filters.category),
+      );
+    }
+
+    if (searchQuery.trim()) {
+      const term = searchQuery.trim().toLowerCase();
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(term) ||
+          product.description.toLowerCase().includes(term) ||
+          product.materials.some((material) => material.toLowerCase().includes(term)) ||
+          (product.origin?.toLowerCase().includes(term) ?? false),
       );
     }
 
@@ -121,7 +166,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     }
 
     return filtered;
-  }, [allProducts, categories, filters]);
+  }, [allProducts, filters, searchQuery]);
 
   const sortedProducts = useMemo(() => {
     const sorted = [...filteredProducts];
@@ -151,77 +196,48 @@ export function CollectionsPageClient({ initialProducts, categories, collections
     }, 300);
   }, []);
 
-  const handleComparisonToggle = useCallback((productId: string, isSelected: boolean) => {
-    setSelectedProducts((prev) => {
-      if (isSelected) {
-        return prev.includes(productId) ? prev : [...prev, productId];
-      }
-      return prev.filter((id) => id !== productId);
-    });
-  }, []);
+  const handleRemoveFilter = useCallback(
+    (type: keyof FilterState, value?: FilterState[keyof FilterState]) => {
+      setFilters((prev) => {
+        let next: FilterState = prev;
 
-  const handleRemoveFromComparison = useCallback((productId: string) => {
-    setSelectedProducts((prev) => prev.filter((id) => id !== productId));
-  }, []);
+        if (type === "materials" || type === "origin") {
+          next = {
+            ...prev,
+            [type]: (value ?? []) as string[],
+          };
+        } else if (type === "priceRange") {
+          next = {
+            ...prev,
+            priceRange: (value ?? null) as [number, number] | null,
+          };
+        } else if (type === "category") {
+          next = {
+            ...prev,
+            category: (value ?? "all") as string,
+          };
+        }
 
-  const handleClearComparison = useCallback(() => {
-    setSelectedProducts([]);
-  }, []);
-
-  const handleQuickView = useCallback((product: ProductCardData) => {
-    setQuickViewProduct(product);
-    setIsQuickViewOpen(true);
-  }, []);
-
-  const handleCloseQuickView = useCallback(() => {
-    setIsQuickViewOpen(false);
-    setQuickViewProduct(null);
-  }, []);
-
-  const selectedProductsData = useMemo(
-    () => allProducts.filter((product) => selectedProducts.includes(product.id)),
-    [allProducts, selectedProducts]
+        setDisplayedCount(PRODUCTS_PER_PAGE);
+        syncUrl(next, searchQuery);
+        return next;
+      });
+    },
+    [searchQuery, syncUrl],
   );
-
-  const handleRemoveFilter = useCallback((type: keyof FilterState, value?: FilterState[keyof FilterState]) => {
-    setFilters((prev) => {
-      if (type === "materials" || type === "origin") {
-        setDisplayedCount(PRODUCTS_PER_PAGE);
-        return {
-          ...prev,
-          [type]: (value ?? []) as string[],
-        };
-      }
-
-      if (type === "priceRange") {
-        setDisplayedCount(PRODUCTS_PER_PAGE);
-        return {
-          ...prev,
-          priceRange: (value ?? null) as [number, number] | null,
-        };
-      }
-
-      if (type === "category") {
-        setDisplayedCount(PRODUCTS_PER_PAGE);
-        return {
-          ...prev,
-          category: (value ?? "all") as string,
-        };
-      }
-
-      return prev;
-    });
-  }, []);
 
   const handleClearAllFilters = useCallback(() => {
     setDisplayedCount(PRODUCTS_PER_PAGE);
-    setFilters({
+    setSearchQuery("");
+    const cleared: FilterState = {
       category: "all",
       priceRange: null,
       materials: [],
       origin: [],
-    });
-  }, []);
+    };
+    setFilters(cleared);
+    syncUrl(cleared, "");
+  }, [syncUrl]);
 
   return (
     <ErrorBoundary>
@@ -311,12 +327,7 @@ export function CollectionsPageClient({ initialProducts, categories, collections
                           transition={{ duration: 0.3 }}
                           layout
                         >
-                          <ProductCard
-                            product={product}
-                            isSelectedForComparison={selectedProducts.includes(product.id)}
-                            onComparisonToggle={handleComparisonToggle}
-                            onQuickView={handleQuickView}
-                          />
+                          <ProductCard product={product} />
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -352,19 +363,6 @@ export function CollectionsPageClient({ initialProducts, categories, collections
         </div>
       </section>
 
-      <QuickViewModal
-        product={quickViewProduct}
-        isOpen={isQuickViewOpen}
-        onClose={handleCloseQuickView}
-      />
-
-      <ProductComparison
-        selectedProducts={selectedProductsData}
-        onRemove={handleRemoveFromComparison}
-        onClear={handleClearComparison}
-      />
-
-      {selectedProducts.length > 0 && <div className="h-24" />}
     </main>
     </ErrorBoundary>
   );

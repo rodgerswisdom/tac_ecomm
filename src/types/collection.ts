@@ -25,7 +25,6 @@ export interface CollectionSummary {
   itemCount: number
   featuredRegions: string[]
   artisanCount: number
-  subcategories: string[]
   heroTitle?: string
   heroDescription?: string
   heroImage?: string
@@ -34,5 +33,4 @@ export interface CollectionSummary {
   spotlight?: CollectionSpotlight
   ctas?: CollectionCta[]
   featuredProductIds?: string[]
-  childCategories?: { slug: string; name: string }[]
 }

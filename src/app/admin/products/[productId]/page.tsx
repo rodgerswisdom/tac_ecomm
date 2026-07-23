@@ -1,19 +1,16 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ProductType } from "@prisma/client"
 import { AdminActionForm } from "@/components/admin/AdminActionForm"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { AddProductImageForm } from "./AddProductImageForm"
-import { getProductDetail } from "@/server/admin/products"
+import { getProductDetail, getProductDeleteInfo } from "@/server/admin/products"
 import { ImageSortableGallery } from "./ImageSortableGallery"
 import { ProductDeleteForm } from "./ProductDeleteForm"
 import {
   addProductImageAction,
-  addVariantAction,
   deleteProductImageAction,
-  deleteVariantAction,
   reorderImagesAction,
   updateProductAction,
 } from "@/server/admin/product-actions"
@@ -23,12 +20,15 @@ interface ProductDetailPageProps {
   params: Promise<{ productId: string }>
 }
 
+const fieldLabel = "text-xs font-medium text-muted-foreground"
+
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { productId } = await params
 
-  const [product, categories] = await Promise.all([
+  const [product, categories, deleteInfo] = await Promise.all([
     getProductDetail(productId),
     getCategoryOptions(),
+    getProductDeleteInfo(productId),
   ])
 
   if (!product) {
@@ -36,94 +36,110 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Products / {product.name}
           </p>
-          <h1 className="text-3xl font-semibold tracking-tight">{product.name}</h1>
-          <p className="text-sm text-muted-foreground">
-            Update availability, pricing, variants, and imagery for this product.
-          </p>
+          <h1 className="truncate text-2xl font-semibold tracking-tight">{product.name}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex shrink-0 gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link href="/admin/products">Back to products</Link>
+            <Link href="/admin/products">Back</Link>
           </Button>
-          <ProductDeleteForm productId={product.id} />
+          <ProductDeleteForm
+            productId={product.id}
+            productName={product.name}
+            orderCount={deleteInfo.orderCount}
+            orderNumbers={deleteInfo.orderNumbers}
+          />
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Product details</CardTitle>
+      {deleteInfo.orderCount > 0 ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Linked to {deleteInfo.orderCount} order{deleteInfo.orderCount === 1 ? "" : "s"} — consider archiving instead of deleting.
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 xl:grid-cols-2 xl:items-start">
+        <Card className="h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Product details</CardTitle>
           </CardHeader>
           <CardContent>
-            <AdminActionForm action={updateProductAction} successMessage="Product saved." className="space-y-4">
+            <AdminActionForm action={updateProductAction} successMessage="Product saved." className="space-y-3">
               <input type="hidden" name="id" value={product.id} />
-              <Input name="name" defaultValue={product.name} required />
-              <Input name="sku" defaultValue={product.sku} required />
-              <textarea
-                name="description"
-                defaultValue={product.description}
-                minLength={10}
-                required
-                className="min-h-[140px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground">Selling price</span>
-                  <Input name="price" type="number" step="0.01" defaultValue={product.price} required className="mt-1 block w-full" />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1 sm:col-span-2">
+                  <span className={fieldLabel}>Name</span>
+                  <Input name="name" defaultValue={product.name} required />
                 </label>
                 <label className="space-y-1">
-                  <span className="text-xs font-medium text-muted-foreground">Market price</span>
-                  <p className="text-[11px] text-muted-foreground">Original price before discount. Leave blank if not on sale.</p>
+                  <span className={fieldLabel}>SKU</span>
+                  <Input name="sku" defaultValue={product.sku} required />
+                </label>
+                <label className="space-y-1">
+                  <span className={fieldLabel}>Category</span>
+                  <select
+                    name="categoryId"
+                    defaultValue={product.categoryId}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <label className="block space-y-1">
+                <span className={fieldLabel}>Description</span>
+                <textarea
+                  name="description"
+                  defaultValue={product.description}
+                  minLength={10}
+                  required
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </label>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="space-y-1">
+                  <span className={fieldLabel}>Selling price</span>
+                  <Input name="price" type="number" step="0.01" defaultValue={product.price} required />
+                </label>
+                <label className="space-y-1">
+                  <span className={fieldLabel}>Market price</span>
                   <Input
                     name="comparePrice"
                     type="number"
                     step="0.01"
                     defaultValue={product.comparePrice ?? ""}
-                    className="mt-1 block w-full"
+                    placeholder="Optional"
                   />
                 </label>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input name="stock" type="number" min="0" defaultValue={product.stock} required />
-                <select
-                  name="categoryId"
-                  defaultValue={product.categoryId}
-                  className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                >
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <label className="space-y-1 block">
-                <span className="text-xs font-medium text-muted-foreground">Subcategory (optional)</span>
-                <Input
-                  name="subcategory"
-                  defaultValue={product.subcategory ?? ""}
-                  placeholder="e.g. African Beads, Classic Kenyan"
-                />
-              </label>
-              <div className="grid gap-4 md:grid-cols-2 text-sm">
-                <label className="space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground">Weight (kg)</span>
+                <label className="space-y-1">
+                  <span className={fieldLabel}>Stock</span>
+                  <Input name="stock" type="number" min="0" defaultValue={product.stock} required />
+                </label>
+                <label className="space-y-1">
+                  <span className={fieldLabel}>Weight (kg)</span>
                   <Input
                     name="weight"
                     type="number"
                     step="0.01"
-                    placeholder="e.g. 2.5"
+                    placeholder="Optional"
                     defaultValue={product.weight ?? ""}
                   />
                 </label>
-                <label className="space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground">Dimensions</span>
+                <label className="space-y-1 sm:col-span-2">
+                  <span className={fieldLabel}>Dimensions</span>
                   <Input
                     name="dimensions"
                     placeholder="Length × Width × Height"
@@ -131,112 +147,30 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   />
                 </label>
               </div>
-              <select
-                name="productType"
-                defaultValue={product.productType}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                {Object.values(ProductType).map((type) => (
-                  <option key={type} value={type}>
-                    {type.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="isActive" value="true" defaultChecked={product.isActive} /> Active
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="isFeatured" value="true" defaultChecked={product.isFeatured} /> Featured
-                </label>
-                <label className="flex items-center gap-2">
-                  <input type="checkbox" name="isBespoke" value="true" defaultChecked={product.isBespoke} /> Bespoke
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="isCorporateGift"
-                    value="true"
-                    defaultChecked={product.isCorporateGift}
-                  />
-                  Corporate gift
-                </label>
-              </div>
-              <Button type="submit">Save changes</Button>
-            </AdminActionForm>
-          </CardContent>
-        </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Variants</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {product.variants.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No variants added.</p>
-            ) : (
-              product.variants.map((variant) => (
-                <div key={variant.id} className="rounded-lg border border-border px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">{variant.name}</div>
-                      <p className="text-xs text-muted-foreground">{variant.value}</p>
-                    </div>
-                    <AdminActionForm
-                      action={deleteVariantAction}
-                      successMessage="Variant removed."
-                    >
-                      <input type="hidden" name="variantId" value={variant.id} />
-                      <Button variant="ghost" size="sm">
-                        Remove
-                      </Button>
-                    </AdminActionForm>
-                  </div>
-                  <div className="mt-2 grid grid-cols-3 text-xs text-muted-foreground">
-                    <span>Stock: {variant.stock}</span>
-                    <span>Price: {variant.price ?? "—"}</span>
-                    <span>SKU: {variant.sku ?? "—"}</span>
-                  </div>
-                </div>
-              ))
-            )}
-            <AdminActionForm
-              action={addVariantAction}
-              successMessage="Variant added."
-              className="space-y-2 rounded-lg border border-dashed border-border p-4"
-            >
-              <input type="hidden" name="productId" value={product.id} />
-              <div className="grid grid-cols-2 gap-2">
-                <Input name="name" placeholder="Variant name" required />
-                <Input name="value" placeholder="Value" required />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <Input name="price" type="number" step="0.01" placeholder="Price" />
-                <Input name="stock" type="number" placeholder="Stock" min="0" />
-                <Input name="sku" placeholder="SKU" />
-              </div>
-              <Button type="submit" size="sm">
-                Add variant
+              <Button type="submit" className="w-full sm:w-auto">
+                Save changes
               </Button>
             </AdminActionForm>
           </CardContent>
         </Card>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Images</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ImageSortableGallery
-            productId={product.id}
-            initialImages={product.images}
-            onDeleteAction={deleteProductImageAction}
-            onReorderAction={reorderImagesAction}
-          />
-          <AddProductImageForm productId={product.id} addProductImageAction={addProductImageAction} />
-        </CardContent>
-      </Card>
+        <Card className="h-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">Images</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <ImageSortableGallery
+              productId={product.id}
+              initialImages={product.images}
+              onDeleteAction={deleteProductImageAction}
+              onReorderAction={reorderImagesAction}
+              compact
+            />
+            <AddProductImageForm productId={product.id} addProductImageAction={addProductImageAction} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

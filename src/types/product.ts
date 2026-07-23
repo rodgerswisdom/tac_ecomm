@@ -18,7 +18,6 @@ export interface ProductCardData {
   origin: string
   materials: string[]
   category?: string
-  subcategory?: string
   productType?: string
   isCorporateGift?: boolean
   communityImpact?: string

@@ -1,7 +1,6 @@
 import { ProductType } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
-import { getChildCategoriesForSlug } from "@/lib/category-tree"
 import { TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
 import type { CollectionSummary, CollectionHighlight, CollectionSpotlight, CollectionCta } from "@/types/collection"
@@ -20,7 +19,7 @@ export type HomePageCategoryCard = Pick<CollectionSummary, "id" | "name" | "slug
 /** Main shop categories selected in admin for the home page Curated Collections section. */
 export async function getHomePageMainCategories(): Promise<HomePageCategoryCard[]> {
   const dbCategories = await prisma.category.findMany({
-    where: { parentId: null, showOnHomepage: true },
+    where: { showOnHomepage: true },
     orderBy: [{ homepageOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,
@@ -64,14 +63,7 @@ export async function getCollectionSummaries(options: CollectionSummaryOptions =
 
   const [categories, allProducts] = await Promise.all([
     prisma.category.findMany({
-      where: { parentId: null },
       orderBy: { name: "asc" },
-      include: {
-        children: {
-          orderBy: { name: "asc" },
-          select: { id: true, name: true, slug: true },
-        },
-      },
     }),
     getProductCardData(),
   ])
@@ -79,19 +71,15 @@ export async function getCollectionSummaries(options: CollectionSummaryOptions =
   const builtSummaries: CollectionSummary[] = []
 
   for (const category of categories) {
-    const categorySlugs = new Set([
-      category.slug,
-      ...category.children.map((child) => child.slug),
-    ])
     const products = allProducts.filter(
-      (product) => product.category && categorySlugs.has(product.category)
+      (product) => product.category === category.slug
     )
 
     if (products.length === 0 && !TOP_LEVEL_CATEGORY_SLUGS.includes(category.slug)) {
       continue
     }
 
-    builtSummaries.push(mapCategoryToSummary(category, products, category.children))
+    builtSummaries.push(mapCategoryToSummary(category, products))
   }
 
   let summaries = builtSummaries
@@ -154,9 +142,8 @@ export async function getCollectionSummaryBySlug(slug: string) {
   if (!category) return null
 
   const products = await getProductCardData({ categorySlug: slug })
-  const children = await getChildCategoriesForSlug(slug)
 
-  return mapCategoryToSummary(category, products, children)
+  return mapCategoryToSummary(category, products)
 }
 
 export async function getCollectionSlugs() {
@@ -166,11 +153,10 @@ export async function getCollectionSlugs() {
     .filter((slug): slug is string => Boolean(slug))
 }
 
-/** Lightweight list of collection slug+name for navbar Shop submenu. Top-level DB categories + virtual collections. */
+/** Lightweight list of collection slug+name for navbar Shop submenu. */
 export async function getNavShopCategories(): Promise<{ slug: string; name: string }[]> {
-  const [topLevel, matchingSetCount, corporateGiftCount] = await Promise.all([
+  const [categories, matchingSetCount, corporateGiftCount] = await Promise.all([
     prisma.category.findMany({
-      where: { parentId: null },
       orderBy: { name: "asc" },
       select: { slug: true, name: true },
     }),
@@ -185,7 +171,7 @@ export async function getNavShopCategories(): Promise<{ slug: string; name: stri
   const navItems: { slug: string; name: string }[] = []
   const seenSlugs = new Set<string>()
 
-  for (const category of topLevel) {
+  for (const category of categories) {
     if (seenSlugs.has(category.slug)) continue
     seenSlugs.add(category.slug)
     navItems.push({
@@ -215,26 +201,14 @@ type CategoryRecord = {
   image?: string | null
 }
 
-type ChildCategory = {
-  id: string
-  name: string
-  slug: string
-}
-
 function mapCategoryToSummary(
   category: CategoryRecord,
   products: ProductCardData[],
-  children: ChildCategory[] = []
 ): CollectionSummary {
   const heroImage = category.image ?? products[0]?.image ?? FALLBACK_COLLECTION_IMAGE
   const description = category.description ?? "Curated by the TAC atelier"
   const featuredRegions = uniqueStrings(products.map((product) => product.origin).filter(Boolean))
   const artisanCount = new Set(products.map((product) => product.artisan?.name).filter(Boolean)).size
-  const childNames = children.map((child) => child.name)
-  const productSubcategories = uniqueStrings(
-    products.map((product) => product.subcategory).filter(Boolean) as string[]
-  )
-  const subcategories = uniqueStrings([...childNames, ...productSubcategories])
 
   return {
     id: category.id,
@@ -245,11 +219,6 @@ function mapCategoryToSummary(
     itemCount: products.length,
     featuredRegions,
     artisanCount,
-    subcategories,
-    childCategories: children.map((child) => ({
-      slug: child.slug,
-      name: child.name,
-    })),
     heroTitle: category.name,
     heroDescription: description,
     heroImage,
@@ -299,9 +268,6 @@ function mapProductCardsToSummary({
 }): CollectionSummary {
   const heroImage = products[0]?.image ?? FALLBACK_COLLECTION_IMAGE
   const featuredRegions = uniqueStrings(products.map((product) => product.origin).filter(Boolean))
-  const subcategories = uniqueStrings(
-    products.map((product) => product.subcategory).filter(Boolean) as string[]
-  )
   const artisanCount = new Set(products.map((product) => product.artisan?.name).filter(Boolean)).size
 
   return {
@@ -313,7 +279,6 @@ function mapProductCardsToSummary({
     itemCount: products.length,
     featuredRegions,
     artisanCount,
-    subcategories,
     heroTitle: name,
     heroDescription: description,
     heroImage,

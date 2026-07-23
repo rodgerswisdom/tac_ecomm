@@ -20,11 +20,9 @@ type EditCategoryFormProps = {
     slug: string | null
     description: string | null
     image: string | null
-    parent: { id: string; name: string } | null
     showOnHomepage: boolean
     homepageOrder: number
   }
-  parentOptions: Array<{ id: string; name: string }>
 }
 
 const initialState: ActionResult = { success: false, error: undefined }
@@ -38,10 +36,9 @@ function SaveButton() {
   )
 }
 
-export function EditCategoryForm({ category, parentOptions }: EditCategoryFormProps) {
+export function EditCategoryForm({ category }: EditCategoryFormProps) {
   const [state, formAction] = useActionState(updateCategoryAction, initialState)
   useAdminActionFeedback(state, { successMessage: "Category saved." })
-  const isTopLevel = category.parent === null
 
   return (
     <Card>
@@ -85,65 +82,43 @@ export function EditCategoryForm({ category, parentOptions }: EditCategoryFormPr
             />
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Category image</label>
-              <p className="text-xs text-muted-foreground">
-                Upload a new image to replace the current one.
-              </p>
-              <EditCategoryImageField defaultImage={category.image} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground" htmlFor="parentId">
-                Parent category
-              </label>
-              <select
-                id="parentId"
-                name="parentId"
-                defaultValue={category.parent?.id ?? ""}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="">None</option>
-                {parentOptions.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Category image</label>
+            <p className="text-xs text-muted-foreground">
+              Upload a new image to replace the current one.
+            </p>
+            <EditCategoryImageField defaultImage={category.image} />
           </div>
 
-          {isTopLevel ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    name="showOnHomepage"
-                    defaultChecked={category.showOnHomepage}
-                    className="h-4 w-4 rounded border border-input"
-                  />
-                  Show on homepage
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Include this main category in the Curated Collections section on the home page.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground" htmlFor="homepageOrder">
-                  Homepage order
-                </label>
-                <Input
-                  id="homepageOrder"
-                  name="homepageOrder"
-                  type="number"
-                  min={0}
-                  defaultValue={category.homepageOrder}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <input
+                  type="checkbox"
+                  name="showOnHomepage"
+                  defaultChecked={category.showOnHomepage}
+                  className="h-4 w-4 rounded border border-input"
                 />
-                <p className="text-xs text-muted-foreground">Lower numbers appear first.</p>
-              </div>
+                Show on homepage
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Include this category in the Curated Collections section on the home page.
+              </p>
             </div>
-          ) : null}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground" htmlFor="homepageOrder">
+                Homepage order
+              </label>
+              <Input
+                id="homepageOrder"
+                name="homepageOrder"
+                type="number"
+                min={0}
+                defaultValue={category.homepageOrder}
+              />
+              <p className="text-xs text-muted-foreground">Lower numbers appear first.</p>
+            </div>
+          </div>
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button asChild variant="ghost">

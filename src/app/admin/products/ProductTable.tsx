@@ -20,6 +20,7 @@ import { BulkActions } from "./BulkActions"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
 import { Button } from "@/components/ui/button"
 import { adminToast } from "@/lib/admin/feedback"
+import { buildProductDeleteDescription, buildBulkProductDeleteDescription } from "@/lib/admin/product-delete"
 
 interface Product {
     id: string
@@ -131,6 +132,15 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                       icon: <Trash2 className="h-4 w-4" />,
                       action: bulkDeleteProducts,
                       variant: "destructive" as const,
+                      confirmDescription: (ids: string[]) => {
+                          const withOrders = products.filter(
+                              (product) => ids.includes(product.id) && (product._count?.orderItems ?? 0) > 0,
+                          ).length
+                          return buildBulkProductDeleteDescription({
+                              totalSelected: ids.length,
+                              withOrdersCount: withOrders,
+                          })
+                      },
                   },
               ]
             : [
@@ -144,6 +154,15 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                       icon: <Trash2 className="h-4 w-4" />,
                       action: bulkDeleteProducts,
                       variant: "destructive" as const,
+                      confirmDescription: (ids: string[]) => {
+                          const withOrders = products.filter(
+                              (product) => ids.includes(product.id) && (product._count?.orderItems ?? 0) > 0,
+                          ).length
+                          return buildBulkProductDeleteDescription({
+                              totalSelected: ids.length,
+                              withOrdersCount: withOrders,
+                          })
+                      },
                   },
               ]
 
@@ -362,7 +381,12 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                                                     fields: { productId: product.id },
                                                     resourceLabel: product.name,
                                                     confirmTitle: `Delete ${product.name}?`,
-                                                    confirmDescription: `This will permanently remove ${product.name}.`,
+                                                    confirmDescription: buildProductDeleteDescription({
+                                                        productName: product.name,
+                                                        orderItemCount: product._count?.orderItems ?? 0,
+                                                    }),
+                                                    showArchiveOption: (product._count?.orderItems ?? 0) > 0,
+                                                    archiveAction: archiveProductAction,
                                                 }}
                                             />
                                             </div>

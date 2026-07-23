@@ -98,13 +98,10 @@ model Category {
   slug            String     @unique
   description     String?
   image           String?
-  parentId        String?
   showOnHomepage  Boolean    @default(false)
   homepageOrder   Int        @default(0)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
-  parent          Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children        Category[] @relation("CategoryHierarchy")
   products        Product[]
 }
 
@@ -138,7 +135,6 @@ model Product {
   updatedAt        DateTime         @updatedAt
   materials        String[]         @default([])
   origin           String?
-  subcategory      String?
   cartItems        CartItem[]
   orderItems       OrderItem[]
   artisan          Artisan?         @relation(fields: [artisanId], references: [id])
@@ -287,13 +283,15 @@ model OrderItem {
   quantity           Int
   price              Float
   orderId            String
-  productId          String
+  productId          String?
+  productName        String?
+  productSku         String?
   variantId          String?
   productImageId     String?
   selectedImageUrl   String?
   selectedImageLabel String?
   order              Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product            Product       @relation(fields: [productId], references: [id])
+  product            Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
   productImage       ProductImage? @relation(fields: [productImageId], references: [id], onDelete: SetNull)
 
   @@index([orderId])

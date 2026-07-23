@@ -13,7 +13,6 @@ const categorySchema = z.object({
     name: z.string().min(2),
     description: z.string().optional().nullable(),
     image: z.string().url().optional().nullable(),
-    parentId: z.string().cuid().optional().nullable(),
     showOnHomepage: z.coerce.boolean().optional().default(false),
     homepageOrder: z.coerce.number().int().min(0).optional().default(0),
     slug: z
@@ -27,13 +26,6 @@ const categorySchema = z.object({
 
 function parseShowOnHomepage(value: FormDataEntryValue | null) {
     return value === "on" || value === "true"
-}
-
-function resolveHomepageFields(parentId: string | null | undefined, showOnHomepage: boolean, homepageOrder: number) {
-    if (parentId) {
-        return { showOnHomepage: false, homepageOrder: 0 }
-    }
-    return { showOnHomepage, homepageOrder }
 }
 
 function normalizeSlug(value: FormDataEntryValue | null) {
@@ -68,39 +60,30 @@ export async function getCategories() {
     const categories = await prisma.category.findMany({
         orderBy: { name: "asc" },
         include: {
-            parent: { select: { id: true, name: true } },
-            _count: { select: { products: true, children: true } },
+            _count: { select: { products: true } },
         },
     })
 
     return ensureCategorySlugRecords(categories)
 }
 
-
 export async function getCategoryOptions() {
     const categories = await prisma.category.findMany({
         orderBy: { name: "asc" },
-        include: { parent: { select: { name: true, slug: true } } },
     })
 
-    return categories
-        .filter((category) => category.parentId !== null)
-        .map((category) => ({
-            id: category.id,
-            name: category.parent
-                ? `${category.parent.name} / ${category.name}`
-                : category.name,
-            slug: category.slug,
-            parentSlug: category.parent?.slug ?? null,
-        }))
+    return categories.map((category) => ({
+        id: category.id,
+        name: category.name,
+        slug: category.slug,
+    }))
 }
 
 export async function getCategoryById(id: string) {
     const category = await prisma.category.findUnique({
         where: { id },
         include: {
-            parent: { select: { id: true, name: true } },
-            _count: { select: { products: true, children: true } },
+            _count: { select: { products: true } },
         },
     })
 
@@ -125,8 +108,7 @@ async function resolveCategorySlug(name: string, proposedSlug?: string, existing
 
 type CategoryRecord = Prisma.CategoryGetPayload<{
     include: {
-        parent: { select: { id: true, name: true } }
-        _count: { select: { products: true, children: true } }
+        _count: { select: { products: true } }
     }
 }>
 
@@ -152,7 +134,6 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
         name: formData.get("name")?.toString() ?? "",
         description: formData.get("description")?.toString(),
         image: normalizeImage(formData.get("image")),
-        parentId: formData.get("parentId")?.toString() || undefined,
         showOnHomepage: parseShowOnHomepage(formData.get("showOnHomepage")),
         homepageOrder: formData.get("homepageOrder")?.toString() ?? "0",
         slug: normalizeSlug(formData.get("slug")),
@@ -163,17 +144,11 @@ export async function createCategoryAction(_prev: ActionResult | undefined, form
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined)
-    const homepageFields = resolveHomepageFields(
-        parsed.data.parentId,
-        parsed.data.showOnHomepage ?? false,
-        parsed.data.homepageOrder ?? 0,
-    )
 
     try {
         const created = await prisma.category.create({
             data: {
                 ...parsed.data,
-                ...homepageFields,
                 slug,
             },
         })
@@ -196,7 +171,6 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
         name: formData.get("name")?.toString() ?? "",
         description: formData.get("description")?.toString(),
         image: normalizeImage(formData.get("image")),
-        parentId: formData.get("parentId")?.toString() || undefined,
         showOnHomepage: parseShowOnHomepage(formData.get("showOnHomepage")),
         homepageOrder: formData.get("homepageOrder")?.toString() ?? "0",
         slug: normalizeSlug(formData.get("slug")),
@@ -207,18 +181,12 @@ export async function updateCategoryAction(_prev: ActionResult | undefined, form
     }
 
     const slug = await resolveCategorySlug(parsed.data.name, parsed.data.slug ?? undefined, parsed.data.id)
-    const homepageFields = resolveHomepageFields(
-        parsed.data.parentId,
-        parsed.data.showOnHomepage ?? false,
-        parsed.data.homepageOrder ?? 0,
-    )
 
     try {
         await prisma.category.update({
             where: { id: parsed.data.id },
             data: {
                 ...parsed.data,
-                ...homepageFields,
                 slug,
             },
         })
@@ -241,7 +209,7 @@ export async function deleteCategoryAction(formData: FormData) {
 
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
-        include: { _count: { select: { products: true, children: true } } },
+        include: { _count: { select: { products: true } } },
     })
 
     if (!category) {
@@ -250,10 +218,6 @@ export async function deleteCategoryAction(formData: FormData) {
 
     if (category._count.products > 0) {
         throw new Error("Cannot delete a category that still has products")
-    }
-
-    if (category._count.children > 0) {
-        throw new Error("Reassign or delete child categories first")
     }
 
     try {
@@ -281,15 +245,11 @@ export async function toggleCategoryHomepageAction(
 
     const category = await prisma.category.findUnique({
         where: { id: categoryId },
-        select: { id: true, slug: true, parentId: true, showOnHomepage: true },
+        select: { id: true, slug: true, showOnHomepage: true },
     })
 
     if (!category) {
         return { error: "Category not found" }
-    }
-
-    if (category.parentId) {
-        return { error: "Only main categories can appear on the homepage" }
     }
 
     try {

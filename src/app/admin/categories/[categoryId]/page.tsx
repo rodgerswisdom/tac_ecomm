@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getCategoryById, getCategoryOptions } from "@/server/admin/categories"
+import { getCategoryById } from "@/server/admin/categories"
 import { EditCategoryForm } from "./EditCategoryForm"
 import { CategoryDeleteForm } from "./CategoryDeleteForm"
 
@@ -13,9 +13,6 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
   if (!category) {
     notFound()
   }
-
-  const options = await getCategoryOptions()
-  const parentOptions = options.filter((option) => option.id !== category.id)
 
   return (
     <div className="space-y-8">
@@ -41,11 +38,9 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
           slug: category.slug,
           description: category.description,
           image: category.image,
-          parent: category.parent,
           showOnHomepage: category.showOnHomepage,
           homepageOrder: category.homepageOrder,
         }}
-        parentOptions={parentOptions}
       />
 
       <Card className="border-rose-200">
@@ -53,7 +48,7 @@ export default async function EditCategoryPage({ params }: { params: Promise<{ c
           <CardTitle>Danger zone</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>Deleting this category requires no products or child categories to be attached.</p>
+          <p>Deleting this category requires no products to be attached.</p>
           <CategoryDeleteForm categoryId={category.id} />
         </CardContent>
       </Card>

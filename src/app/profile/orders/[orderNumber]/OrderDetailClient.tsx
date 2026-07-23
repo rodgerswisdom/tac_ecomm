@@ -32,6 +32,7 @@ import {
 } from "@/lib/order-utils"
 import { cn } from "@/lib/utils"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
+import { getOrderItemProductName, isOrderItemProductDeleted } from "@/lib/order-item-display"
 
 interface OrderDetailClientProps {
   order: OrderDetail
@@ -144,11 +145,11 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
                         className="flex gap-4 p-4 rounded-lg border border-border/60 bg-muted/20"
                       >
                         {/* Product Image */}
-                        {item.product && imageUrl && (
+                        {imageUrl && (
                           <div className="relative h-20 w-20 shrink-0 rounded-md overflow-hidden bg-muted">
                             <Image
                               src={imageUrl}
-                              alt={item.product.name}
+                              alt={getOrderItemProductName(item)}
                               fill
                               className="object-cover"
                             />
@@ -158,15 +159,15 @@ export function OrderDetailClient({ order }: OrderDetailClientProps) {
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold mb-1">
-                            {item.product ? (
+                            {item.product?.slug && !isOrderItemProductDeleted(item) ? (
                               <Link
                                 href={`/products/${item.product.slug}`}
                                 className="hover:text-primary transition-colors"
                               >
-                                {item.product.name}
+                                {getOrderItemProductName(item)}
                               </Link>
                             ) : (
-                              "Product"
+                              getOrderItemProductName(item)
                             )}
                           </h4>
                           {imageLabel ? (

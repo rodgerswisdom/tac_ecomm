@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
+import { getCollectionsHref } from "@/lib/collections-url";
 
 function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
   const seenCategorySlugs = new Set<string>();
@@ -40,7 +41,7 @@ function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
       return true;
     })
     .map((category) => ({
-      href: `/collections/${category.slug}`,
+      href: getCollectionsHref(category.slug),
       label: category.name,
     }));
   return [

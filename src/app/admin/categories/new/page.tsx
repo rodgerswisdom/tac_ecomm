@@ -1,15 +1,12 @@
 import { AdminPageHeader } from "@/components/admin/page-header"
-import { createCategoryAction, getCategoryOptions } from "@/server/admin/categories"
+import { createCategoryAction } from "@/server/admin/categories"
 
 import { CategorySubmitButton, CreateCategoryForm } from "./CreateCategoryForm"
 
 export default async function NewCategoryPage() {
-  const categories = await getCategoryOptions()
-
   return (
     <div className="space-y-8">
       <CreateCategoryForm
-        categories={categories}
         action={createCategoryAction}
         pageHeader={
           <AdminPageHeader

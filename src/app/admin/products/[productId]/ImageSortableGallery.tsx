@@ -36,6 +36,7 @@ interface ImageSortableGalleryProps {
     initialImages: ProductImage[]
     onDeleteAction: (formData: FormData) => Promise<void>
     onReorderAction: (productId: string, imageIds: string[]) => Promise<void>
+    compact?: boolean
 }
 
 export function ImageSortableGallery({
@@ -43,6 +44,7 @@ export function ImageSortableGallery({
     initialImages,
     onDeleteAction,
     onReorderAction,
+    compact = false,
 }: ImageSortableGalleryProps) {
     const [items, setItems] = useState(initialImages.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)))
     const [isPending, startTransition] = useTransition()
@@ -91,7 +93,7 @@ export function ImageSortableGallery({
             onDragEnd={handleDragEnd}
         >
             <SortableContext items={items} strategy={verticalListSortingStrategy}>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className={compact ? "grid gap-3 grid-cols-2" : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"}>
                     {items.map((image, index) => (
                         <SortableImage
                             key={image.id}
@@ -99,6 +101,7 @@ export function ImageSortableGallery({
                             index={index}
                             isPending={isPending}
                             onDeleteAction={onDeleteAction}
+                            compact={compact}
                         />
                     ))}
                 </div>
@@ -118,11 +121,13 @@ function SortableImage({
     index,
     isPending,
     onDeleteAction,
+    compact = false,
 }: {
     image: ProductImage
     index: number
     isPending: boolean
     onDeleteAction: (formData: FormData) => Promise<void>
+    compact?: boolean
 }) {
     const {
         attributes,
@@ -146,7 +151,7 @@ function SortableImage({
             style={style}
             className="group relative rounded-lg border border-border bg-white p-2 shadow-sm"
         >
-            <div className="relative h-40 w-full overflow-hidden rounded-md bg-muted">
+            <div className={`relative w-full overflow-hidden rounded-md bg-muted ${compact ? "h-28" : "h-40"}`}>
                 <Image
                     src={image.url}
                     alt={image.alt ?? "Product image"}

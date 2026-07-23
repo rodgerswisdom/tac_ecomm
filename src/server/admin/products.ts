@@ -24,7 +24,25 @@ export const productInputSchema = z
         artisanId: z.string().optional().nullable(),
         weight: z.coerce.number().nonnegative().optional().nullable(),
         dimensions: z.string().max(120).optional().nullable(),
-        subcategory: z.string().max(120).optional().nullable(),
+    })
+    .refine(
+        (data) => data.comparePrice == null || data.comparePrice > data.price,
+        { message: "Market price must be greater than selling price when set.", path: ["comparePrice"] },
+    )
+
+/** Fields editable on the simplified admin product detail form. */
+export const productUpdateSchema = z
+    .object({
+        id: z.string().cuid(),
+        name: z.string().min(2, "Name is required"),
+        description: z.string().min(10, "Description is required"),
+        price: z.coerce.number().positive(),
+        comparePrice: z.coerce.number().positive().optional().nullable(),
+        stock: z.coerce.number().int().nonnegative(),
+        sku: z.string().default(""),
+        categoryId: z.string().min(1, "Category is required"),
+        weight: z.coerce.number().nonnegative().optional().nullable(),
+        dimensions: z.string().max(120).optional().nullable(),
     })
     .refine(
         (data) => data.comparePrice == null || data.comparePrice > data.price,
@@ -144,10 +162,30 @@ export async function getProductDetail(productId: string) {
         where: { id: productId },
         include: {
             category: true,
-            variants: { orderBy: { name: "asc" } },
             images: { orderBy: { order: "asc" } },
+            _count: { select: { orderItems: true } },
         },
     })
+}
+
+export async function getProductDeleteInfo(productId: string) {
+    const orderItems = await prisma.orderItem.findMany({
+        where: { productId },
+        select: {
+            orderId: true,
+            order: { select: { orderNumber: true } },
+        },
+    })
+
+    const orderNumbers = Array.from(
+        new Map(orderItems.map((item) => [item.orderId, item.order.orderNumber])).values(),
+    ).slice(0, 5)
+
+    return {
+        orderItemCount: orderItems.length,
+        orderCount: new Set(orderItems.map((item) => item.orderId)).size,
+        orderNumbers,
+    }
 }
 
 export async function resolveProductSlug(name: string, proposedSlug?: string, existingId?: string) {

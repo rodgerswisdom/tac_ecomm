@@ -35,6 +35,7 @@ type ValidatedOrderItem = {
   quantity: number
   price: number
   name: string
+  sku: string
 }
 
 export async function POST(req: NextRequest) {
@@ -220,7 +221,8 @@ export async function POST(req: NextRequest) {
       selectedImageLabel,
       quantity: qty,
       price,
-      name: product.name
+      name: product.name,
+      sku: product.sku,
     })
   }
 
@@ -381,8 +383,10 @@ export async function POST(req: NextRequest) {
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
       items: {
-        create: validatedItems.map(({ productId, variantId, quantity, price, productImageId, selectedImageUrl, selectedImageLabel }) => ({
+        create: validatedItems.map(({ productId, variantId, quantity, price, productImageId, selectedImageUrl, selectedImageLabel, name, sku }) => ({
           productId,
+          productName: name,
+          productSku: sku,
           variantId: variantId ?? undefined,
           quantity,
           price,

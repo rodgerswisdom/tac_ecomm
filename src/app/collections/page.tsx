@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { CollectionsPageClient } from "./CollectionsPageClient";
 import { getProductCardData } from "@/server/storefront/products";
 import { getCollectionSummaries } from "@/server/storefront/collections";
@@ -10,15 +11,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function CollectionsPage() {
+function parseParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+export default async function CollectionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) ?? {};
+  const initialCategory = parseParam(params.category);
+  const initialSearch = parseParam(params.q);
+
   const products = await getProductCardData();
   const categories = await prisma.category.findMany({
-    where: { parentId: null },
     orderBy: { name: "asc" },
     select: {
       slug: true,
       name: true,
-      children: { select: { slug: true } },
     },
   });
   const collectionSummaries = await getCollectionSummaries({ includeVirtual: true });
@@ -28,14 +40,14 @@ export default async function CollectionsPage() {
     .map((collection) => ({ slug: collection.slug, name: collection.name }));
 
   return (
-    <CollectionsPageClient
-      initialProducts={products}
-      categories={categories.map(({ slug, name, children }) => ({
-        slug,
-        name,
-        childSlugs: children.map((child) => child.slug),
-      }))}
-      collections={collections}
-    />
+    <Suspense fallback={null}>
+      <CollectionsPageClient
+        initialProducts={products}
+        categories={categories}
+        collections={collections}
+        initialCategory={initialCategory}
+        initialSearch={initialSearch}
+      />
+    </Suspense>
   );
 }

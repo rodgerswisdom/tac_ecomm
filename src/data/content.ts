@@ -42,7 +42,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "Kenya",
     materials: ["Bronze", "Maasai glass beads", "24k gold wash"],
     category: "necklaces",
-    subcategory: "collars",
     productType: "ready-to-wear",
     isCorporateGift: true,
     communityImpact: "Supports 3 artisan families in Nairobi",
@@ -80,7 +79,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "Ghana",
     materials: ["18k Fairmined gold", "Adinkra etching", "Ebony inlay"],
     category: "rings",
-    subcategory: "signets",
     productType: "ready-to-wear",
     isCorporateGift: false,
     communityImpact: "Supports 2 goldsmith families in Accra",
@@ -118,7 +116,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "Mali",
     materials: ["Tuareg bronze", "Fine sand casting", "Indigo patina"],
     category: "bracelets",
-    subcategory: "bangles",
     productType: "ready-to-wear",
     isCorporateGift: false,
     communityImpact: "Supports 4 Tuareg artisan families in Bamako",
@@ -155,7 +152,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "South Africa",
     materials: ["Recycled glass", "Brushed gold", "Hand-spun thread"],
     category: "earrings",
-    subcategory: "hoops",
     productType: "ready-to-wear",
     isCorporateGift: false,
     communityImpact: "Supports 5 Zulu artisan families in KwaZulu",
@@ -193,7 +189,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "Zimbabwe",
     materials: ["Reclaimed brass", "Gold leaf", "Ndebele etching"],
     category: "bracelets",
-    subcategory: "cuffs",
     productType: "ready-to-wear",
     isCorporateGift: true,
     communityImpact: "Supports 3 Ndebele artisan families in Harare",
@@ -230,7 +225,6 @@ export const featuredProducts: ProductCardData[] = [
     origin: "Morocco",
     materials: ["Merino wool", "Henna dye", "Hand-cut leather"],
     category: "hair-accessories",
-    subcategory: "shawls",
     productType: "ready-to-wear",
     isCorporateGift: false,
     communityImpact: "Supports 2 Berber weaving families in Marrakech",
@@ -516,7 +510,7 @@ export const featuredCollections: CollectionCategory[] = [
     },
     ctas: [
       { label: "Shop Earrings", href: "#collection-products", variant: "primary" },
-      { label: "Discover Matching Sets", href: "/collections/matching-sets", variant: "secondary" }
+      { label: "Discover Matching Sets", href: "/collections?category=matching-sets", variant: "secondary" }
     ],
     featuredProductIds: ["4"]
   },
@@ -597,8 +591,8 @@ export const featuredCollections: CollectionCategory[] = [
       image: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80"
     },
     ctas: [
-      { label: "Explore Sets", href: "/collections/matching-sets", variant: "primary" },
-      { label: "Corporate Gift Concierge", href: "/collections/corporate-gifts", variant: "secondary" }
+      { label: "Explore Sets", href: "/collections?category=matching-sets", variant: "primary" },
+      { label: "Corporate Gift Concierge", href: "/collections?category=corporate-gifts", variant: "secondary" }
     ],
     featuredProductIds: ["1", "2", "3", "4", "5", "6"]
   }

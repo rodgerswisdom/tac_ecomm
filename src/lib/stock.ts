@@ -24,6 +24,16 @@ export interface StockLineItem {
   quantity: number
 }
 
+export function toStockLineItems(
+  items: Array<{ productId: string | null; variantId?: string | null; quantity: number }>,
+): StockLineItem[] {
+  return items.flatMap((item) =>
+    item.productId
+      ? [{ productId: item.productId, variantId: item.variantId, quantity: item.quantity }]
+      : [],
+  )
+}
+
 type StockClient = Prisma.TransactionClient
 
 class InsufficientStockError extends Error {
@@ -151,5 +161,5 @@ export async function restoreStock(orderId: string, tx?: StockClient): Promise<v
 
   if (!order?.items.length) return
 
-  await restoreStockItems(order.items, client)
+  await restoreStockItems(toStockLineItems(order.items), client)
 }

@@ -73,8 +73,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
     if (!needle) return true
     return (
       category.name.toLowerCase().includes(needle) ||
-      category.slug.toLowerCase().includes(needle) ||
-      (category.parent?.name?.toLowerCase().includes(needle) ?? false)
+      category.slug.toLowerCase().includes(needle)
     )
   })
 
@@ -176,7 +175,6 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                 <th className="px-4 py-3 text-left text-xs">Category</th>
                 <th className="px-4 py-3 text-left text-xs">Slug</th>
                 <th className="px-4 py-3 text-left text-xs">Number of products</th>
-                <th className="px-4 py-3 text-left text-xs">Parent category</th>
                 <th className="px-4 py-3 text-left text-xs">Homepage</th>
                 <th className="px-4 py-3 text-left text-xs">Actions</th>
               </tr>
@@ -184,7 +182,7 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
             <tbody>
               {visibleCategories.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={5} className="py-10 text-center text-sm text-muted-foreground">
                     No categories match the current filters.
                   </td>
                 </tr>
@@ -193,7 +191,6 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
                   <tr key={category.id} className="border-b last:border-b-0">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        {category.parentId && <div className="ml-8 border-l border-border h-8 mr-2 -mt-4 mb-4" />}
                         <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border/60 bg-muted text-xs font-semibold uppercase shrink-0">
                           {getInitials(category.name)}
                         </div>
@@ -206,16 +203,11 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
 
                     <td className="px-4 py-4">{category.slug}</td>
                     <td className="px-4 py-4">{category._count.products}</td>
-                    <td className="px-4 py-4">{category.parent?.name ?? "—"}</td>
                     <td className="px-4 py-4">
-                      {category.parentId ? (
-                        <span className="text-muted-foreground">—</span>
-                      ) : (
-                        <CategoryHomepageToggle
-                          categoryId={category.id}
-                          enabled={category.showOnHomepage}
-                        />
-                      )}
+                      <CategoryHomepageToggle
+                        categoryId={category.id}
+                        enabled={category.showOnHomepage}
+                      />
                     </td>
                     <td className="px-4 py-4">
                       <RowActions
@@ -243,18 +235,14 @@ export default async function CategoriesPage({ searchParams }: CategoriesPagePro
 
                             <div className="grid grid-cols-2 gap-4">
                               <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Taxonomy Stats</p>
-                                <div className="space-y-1">
-                                    <p className="text-xl font-black text-brand-teal">{category._count.products} products</p>
-                                    <p className="text-xs font-bold text-brand-umber tracking-tight">{category._count.children} subcategories</p>
-                                </div>
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Products</p>
+                                <p className="text-xl font-black text-brand-teal">{category._count.products} products</p>
                               </div>
                               <div className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm">
-                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Hierarchy Position</p>
+                                <p className="text-[10px] font-black tracking-widest text-slate-400 mb-1">Homepage</p>
                                 <p className="text-sm font-black text-slate-900 mt-1">
-                                  {category.parent?.name ? `Subcategory of ${category.parent.name}` : "Main Department"}
+                                  {category.showOnHomepage ? "Visible on homepage" : "Hidden from homepage"}
                                 </p>
-                                <p className="text-[10px] font-bold text-slate-400">Taxonomy level</p>
                               </div>
                             </div>
 

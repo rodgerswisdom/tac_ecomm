@@ -136,10 +136,16 @@ export class ZohoSyncQueue {
 
         // Check if all products are synced
         for (const item of order.items) {
+          if (!item.product) {
+            return {
+              ready: false,
+              reason: `Product no longer available: ${item.productName ?? item.productId ?? "unknown item"}`,
+            }
+          }
           if (!item.product.zohoItemId) {
             return {
               ready: false,
-              reason: `Product not synced: ${item.product.name} (${item.productId})`,
+              reason: `Product not synced: ${item.productName ?? item.product.name} (${item.productId})`,
             }
           }
         }

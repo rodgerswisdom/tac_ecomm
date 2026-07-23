@@ -231,7 +231,6 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     origin: product.origin ?? artisan.regionLabel,
     materials: product.materials ?? [],
     category: product.category?.slug,
-    subcategory: product.subcategory ?? undefined,
     productType: product.productType,
     isCorporateGift: product.isCorporateGift,
     communityImpact: product.communityImpact ?? undefined,

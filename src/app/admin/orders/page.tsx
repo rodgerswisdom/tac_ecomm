@@ -13,6 +13,7 @@ import { RowActions } from "@/components/admin/row-actions"
 import { formatPrice } from "@/lib/utils"
 import { CopyToClipboardButton } from "@/components/admin/CopyToClipboardButton"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
+import { getOrderItemProductName } from "@/lib/order-item-display"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -289,15 +290,15 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                     <div key={item.id} className="px-4 py-3 flex items-center gap-4 text-sm">
                                       <div className="h-10 w-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 shrink-0">
                                         {imageUrl ? (
-                                          <img src={imageUrl} alt={item.product?.name} className="h-full w-full object-cover" />
+                                          <img src={imageUrl} alt={getOrderItemProductName(item)} className="h-full w-full object-cover" />
                                         ) : (
                                           <div className="h-full w-full flex items-center justify-center text-[10px] font-black text-slate-200 uppercase">
-                                            {item.product?.name?.slice(0, 2)}
+                                            {getOrderItemProductName(item).slice(0, 2)}
                                           </div>
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0 mr-4">
-                                        <p className="font-bold text-slate-900 truncate">{item.product?.name}</p>
+                                        <p className="font-bold text-slate-900 truncate">{getOrderItemProductName(item)}</p>
                                         {imageLabel ? (
                                           <p className="text-[10px] text-brand-umber/70">{imageLabel}</p>
                                         ) : null}

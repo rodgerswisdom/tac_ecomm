@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
-import { decrementStock, restoreStock } from "@/lib/stock"
+import { decrementStock, restoreStock, toStockLineItems } from "@/lib/stock"
 import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
 
 // ─────────────────────────────────────────────
@@ -102,7 +102,7 @@ export async function updateOrderStatusAction(
                 where: { orderId },
                 select: { productId: true, variantId: true, quantity: true },
             })
-            await decrementStock(items, tx)
+            await decrementStock(toStockLineItems(items), tx)
         }
 
         if (wasConfirmed && nowCancelledOrRefunded) {

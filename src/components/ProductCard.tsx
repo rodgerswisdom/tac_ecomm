@@ -1,153 +1,38 @@
 "use client";
 
-import { useState, useEffect, useRef, memo } from "react";
+import { useState, memo } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
-  CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ShoppingBag, Heart, Star, Plus, Eye } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { Star } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { ProductCardData } from "@/types/product";
-import { cn } from "@/lib/utils";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
 
 interface ProductCardProps {
   product: ProductCardData;
-  isSelectedForComparison?: boolean;
-  onComparisonToggle?: (productId: string, isSelected: boolean) => void;
-  onQuickView?: (product: ProductCardData) => void;
 }
 
-const ProductCardComponent = ({
-  product,
-  isSelectedForComparison = false,
-  onComparisonToggle,
-  onQuickView,
-}: ProductCardProps) => {
+const ProductCardComponent = ({ product }: ProductCardProps) => {
   const router = useRouter();
-  const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  const [showQuickAdd, setShowQuickAdd] = useState(false);
-  // Tracks whether the API returned a valid session (determined on first fetch)
-  const isAuthenticated = useRef(false);
 
-  // Calculate discount percentage
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
 
-  // Get secondary image for hover swap (use second gallery image or first if only one)
   const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
-
-  // Handle image navigation
-  const handleImageClick = (index: number) => {
-    setActiveImageIndex(index);
-  };
-
-  // Handle quick add to cart
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isOutOfStock) return;
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    });
-  };
 
   const handleOpenProduct = () => {
     router.push(`/products/${product.slug}`);
   };
 
-  const getGuestWishlist = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem('tac-wishlist') || '[]');
-      if (Array.isArray(stored)) {
-        return stored.map((value) => value.toString());
-      }
-    } catch { }
-    return [] as string[];
-  };
-
-  // Load wishlist state on mount — try API first, fall back to guest localStorage
-  useEffect(() => {
-    let ignore = false;
-    async function fetchWishlist() {
-      try {
-        const res = await fetch('/api/wishlist');
-        if (res.ok) {
-          const data = await res.json();
-          if (!ignore && data.wishlist) {
-            isAuthenticated.current = true;
-            setIsWishlisted(data.wishlist.some((w: any) => w.productId === product.id));
-            return;
-          }
-        }
-      } catch { }
-      if (!ignore) {
-        const guestWishlist = getGuestWishlist();
-        setIsWishlisted(guestWishlist.includes(product.id));
-      }
-    }
-    fetchWishlist();
-    return () => { ignore = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product.id]);
-
-  // Handle wishlist toggle
-  const handleWishlistToggle = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setWishlistLoading(true);
-    if (isAuthenticated.current) {
-      try {
-        if (!isWishlisted) {
-          await fetch('/api/wishlist', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId: product.id })
-          });
-          setIsWishlisted(true);
-        } else {
-          await fetch('/api/wishlist', {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId: product.id })
-          });
-          setIsWishlisted(false);
-        }
-      } catch { }
-    } else {
-      // Guest: use localStorage
-      const guestWishlist = getGuestWishlist();
-      if (!isWishlisted) {
-        const updated = [...guestWishlist, product.id];
-        localStorage.setItem('tac-wishlist', JSON.stringify(updated));
-        setIsWishlisted(true);
-      } else {
-        const updated = guestWishlist.filter((id) => id !== product.id);
-        localStorage.setItem('tac-wishlist', JSON.stringify(updated));
-        setIsWishlisted(false);
-      }
-    }
-    setWishlistLoading(false);
-  };
-
-  // Render star rating
   const renderStars = () => {
     if (!product.rating) return null;
     const rating = Math.round(product.rating);
@@ -174,14 +59,8 @@ const ProductCardComponent = ({
   return (
     <motion.div
       className="group relative cursor-pointer"
-      onMouseEnter={() => {
-        setIsHovered(true);
-        setShowQuickAdd(true);
-      }}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setShowQuickAdd(false);
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onClick={handleOpenProduct}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget) return;
@@ -197,7 +76,6 @@ const ProductCardComponent = ({
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       <Card className="relative h-full overflow-hidden bg-white transition-all duration-300 hover:shadow-[0_8px_24px_rgba(74,43,40,0.12)]">
-        {/* Image Container */}
         <div className="relative aspect-square w-full overflow-hidden rounded-t-xl bg-brand-beige/30">
           <div className="block h-full w-full">
             <AnimatePresence mode="wait">
@@ -213,7 +91,7 @@ const ProductCardComponent = ({
                   src={
                     isHovered && secondaryImage !== product.image
                       ? secondaryImage
-                      : product.gallery[activeImageIndex] || product.image
+                      : product.gallery[0] || product.image
                   }
                   alt={product.name}
                   fill
@@ -225,7 +103,6 @@ const ProductCardComponent = ({
             </AnimatePresence>
           </div>
 
-          {/* Sale Badge - Top Left */}
           <div className="absolute left-3 top-3 z-10 flex flex-col gap-1">
             {isOutOfStock && (
               <span className="rounded-md bg-red-600 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
@@ -237,142 +114,19 @@ const ProductCardComponent = ({
                 -{discountPercent}%
               </span>
             )}
-            {product.isBestSeller && (
-              <span className="rounded-md bg-brand-teal px-2 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-md">
-                Best Seller
-              </span>
-            )}
           </div>
-
-          {/* Comparison Checkbox - Bottom Left */}
-          {onComparisonToggle && (
-            <div className="absolute bottom-3 left-3 z-10">
-              <label
-                className="flex cursor-pointer items-center gap-2 rounded-full bg-white/90 px-2.5 py-1.5 backdrop-blur-sm transition-all hover:bg-white sm:px-3"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelectedForComparison}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onComparisonToggle(product.id, e.target.checked);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="h-4 w-4 rounded border-brand-teal text-brand-teal focus:ring-brand-teal"
-                />
-                <span className="hidden text-xs font-medium text-brand-umber sm:inline">Compare</span>
-              </label>
-            </div>
-          )}
-
-          {/* Wishlist Heart - Top Right */}
-          <button
-            onClick={handleWishlistToggle}
-            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 backdrop-blur-sm transition-all hover:bg-white hover:scale-110 disabled:opacity-60 opacity-100"
-            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-            disabled={wishlistLoading}
-          >
-            <Heart
-              className={`h-4 w-4 transition-colors ${isWishlisted
-                ? "fill-brand-coral text-brand-coral"
-                : "text-brand-umber/60 hover:text-brand-coral"
-                }`}
-            />
-          </button>
-
-          {/* Quick View Button - Appears on Hover */}
-          {onQuickView && (
-            <AnimatePresence>
-              {isHovered && (
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onQuickView(product);
-                  }}
-                  className="absolute right-3 bottom-3 z-10 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:scale-105"
-                >
-                  <Eye className="h-3.5 w-3.5" />
-                  Quick View
-                </motion.button>
-              )}
-            </AnimatePresence>
-          )}
-
-          {/* Quick Add Button — Hover on desktop only, hidden on mobile (moved below) */}
-          <AnimatePresence>
-            {showQuickAdd && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                transition={{ duration: 0.2 }}
-                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 hidden sm:block"
-              >
-                <Button
-                  onClick={handleQuickAdd}
-                  size="sm"
-                  disabled={isOutOfStock}
-                  className="rounded-full bg-white/95 px-4 py-2 text-xs font-semibold text-brand-umber shadow-lg backdrop-blur-sm hover:bg-white hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                  {isOutOfStock ? "Unavailable" : "Quick Add"}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Image Pagination Dots - Bottom Center */}
-          {product.gallery.length > 1 && (
-            <div className={cn(
-              "absolute bottom-3 left-1/2 z-10 hidden -translate-x-1/2 gap-1.5 sm:flex",
-              onComparisonToggle && "sm:bottom-2"
-            )}>
-              {product.gallery.slice(0, 5).map((_, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleImageClick(index);
-                  }}
-                  className={`h-1.5 rounded-full transition-all ${activeImageIndex === index
-                    ? "w-6 bg-white"
-                    : "w-1.5 bg-white/50 hover:bg-white/75"
-                    }`}
-                  aria-label={`View angle ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-
         </div>
 
-        {/* Product Information */}
         <CardContent className="p-2.5 sm:p-4">
           <div className="space-y-1 sm:space-y-2 min-w-0">
-            {/* Brand Name - Subtle */}
-            {product.brand && (
-              <p className="text-xs font-semibold uppercase tracking-wider text-brand-umber/50">
-                {product.brand}
-              </p>
-            )}
-
-            {/* Product Name - Prominent */}
-            <CardTitle className="line-clamp-2 min-w-0 text-left text-sm font-semibold leading-tight sm:text-base">
+            <CardTitle className="line-clamp-2 min-w-0 text-left text-lg font-semibold leading-tight sm:text-xl">
               <span className="transition-colors group-hover:text-brand-teal">
                 {product.name}
               </span>
             </CardTitle>
 
-            {/* Rating Stars */}
             {renderStars()}
 
-            {/* Price */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-sm sm:text-lg font-bold text-brand-coral">
                 {formatPrice(product.price)}
@@ -384,19 +138,6 @@ const ProductCardComponent = ({
               )}
             </div>
 
-            {/* Mobile Quick Add Button - in card body, below price */}
-            <div className="sm:hidden pt-1">
-              <button
-                onClick={handleQuickAdd}
-                disabled={isOutOfStock}
-                className="flex w-full items-center justify-center gap-1.5 rounded-full border border-brand-teal/30 bg-white py-1.5 text-xs font-semibold text-brand-umber transition hover:border-brand-teal hover:bg-brand-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Plus className="h-3 w-3" />
-                {isOutOfStock ? "Out of Stock" : "Add to Bag"}
-              </button>
-            </div>
-
-            {/* Color Swatches */}
             {product.colors && product.colors.length > 0 && (
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-xs text-brand-umber/60">Colors:</span>
@@ -418,7 +159,6 @@ const ProductCardComponent = ({
               </div>
             )}
 
-            {/* Size Swatches */}
             {product.sizes && product.sizes.length > 0 && (
               <div className="flex items-center gap-2 pt-1">
                 <span className="text-xs text-brand-umber/60">Sizes:</span>

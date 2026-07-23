@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { patternAssets } from "@/lib/patterns";
 import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
+import { getCollectionsHref } from "@/lib/collections-url";
 
 const discoverLinks = [
   { key: "about", label: "About TAC", href: "/about" },
@@ -35,12 +36,12 @@ export const Footer = () => {
       ? shopCategories.map((category) => ({
           key: category.slug,
           label: category.name,
-          href: `/collections/${category.slug}`,
+          href: getCollectionsHref(category.slug),
         }))
       : CATEGORY_TAXONOMY.map((category) => ({
           key: category.slug,
           label: category.name,
-          href: `/collections/${category.slug}`,
+          href: getCollectionsHref(category.slug),
         }));
 
   const footerLinkGroups = [

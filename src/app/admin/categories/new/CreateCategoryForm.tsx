@@ -16,8 +16,6 @@ const fieldTone =
   "rounded-2xl border border-[#cfa46c]/70 bg-[#fff8ee] text-[#3f3324] placeholder:text-[#ad8452] focus:border-[#4b9286] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b9286]/35"
 const textareaTone =
   "rounded-2xl border border-[#cfa46c]/70 bg-[#fff8ee] text-[#3f3324] placeholder:text-[#ad8452] focus:border-[#4b9286] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b9286]/35"
-const selectTone =
-  "h-12 w-full rounded-2xl border border-[#cfa46c]/70 bg-[#fff8ee] px-4 text-sm text-[#3f3324] focus:border-[#4b9286] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#4b9286]/35"
 
 const primaryButtonTone =
   "rounded-full border border-transparent bg-[#4a2b28] px-6 text-[#f2dcb8] shadow-[0_8px_22px_rgba(74,43,40,0.35)] transition hover:bg-[#3b211f]"
@@ -40,11 +38,9 @@ export function CategorySubmitButton({ label, className }: { label: string; clas
 }
 
 export function CreateCategoryForm({
-  categories,
   pageHeader,
   action,
 }: {
-  categories: Array<{ id: string; name: string }>
   pageHeader: ReactNode
   action: (prevState: ActionResult, formData: FormData) => Promise<ActionResult>
 }) {
@@ -87,39 +83,17 @@ export function CreateCategoryForm({
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label htmlFor="category-slug" className={labelTone}>
-                  Category slug
-                </label>
-                <Input
-                  id="category-slug"
-                  name="slug"
-                  placeholder="Enter a category slug..."
-                  className={`h-12 ${fieldTone}`}
-                />
-                <p className="text-xs text-[#7d5b3b]">Leave blank to auto-generate from the title.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="category-parent" className={labelTone}>
-                  Parent category (optional)
-                </label>
-                <select
-                  id="category-parent"
-                  name="parentId"
-                  className={selectTone}
-                  defaultValue=""
-                >
-                  <option value="">Select category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-
-              </div>
+            <div className="space-y-2">
+              <label htmlFor="category-slug" className={labelTone}>
+                Category slug
+              </label>
+              <Input
+                id="category-slug"
+                name="slug"
+                placeholder="Enter a category slug..."
+                className={`h-12 ${fieldTone}`}
+              />
+              <p className="text-xs text-[#7d5b3b]">Leave blank to auto-generate from the title.</p>
             </div>
           </CardContent>
         </Card>
