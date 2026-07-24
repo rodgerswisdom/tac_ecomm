@@ -11,8 +11,6 @@ import { getCollectionsHref } from "@/lib/collections-url";
 
 const discoverLinks = [
   { key: "about", label: "About TAC", href: "/about" },
-  { key: "stories", label: "Artisan Stories", href: "/stories" },
-  { key: "legacy", label: "Our Legacy", href: "/about#legacy" },
 ];
 
 const supportLinks = [
