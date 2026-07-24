@@ -1,4 +1,4 @@
-import type { PrismaClient } from "@prisma/client"
+import { ProductType, type PrismaClient } from "@prisma/client"
 
 import {
   CATEGORY_TAXONOMY,
@@ -93,6 +93,27 @@ export async function migrateProductsToTaxonomy(client: SeedClient) {
   }
 }
 
+export async function migrateMatchingSetProductsToCategory(client: SeedClient) {
+  const matchingSetsCategory = await client.category.findUnique({
+    where: { slug: "matching-sets" },
+    select: { id: true },
+  })
+
+  if (!matchingSetsCategory) {
+    throw new Error("Matching Sets category missing — run seedCategoryTaxonomy first")
+  }
+
+  const result = await client.product.updateMany({
+    where: { productType: ProductType.MATCHING_SET },
+    data: {
+      categoryId: matchingSetsCategory.id,
+      productType: ProductType.READY_TO_WEAR,
+    },
+  })
+
+  return result.count
+}
+
 export async function removeDeprecatedEmptyCategories(client: SeedClient) {
   for (const slug of DEPRECATED_CATEGORY_SLUGS) {
     const category = await client.category.findUnique({
@@ -110,6 +131,7 @@ export async function removeDeprecatedEmptyCategories(client: SeedClient) {
 export async function runCategoryTaxonomySeed(client: SeedClient) {
   await seedCategoryTaxonomy(client)
   await migrateProductsToTaxonomy(client)
+  await migrateMatchingSetProductsToCategory(client)
   await removeDeprecatedEmptyCategories(client)
 }
 

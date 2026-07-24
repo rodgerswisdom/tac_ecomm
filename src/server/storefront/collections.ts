@@ -1,5 +1,3 @@
-import { ProductType } from "@prisma/client"
-
 import { prisma } from "@/lib/prisma"
 import { TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
@@ -87,12 +85,6 @@ export async function getCollectionSummaries(options: CollectionSummaryOptions =
   if (includeVirtual) {
     const virtualCollections = await Promise.all([
       buildVirtualCollectionSummary({
-        slug: "matching-sets",
-        name: "Matching Sets",
-        description: "Curated ensembles crafted as cohesive heirloom sets.",
-        query: { productType: ProductType.MATCHING_SET },
-      }),
-      buildVirtualCollectionSummary({
         slug: "corporate-gifts",
         name: "Corporate Gifts",
         description: "Purposeful gifting programs for partners and teams.",
@@ -116,15 +108,6 @@ export async function getCollectionSummaries(options: CollectionSummaryOptions =
 
 export async function getCollectionSummaryBySlug(slug: string) {
   if (!slug) return null
-
-  if (slug === "matching-sets") {
-    return buildVirtualCollectionSummary({
-      slug,
-      name: "Matching Sets",
-      description: "Coordinated heirloom ensembles crafted by the TAC atelier.",
-      query: { productType: ProductType.MATCHING_SET },
-    })
-  }
 
   if (slug === "corporate-gifts") {
     return buildVirtualCollectionSummary({
@@ -155,13 +138,10 @@ export async function getCollectionSlugs() {
 
 /** Lightweight list of collection slug+name for navbar Shop submenu. */
 export async function getNavShopCategories(): Promise<{ slug: string; name: string }[]> {
-  const [categories, matchingSetCount, corporateGiftCount] = await Promise.all([
+  const [categories, corporateGiftCount] = await Promise.all([
     prisma.category.findMany({
       orderBy: { name: "asc" },
       select: { slug: true, name: true },
-    }),
-    prisma.product.count({
-      where: { ...activeProductWhere, productType: ProductType.MATCHING_SET },
     }),
     prisma.product.count({
       where: { ...activeProductWhere, isCorporateGift: true },
@@ -178,11 +158,6 @@ export async function getNavShopCategories(): Promise<{ slug: string; name: stri
       slug: category.slug,
       name: category.name,
     })
-  }
-
-  if (matchingSetCount > 0 && !seenSlugs.has("matching-sets")) {
-    navItems.push({ slug: "matching-sets", name: "Matching Sets" })
-    seenSlugs.add("matching-sets")
   }
 
   if (corporateGiftCount > 0 && !seenSlugs.has("corporate-gifts")) {

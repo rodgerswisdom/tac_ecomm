@@ -1,4 +1,4 @@
-import { Prisma, ProductType } from "@prisma/client"
+import { Prisma } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
 import { getCategorySlugsForFilter } from "@/lib/category-tree"
@@ -30,7 +30,6 @@ export type ProductCardQueryOptions = {
   search?: string
   featuredOnly?: boolean
   includeDrafts?: boolean
-  productType?: ProductType
   corporateGiftsOnly?: boolean
 }
 
@@ -56,10 +55,6 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
 
   if (options.corporateGiftsOnly) {
     where.isCorporateGift = true
-  }
-
-  if (options.productType) {
-    where.productType = options.productType
   }
 
   if (options.search?.trim()) {
@@ -95,10 +90,6 @@ export async function getFeaturedProductCards(limit = 4) {
 }
 
 export async function getCollectionProductCards(slug: string) {
-  if (slug === "matching-sets") {
-    return getProductCardData({ productType: ProductType.MATCHING_SET })
-  }
-
   if (slug === "corporate-gifts") {
     return getProductCardData({ corporateGiftsOnly: true })
   }

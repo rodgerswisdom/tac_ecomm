@@ -2,7 +2,8 @@
 
 import { useCallback, useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Menu, PanelLeft, Search, Settings, UserRound } from "lucide-react"
+import { Menu, PanelLeft, Search, Settings, UserRound, X } from "lucide-react"
+import { AdminHeaderSearch } from "@/components/admin/AdminHeaderSearch"
 import { useCurrency } from "@/contexts/CurrencyContext"
 import { CurrencyCode } from "@/lib/currency"
 import { Button } from "@/components/ui/button"
@@ -113,22 +114,13 @@ export function AdminDashboardShell({
                   <Menu className="h-5 w-5" />
                 </button>
 
-                <form
-                  action="/admin/products"
-                  className="hidden md:flex w-full max-w-md items-center gap-2 rounded-full border border-[#3d5d4a] bg-[#b8d3c2] px-5 py-2 text-sm text-[#2f3c34] shadow-inner"
-                >
-                  <Search className="h-4 w-4 opacity-50" />
-                  <input
-                    name="q"
-                    type="search"
-                    placeholder="Search resources..."
-                    className="flex-1 bg-transparent text-sm placeholder:text-[#53705f] focus:outline-none"
-                  />
-                </form>
+                <AdminHeaderSearch className="hidden md:flex max-w-md" />
 
                 <button
+                  type="button"
                   onClick={() => setIsMobileSearchOpen(true)}
-                  className="p-2.5 rounded-xl border border-[#3f3324]/40 bg-[#b8d3c2] text-[#3f3324] md:hidden"
+                  className="rounded-xl border border-[#3f3324]/25 bg-[#eef5f0]/90 p-2.5 text-[#3f3324] shadow-[inset_0_1px_2px_rgba(45,59,52,0.08)] transition hover:border-[#2d543f]/40 hover:bg-white md:hidden"
+                  aria-label="Open search"
                 >
                   <Search className="h-5 w-5" />
                 </button>
@@ -205,21 +197,22 @@ export function AdminDashboardShell({
         </div>
 
         {isMobileSearchOpen && (
-          <div className="fixed inset-0 z-50 bg-[#d8b780] flex flex-col p-4">
-            <div className="flex items-center gap-4 mb-8 text-[#3f3324]">
-              <button onClick={() => setIsMobileSearchOpen(false)} className="p-2 rounded-xl bg-black/5">
-                <Menu className="h-5 w-5 rotate-90" />
+          <div className="fixed inset-0 z-[60] flex flex-col bg-[#d8b780]/98 p-4 backdrop-blur-sm md:hidden">
+            <div className="mb-6 flex items-center justify-between gap-4 text-[#3f3324]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#6e5a44]">Admin search</p>
+                <p className="text-sm font-medium">Find products in the catalog</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="rounded-xl border border-[#3f3324]/20 bg-white/60 p-2 text-[#3f3324] transition hover:bg-white"
+                aria-label="Close search"
+              >
+                <X className="h-5 w-5" />
               </button>
-              <span className="font-semibold">Search TAC Console</span>
             </div>
-            <form action="/admin/products" className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#3f3324]/50" />
-              <input
-                name="q"
-                placeholder="Search..."
-                className="w-full h-14 pl-12 pr-4 bg-[#b8d3c2] border border-[#3d5d4a]/30 rounded-full text-lg focus:outline-none shadow-inner"
-              />
-            </form>
+            <AdminHeaderSearch size="large" inputId="admin-mobile-header-search" />
           </div>
         )}
       </header>

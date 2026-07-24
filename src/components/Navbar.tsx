@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ShoppingBag, Menu, ChevronDown, User, LogOut, Settings, X, Search } from "lucide-react";
+import { SearchBar } from "@/components/SearchBar";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -73,6 +74,7 @@ export const Navbar = () => {
   const cartCount = getCartItemCount();
   const isCheckoutPage = pathname.startsWith("/checkout");
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(true);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,17 +203,30 @@ export const Navbar = () => {
   return (
     <div
       className={cn(
-        "pointer-events-none fixed top-0 left-0 right-0 z-50 flex w-full flex-col items-center transition-transform duration-300 ease-out",
+        "pointer-events-none fixed top-0 left-0 right-0 z-[100] flex w-full flex-col items-center transition-transform duration-300 ease-out",
         isNavVisible ? "translate-y-0" : "-translate-y-full"
       )}
     >
+      {!isCheckoutPage && mobileSearchOpen && (
+        <div className="pointer-events-auto fixed inset-x-0 top-0 z-[60] flex items-center gap-2 border-b border-brand-umber/12 bg-white/95 px-3 py-3 shadow-lg backdrop-blur-xl lg:hidden">
+          <SearchBar className="max-w-none flex-1 sm:max-w-md" />
+          <button
+            type="button"
+            onClick={() => setMobileSearchOpen(false)}
+            className="flex-shrink-0 rounded-full p-2 text-brand-umber/60 transition-colors hover:bg-brand-beige/60 hover:text-brand-umber"
+            aria-label="Close search"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      )}
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.33, 1, 0.68, 1] }}
-        className="pointer-events-auto w-full max-w-none rounded-none border border-x-0 border-t-0 border-b-brand-umber/12 bg-white/90 py-2 shadow-[0_8px_22px_rgba(74,43,40,0.08)] backdrop-blur-xl sm:py-3"
+        className="pointer-events-auto w-full max-w-none overflow-visible rounded-none border border-x-0 border-t-0 border-b-brand-umber/12 bg-white/90 py-2 shadow-[0_8px_22px_rgba(74,43,40,0.08)] backdrop-blur-xl sm:py-3"
       >
-        <div className="gallery-container flex w-full flex-wrap items-center gap-2 sm:flex-nowrap sm:gap-4">
+        <div className="gallery-container flex w-full flex-wrap items-center gap-2 overflow-visible sm:flex-nowrap sm:gap-4">
           <Link
             href="/"
             className="caps-spacing inline-flex flex-shrink-0 items-center gap-1 text-[9px] font-semibold text-brand-umber/80 transition-colors hover:text-brand-umber sm:gap-3 sm:text-xs"
@@ -288,6 +303,12 @@ export const Navbar = () => {
               );
             })}
           </div>
+
+          {!isCheckoutPage && (
+            <div className="hidden min-w-0 flex-1 lg:block xl:max-w-md">
+              <SearchBar className="mx-0 max-w-none" />
+            </div>
+          )}
 
           <div className="ml-auto flex items-center justify-end gap-1.5 sm:gap-3">
             <div className="hidden md:block">
@@ -463,11 +484,11 @@ export const Navbar = () => {
                 variant="ghost"
                 size="icon"
                 className="inline-flex lg:hidden"
-                asChild
+                type="button"
+                onClick={() => setMobileSearchOpen(true)}
+                aria-label="Open search"
               >
-                <Link href="/search" aria-label="Open search">
-                  <Search className="h-5 w-5 transition-colors" />
-                </Link>
+                <Search className="h-5 w-5 transition-colors" />
               </Button>
             )}
 

@@ -18,10 +18,6 @@ function matchesCollection(
   product: ProductCardData,
   categorySlug: string,
 ) {
-  if (categorySlug === "matching-sets") {
-    return product.productType === "MATCHING_SET";
-  }
-
   if (categorySlug === "corporate-gifts") {
     return Boolean(product.isCorporateGift);
   }

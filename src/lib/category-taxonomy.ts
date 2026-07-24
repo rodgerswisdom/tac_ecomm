@@ -37,6 +37,11 @@ export const CATEGORY_TAXONOMY: CategoryTaxonomyNode[] = [
     slug: "accessories",
     description: "Fridge magnets, keyrings, and everyday artisan accessories.",
   },
+  {
+    name: "Matching Sets",
+    slug: "matching-sets",
+    description: "Curated ensembles crafted as cohesive heirloom sets.",
+  },
 ]
 
 /** Top-level category slugs shown in shop navigation */
@@ -94,5 +99,4 @@ export function getBespokeCategoryOptions() {
 
 export const BESPOKE_CATEGORY_VALUES = [
   ...getBespokeCategoryOptions().map((option) => option.value),
-  "matching-sets",
 ] as const

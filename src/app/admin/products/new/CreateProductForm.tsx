@@ -18,7 +18,6 @@ const PRODUCT_TYPES = [
   { value: "READY_TO_WEAR", label: "Ready to wear" },
   { value: "BESPOKE", label: "Bespoke" },
   { value: "CORPORATE_GIFT", label: "Corporate gift" },
-  { value: "MATCHING_SET", label: "Matching set" },
 ] as const
 
 const AUTOSAVE_KEY = "admin:new-product:draft"
@@ -228,8 +227,6 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
     const label = categoryNameLookup[categoryId]
     if (!label) return undefined
     const normalized = label.toLowerCase()
-    if (normalized.includes("corporate")) return "CORPORATE_GIFT"
-    if (normalized.includes("matching") || normalized.includes("set")) return "MATCHING_SET"
     if (normalized.includes("bespoke") || normalized.includes("custom")) return "BESPOKE"
     return undefined
   }

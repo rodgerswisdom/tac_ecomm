@@ -1,13 +1,20 @@
 import "dotenv/config"
 
 import { prisma } from "../src/lib/prisma"
-import { seedCategoryTaxonomy, migrateProductsToTaxonomy, removeDeprecatedEmptyCategories } from "../src/lib/seed-category-taxonomy"
+import {
+  seedCategoryTaxonomy,
+  migrateProductsToTaxonomy,
+  migrateMatchingSetProductsToCategory,
+  removeDeprecatedEmptyCategories,
+} from "../src/lib/seed-category-taxonomy"
 
 async function main() {
   await seedCategoryTaxonomy(prisma)
 
   if (process.env.SEED_MIGRATE_PRODUCTS === "true") {
     await migrateProductsToTaxonomy(prisma)
+    const migratedMatchingSets = await migrateMatchingSetProductsToCategory(prisma)
+    console.log("Migrated matching-set products to category:", migratedMatchingSets)
     await removeDeprecatedEmptyCategories(prisma)
   }
 
