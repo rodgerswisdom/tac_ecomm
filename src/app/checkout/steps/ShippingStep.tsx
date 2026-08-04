@@ -69,7 +69,7 @@ export function ShippingStep({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.firstName || !form.lastName || !form.email || !form.phone || !form.address || !form.city || !form.state || !form.zipCode) {
-      setError("Please fill in all required fields, including your M-Pesa phone number.");
+      setError("Please fill in all required fields, including your phone number.");
       return;
     }
     setError("");

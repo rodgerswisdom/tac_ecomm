@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "heroImage" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "heroHeadline" TEXT;
+ALTER TABLE "Settings" ADD COLUMN IF NOT EXISTS "heroTagline" TEXT;

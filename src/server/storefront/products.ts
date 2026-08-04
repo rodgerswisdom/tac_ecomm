@@ -31,6 +31,8 @@ export type ProductCardQueryOptions = {
   featuredOnly?: boolean
   includeDrafts?: boolean
   corporateGiftsOnly?: boolean
+  /** When true, only return isBespoke products. When false/undefined, exclude them. */
+  bespokeOnly?: boolean
 }
 
 export async function getProductCardData(options: ProductCardQueryOptions = {}): Promise<ProductCardData[]> {
@@ -38,6 +40,12 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
     isDraft: options.includeDrafts ? undefined : false,
     isActive: options.includeDrafts ? undefined : true,
     isArchived: options.includeDrafts ? undefined : false,
+  }
+
+  if (options.bespokeOnly) {
+    where.isBespoke = true
+  } else {
+    where.isBespoke = false
   }
 
   if (options.categorySlug) {
@@ -89,6 +97,10 @@ export async function getFeaturedProductCards(limit = 4) {
   return getProductCardData({ featuredOnly: true, limit })
 }
 
+export async function getBespokeProductCards() {
+  return getProductCardData({ bespokeOnly: true })
+}
+
 export async function getCollectionProductCards(slug: string) {
   if (slug === "corporate-gifts") {
     return getProductCardData({ corporateGiftsOnly: true })
@@ -127,12 +139,14 @@ export async function getRelatedProductCards({
   productId,
   categorySlug,
   limit = 6,
-}: RelatedProductOptions) {
+  bespokeOnly,
+}: RelatedProductOptions & { bespokeOnly?: boolean }) {
   const baseWhere: Prisma.ProductWhereInput = {
     id: { not: productId },
     isDraft: false,
     isActive: true,
     isArchived: false,
+    isBespoke: bespokeOnly === true,
   }
 
   if (categorySlug) {
@@ -164,6 +178,7 @@ export async function getRelatedProductCards({
       isDraft: false,
       isActive: true,
       isArchived: false,
+      isBespoke: bespokeOnly === true,
     },
     take: limit - related.length,
     orderBy: { createdAt: "desc" },
@@ -184,6 +199,7 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     id: image.id,
     url: image.url,
     alt: image.alt ?? undefined,
+    description: image.description ?? null,
     order: image.order,
   }))
   const gallery = galleryImages.map((image) => image.url)
@@ -219,11 +235,13 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
       ? galleryImages
       : [{ id: "fallback", url: FALLBACK_IMAGE, order: 0 }],
     description: product.shortDescription ?? product.description,
-    origin: product.origin ?? artisan.regionLabel,
+    fullDescription: product.description,
+    origin: product.origin ?? "",
     materials: product.materials ?? [],
     category: product.category?.slug,
     productType: product.productType,
     isCorporateGift: product.isCorporateGift,
+    isBespoke: product.isBespoke,
     communityImpact: product.communityImpact ?? undefined,
     sourcingStory: product.sourcingStory ?? undefined,
     artisan,
@@ -232,7 +250,11 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     reviewCount: reviewCount || undefined,
     isBestSeller: product.isFeatured,
     stock: product.stock,
-    isOutOfStock: !product.isActive || product.stock <= 0,
+    isOutOfStock: product.stock <= 0,
+    weight: product.weight,
+    dimensions: product.dimensions,
+    color: product.color,
+    size: product.size,
     colors: undefined,
     sizes: undefined,
     createdAt: product.createdAt.toISOString(),

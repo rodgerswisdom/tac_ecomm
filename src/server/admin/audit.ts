@@ -9,6 +9,7 @@ export type AuditAction =
     | "UPDATE_USER_ROLE" | "DELETE_USER"
     | "CREATE_COUPON" | "UPDATE_COUPON" | "DELETE_COUPON" | "TOGGLE_COUPON"
     | "UPDATE_SETTINGS" | "TOGGLE_PRODUCT_FLAG"
+    | "MOVE_TO_BESPOKE" | "MOVE_FROM_BESPOKE"
 
 export async function logAdminAction(
     action: AuditAction,

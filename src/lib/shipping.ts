@@ -449,7 +449,6 @@ export function getEstimatedDeliveryDays(service: string): number {
     express: 1,
     overnight: 1,
     international: 5,
-    pickup: 0,
   }
   return estimates[service] ?? 5
 }

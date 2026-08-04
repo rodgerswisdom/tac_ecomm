@@ -2,6 +2,7 @@ export interface ProductGalleryImage {
   id: string
   url: string
   alt?: string
+  description?: string | null
   order: number
 }
 
@@ -15,11 +16,13 @@ export interface ProductCardData {
   gallery: string[]
   galleryImages: ProductGalleryImage[]
   description: string
+  fullDescription?: string
   origin: string
   materials: string[]
   category?: string
   productType?: string
   isCorporateGift?: boolean
+  isBespoke?: boolean
   communityImpact?: string
   sourcingStory?: string
   artisan: {
@@ -37,5 +40,9 @@ export interface ProductCardData {
   isOutOfStock?: boolean
   colors?: string[]
   sizes?: string[]
+  color?: string | null
+  size?: string | null
+  weight?: number | null
+  dimensions?: string | null
   createdAt?: string
 }

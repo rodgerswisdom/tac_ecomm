@@ -14,6 +14,7 @@ import { ReviewStep } from "./steps/ReviewStep";
 import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
 import { trackBeginCheckout } from "@/lib/analytics";
+import { STK_PAYMENT_ENABLED } from "@/lib/manual-payment";
 
 const TOTAL_STEPS = 2;
 
@@ -38,7 +39,9 @@ export default function ShopifyCheckout() {
   }, []);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
   const pendingDeliveryRef = useRef<DeliveryMethod | null>(null);
-  const defaultPayment = { method: "TUMA" as const };
+  const defaultPayment = {
+    method: (STK_PAYMENT_ENABLED ? "TUMA" : "BANK_TRANSFER") as "TUMA" | "BANK_TRANSFER",
+  };
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
   const appliedCouponRef = useRef(appliedCoupon);
   appliedCouponRef.current = appliedCoupon;
@@ -84,7 +87,7 @@ export default function ShopifyCheckout() {
     try {
       const body: Record<string, unknown> = {
         ...shipping,
-        paymentMethod: "TUMA",
+        paymentMethod: STK_PAYMENT_ENABLED ? "TUMA" : "BANK_TRANSFER",
         shippingMethod: delivery,
         cartItems: cart,
       };

@@ -113,8 +113,9 @@ export default function ProductDetailPage({ params }: ProductPageProps) {
 
   const related = use(
     getRelatedProductCards({
-    productId: product.id,
-    categorySlug: product.category,
+      productId: product.id,
+      categorySlug: product.category,
+      bespokeOnly: Boolean(product.isBespoke),
     }),
   );
 

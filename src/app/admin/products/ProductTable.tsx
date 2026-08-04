@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -13,12 +12,12 @@ import {
   bulkUnarchiveProducts,
   archiveProductAction,
   unarchiveProductAction,
+  setProductBespokeAction,
 } from "@/server/admin/product-actions"
 import { RowActions } from "@/components/admin/row-actions"
 import { deleteProductAction } from "@/server/admin/product-actions"
 import { BulkActions } from "./BulkActions"
 import { AdminFormattedPrice } from "@/components/admin/admin-formatted-price"
-import { Button } from "@/components/ui/button"
 import { adminToast } from "@/lib/admin/feedback"
 import { buildProductDeleteDescription, buildBulkProductDeleteDescription } from "@/lib/admin/product-delete"
 
@@ -39,6 +38,7 @@ interface Product {
     weight: number | null
     dimensions: string | null
     isFeatured: boolean
+    isBespoke: boolean
     comparePrice: number | null
     _count?: { orderItems: number; variants: number }
 }
@@ -65,6 +65,30 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                     await archiveProductAction(formData)
                     adminToast.success("Product archived.")
                 }
+                router.refresh()
+            } catch (error) {
+                adminToast.error(error instanceof Error ? error.message : "Action failed")
+            }
+        })
+    }
+
+    const handleMoveBespoke = (productId: string, isBespoke: boolean) => {
+        startArchive(async () => {
+            try {
+                const formData = new FormData()
+                formData.append("productId", productId)
+                formData.append("isBespoke", isBespoke ? "true" : "false")
+                const result = await setProductBespokeAction(formData)
+                if (result?.error) {
+                    adminToast.error(result.error)
+                    return
+                }
+                adminToast.success(
+                    result?.message ??
+                        (isBespoke
+                            ? "Moved to Bespoke & Limited Edition."
+                            : "Moved to regular collections."),
+                )
                 router.refresh()
             } catch (error) {
                 adminToast.error(error instanceof Error ? error.message : "Action failed")
@@ -278,26 +302,38 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                                         </td>
 
                                         <td className="px-4 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-1">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-8 w-8 text-slate-500 hover:text-slate-700"
-                                                    disabled={isArchiving}
-                                                    onClick={() => handleRowArchiveToggle(product.id)}
-                                                    aria-label={view === "archived" ? "Restore product" : "Archive product"}
-                                                >
-                                                    {view === "archived" ? (
-                                                        <ArchiveRestore className="h-4 w-4" />
-                                                    ) : (
-                                                        <Archive className="h-4 w-4" />
-                                                    )}
-                                                </Button>
                                                 <RowActions
                                                 viewHref={`/admin/products/${product.id}`}
                                                 editHref={`/admin/products/${product.id}`}
                                                 modalTitle="Product Summary"
+                                                items={[
+                                                    ...(view !== "archived"
+                                                        ? [
+                                                              {
+                                                                  label: product.isBespoke
+                                                                      ? "Move to collections"
+                                                                      : "Move to bespoke",
+                                                                  onSelect: () =>
+                                                                      handleMoveBespoke(
+                                                                          product.id,
+                                                                          !product.isBespoke,
+                                                                      ),
+                                                              },
+                                                          ]
+                                                        : []),
+                                                    {
+                                                        label: view === "archived" ? "Restore" : "Archive",
+                                                        icon:
+                                                            view === "archived" ? (
+                                                                <ArchiveRestore className="h-4 w-4" />
+                                                            ) : (
+                                                                <Archive className="h-4 w-4" />
+                                                            ),
+                                                        onSelect: () => handleRowArchiveToggle(product.id),
+                                                        disabled: isArchiving,
+                                                        separatorBefore: true,
+                                                    },
+                                                ]}
                                                 viewContent={
                                                     <div className="space-y-6">
                                                         <div className="flex items-start gap-4">
@@ -389,7 +425,6 @@ export function ProductTable({ products, view = "active" }: ProductTableProps) {
                                                     archiveAction: archiveProductAction,
                                                 }}
                                             />
-                                            </div>
                                         </td>
                                     </tr>
                                 )

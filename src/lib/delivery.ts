@@ -5,19 +5,17 @@ export type DeliveryMethod =
   | "kenya_standard"
   | "kenya_express"
   | "international_standard"
-  | "international_express"
-  | "pickup";
+  | "international_express";
 
 /** Kenya-only free shipping when merchandise subtotal (KSH) meets this threshold. */
 export const FREE_SHIPPING_KENYA_KSH_THRESHOLD = 5000;
 
 /** Base shipping fees stored in KSH (same base unit as product prices). */
 export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
-  kenya_standard: 800,
-  kenya_express: 1500,
+  kenya_standard: 300,
+  kenya_express: 800,
   international_standard: 2500,
   international_express: 4500,
-  pickup: 0,
 };
 
 export const DELIVERY_OPTIONS: {
@@ -50,12 +48,6 @@ export const DELIVERY_OPTIONS: {
     price: SHIPPING_RATES_KSH.international_express,
     regions: "international",
   },
-  {
-    id: "pickup",
-    label: "In-Store Pickup",
-    price: 0,
-    regions: "kenya",
-  },
 ];
 
 export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
@@ -63,7 +55,6 @@ export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   kenya_express: "Kenya Express (1-2 business days)",
   international_standard: "International Standard (3-7 business days)",
   international_express: "International Express (2-5 business days)",
-  pickup: "In-Store Pickup",
 };
 
 export function isKenyaDestination(country: string | null | undefined): boolean {
@@ -112,7 +103,7 @@ export function calculateShippingKsh({
 }): ShippingQuote {
   const baseRateKsh = SHIPPING_RATES_KSH[deliveryMethod] ?? 0;
 
-  if (freeShippingFromCoupon || deliveryMethod === "pickup") {
+  if (freeShippingFromCoupon) {
     return {
       shippingKsh: 0,
       baseRateKsh,
@@ -161,7 +152,6 @@ export function getEstimatedDeliveryDays(method: DeliveryMethod): number {
     kenya_express: 1,
     international_standard: 5,
     international_express: 3,
-    pickup: 0,
   };
   return estimates[method] ?? 5;
 }

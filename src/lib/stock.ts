@@ -16,7 +16,7 @@
 
 import { prisma } from '@/lib/prisma'
 import type { Prisma } from '@prisma/client'
-import { syncProductArchiveForStock } from '@/lib/admin/product-archive'
+import { scheduleBackInStockNotifications } from '@/lib/stock-notify'
 
 export interface StockLineItem {
   productId: string
@@ -103,8 +103,6 @@ export async function decrementStock(items: StockLineItem[], tx?: StockClient): 
         if (result.count === 0) {
           throw new InsufficientStockError(`Insufficient product stock for ${item.productId}`)
         }
-
-        await syncProductArchiveForStock(item.productId, client)
       }
     }
   }
@@ -125,11 +123,12 @@ export async function decrementStock(items: StockLineItem[], tx?: StockClient): 
  * but **only** if stock was previously decremented (i.e. order was CONFIRMED
  * before cancellation – check this in the caller).
  */
-export async function restoreStockItems(items: StockLineItem[], tx?: StockClient): Promise<void> {
+export async function restoreStockItems(items: StockLineItem[], tx?: StockClient): Promise<string[]> {
   const groupedItems = groupLineItems(items)
-  if (!groupedItems.length) return
+  if (!groupedItems.length) return []
 
   const client = getStockClient(tx)
+  const restockedProductIds = new Set<string>()
 
   for (const item of groupedItems) {
     if (item.variantId) {
@@ -137,6 +136,8 @@ export async function restoreStockItems(items: StockLineItem[], tx?: StockClient
         where: { id: item.variantId },
         data: { stock: { increment: item.quantity } },
       })
+      // Product-level waitlist tracks Product.stock; also mark parent for notify check.
+      restockedProductIds.add(item.productId)
       continue
     }
 
@@ -144,10 +145,19 @@ export async function restoreStockItems(items: StockLineItem[], tx?: StockClient
       where: { id: item.productId },
       data: { stock: { increment: item.quantity } },
     })
+    restockedProductIds.add(item.productId)
   }
+
+  const ids = Array.from(restockedProductIds)
+
+  if (!tx) {
+    scheduleBackInStockNotifications(ids)
+  }
+
+  return ids
 }
 
-export async function restoreStock(orderId: string, tx?: StockClient): Promise<void> {
+export async function restoreStock(orderId: string, tx?: StockClient): Promise<string[]> {
   const client = getStockClient(tx)
 
   const order = await client.order.findUnique({
@@ -159,7 +169,7 @@ export async function restoreStock(orderId: string, tx?: StockClient): Promise<v
     },
   })
 
-  if (!order?.items.length) return
+  if (!order?.items.length) return []
 
-  await restoreStockItems(toStockLineItems(order.items), client)
+  return restoreStockItems(toStockLineItems(order.items), client)
 }

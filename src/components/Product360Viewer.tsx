@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Product360ViewerProps {
   images: string[];
@@ -16,6 +17,10 @@ interface Product360ViewerProps {
   hideThumbnailsOnMobile?: boolean;
 }
 
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 2.5;
+const ZOOM_STEP = 0.25;
+
 export function Product360Viewer({
   images,
   productName,
@@ -25,6 +30,7 @@ export function Product360Viewer({
   hideThumbnailsOnMobile = false,
 }: Product360ViewerProps) {
   const [internalIndex, setInternalIndex] = useState(0);
+  const [zoom, setZoom] = useState(MIN_ZOOM);
 
   const isControlled = activeIndex !== undefined;
   const currentIndex = isControlled ? activeIndex : internalIndex;
@@ -34,22 +40,71 @@ export function Product360Viewer({
       setInternalIndex(index);
     }
     onIndexChange?.(index);
+    setZoom(MIN_ZOOM);
   };
 
   const displayImages = images.length > 0 ? images : fallbackImage ? [fallbackImage] : [];
   const totalImages = displayImages.length;
+  const canZoomIn = zoom < MAX_ZOOM;
+  const canZoomOut = zoom > MIN_ZOOM;
+
+  const zoomIn = () => setZoom((prev) => Math.min(MAX_ZOOM, Number((prev + ZOOM_STEP).toFixed(2))));
+  const zoomOut = () => setZoom((prev) => Math.max(MIN_ZOOM, Number((prev - ZOOM_STEP).toFixed(2))));
+
+  const zoomControls = (
+    <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1 rounded-full border border-brand-teal/20 bg-white/95 p-1 shadow-md backdrop-blur-sm">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={zoomOut}
+        disabled={!canZoomOut}
+        className="h-9 w-9 rounded-full p-0"
+        aria-label="Zoom out"
+      >
+        <ZoomOut className="h-4 w-4" />
+      </Button>
+      <span className="min-w-[2.75rem] text-center text-xs tabular-nums text-brand-umber/70">
+        {Math.round(zoom * 100)}%
+      </span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={zoomIn}
+        disabled={!canZoomIn}
+        className="h-9 w-9 rounded-full p-0"
+        aria-label="Zoom in"
+      >
+        <ZoomIn className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
   if (totalImages <= 1) {
     return (
       <div className="relative isolate w-full max-w-full overflow-hidden rounded-2xl border border-brand-teal/20 bg-white shadow-lg sm:rounded-[2.5rem] sm:shadow-[0_35px_80px_rgba(74,43,40,0.18)]">
-        <Image
-          src={displayImages[0] || "/placeholder.png"}
-          alt={productName}
-          width={960}
-          height={720}
-          className="aspect-[4/5] w-full object-cover sm:aspect-auto sm:h-[420px] lg:h-[520px]"
-          priority
-        />
+        <div
+          className={cn(
+            "relative aspect-[4/5] w-full overflow-hidden sm:aspect-auto sm:h-[420px] lg:h-[520px]",
+            zoom > MIN_ZOOM && "cursor-grab active:cursor-grabbing",
+          )}
+        >
+          <div
+            className="absolute inset-0 origin-center transition-transform duration-200 ease-out"
+            style={{ transform: `scale(${zoom})` }}
+          >
+            <Image
+              src={displayImages[0] || "/placeholder.png"}
+              alt={productName}
+              fill
+              sizes="(max-width: 768px) 100vw, 960px"
+              className="object-cover"
+              priority
+            />
+          </div>
+        </div>
+        {zoomControls}
       </div>
     );
   }
@@ -57,7 +112,12 @@ export function Product360Viewer({
   return (
     <div className="w-full max-w-full space-y-3 sm:space-y-4">
       <div className="relative isolate w-full max-w-full overflow-hidden rounded-2xl border border-brand-teal/20 bg-white shadow-lg sm:rounded-[2.5rem] sm:shadow-[0_35px_80px_rgba(74,43,40,0.18)]">
-        <div className="relative aspect-[4/5] w-full overflow-hidden sm:aspect-auto sm:h-[420px] lg:h-[520px]">
+        <div
+          className={cn(
+            "relative aspect-[4/5] w-full overflow-hidden sm:aspect-auto sm:h-[420px] lg:h-[520px]",
+            zoom > MIN_ZOOM && "cursor-grab active:cursor-grabbing",
+          )}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -65,7 +125,8 @@ export function Product360Viewer({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="absolute inset-0"
+              className="absolute inset-0 origin-center transition-transform duration-200 ease-out"
+              style={{ transform: `scale(${zoom})` }}
             >
               <Image
                 src={displayImages[currentIndex]}
@@ -78,6 +139,7 @@ export function Product360Viewer({
             </motion.div>
           </AnimatePresence>
         </div>
+        {zoomControls}
       </div>
 
       <div className="flex items-center justify-center gap-3">

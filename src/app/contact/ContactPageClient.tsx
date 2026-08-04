@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Navbar } from '@/components/Navbar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Mail, Phone, MapPin, Clock, Send, CheckCircle, MessageSquare, Heart, Award } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Send, CheckCircle, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 interface ContactForm {
   name: string
@@ -24,6 +24,8 @@ interface FormErrors {
   message?: string
 }
 
+type FormField = keyof FormErrors
+
 function validateForm(form: ContactForm): FormErrors {
   const errors: FormErrors = {}
   if (!form.name.trim()) errors.name = 'Full name is required.'
@@ -37,31 +39,49 @@ function validateForm(form: ContactForm): FormErrors {
   return errors
 }
 
+const fieldClass = (showError: boolean) =>
+  cn(
+    'h-11 w-full rounded-lg border bg-white px-3 text-sm text-brand-umber placeholder:text-brand-umber/45',
+    'focus:border-brand-teal focus:outline-none focus:ring-2 focus:ring-brand-teal/30',
+    showError ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-brand-umber/20',
+  )
+
 export function ContactPageClient() {
   const [form, setForm] = useState<ContactForm>({
     name: '',
     email: '',
     subject: '',
     message: '',
-    phone: ''
+    phone: '',
   })
   const [errors, setErrors] = useState<FormErrors>({})
+  const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({})
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
+  const showFieldError = (field: FormField) =>
+    Boolean(errors[field] && (hasAttemptedSubmit || touched[field]))
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
-    // Clear field error on change
-    if (errors[name as keyof FormErrors]) {
-      setErrors(prev => ({ ...prev, [name]: undefined }))
+    setForm((prev) => ({ ...prev, [name]: value }))
+    if (errors[name as FormField]) {
+      setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
+  }
+
+  const handleBlur = (field: FormField) => {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+    const nextErrors = validateForm(form)
+    setErrors((prev) => ({ ...prev, [field]: nextErrors[field] }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError(null)
+    setHasAttemptedSubmit(true)
 
     const validationErrors = validateForm(form)
     if (Object.keys(validationErrors).length > 0) {
@@ -80,377 +100,291 @@ export function ContactPageClient() {
         const data = await res.json().catch(() => ({}))
         throw new Error(data.error || 'Failed to send message. Please try again.')
       }
-      setIsSubmitting(false)
       setIsSubmitted(true)
+      setHasAttemptedSubmit(false)
+      setTouched({})
+      setErrors({})
       setTimeout(() => {
         setIsSubmitted(false)
         setForm({ name: '', email: '', subject: '', message: '', phone: '' })
       }, 4000)
     } catch (err) {
-      setIsSubmitting(false)
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const errorSummary =
+    hasAttemptedSubmit && Object.keys(errors).length > 0
+      ? Object.values(errors).filter(Boolean)
+      : []
+
   const contactInfo = [
     {
-      icon: <Mail className="h-6 w-6 text-emerald-500" />,
-      title: "Email Us",
-      details: { href: "mailto:info@tacaccessories.co.ke", label: "info@tacaccessories.co.ke" },
-      description: "Send us an email anytime"
+      icon: Mail,
+      title: 'Email',
+      href: 'mailto:info@tacaccessories.co.ke',
+      label: 'info@tacaccessories.co.ke',
+      description: 'We reply within one business day.',
     },
     {
-      icon: <Phone className="h-6 w-6 text-blue-500" />,
-      title: "Call Us",
-      details: { href: "tel:+254704800866", label: "+254 704 800866" },
-      description: "Open Monday to Friday, 9am–5pm"
+      icon: Phone,
+      title: 'Phone',
+      href: 'tel:+254704800866',
+      label: '+254 704 800866',
+      description: 'Monday–Friday, 9am–5pm EAT.',
     },
     {
-      icon: <MapPin className="h-6 w-6 text-brand-gold" />,
-      title: "Our Location",
-      details: { href: null, label: "Nairobi, Kenya" },
-      description: "Based in Nairobi, Kenya — online studio only."
+      icon: MapPin,
+      title: 'Studio',
+      href: null as string | null,
+      label: 'Based in Nairobi, Kenya',
+      description: 'Online-only studio — customer visits are not available.',
     },
     {
-      icon: <Clock className="h-6 w-6 text-purple-500" />,
-      title: "Business Hours",
-      details: { href: null, label: "Monday to Friday: 9am–5pm" },
-      description: "Closed on weekends"
-    }
-  ]
-
-  const faqs = [
-    {
-      question: "How long does it take to respond to inquiries?",
-      answer: "We typically respond to all inquiries within 24 hours during business days."
+      icon: Clock,
+      title: 'Hours',
+      href: null,
+      label: 'Mon–Fri, 9am–5pm',
+      description: 'Closed on weekends and public holidays.',
     },
-    {
-      question: "Do you offer virtual consultations?",
-      answer: "Yes! We offer virtual consultations to help you choose the perfect piece or discuss custom orders."
-    },
-    {
-      question: "Can I schedule a visit to your workshop?",
-      answer: "We are currently an online-only business. In-person workshop visits are not available at this time. We do offer virtual consultations to discuss your needs.",
-    }
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
       <Navbar />
 
-      {/* Hero Section */}
-      <section className="nav-clearance pb-16 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5 relative overflow-hidden">
-        <div className="absolute inset-0 afro-pattern-stars opacity-5"></div>
-        <div className="gallery-container relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex items-center justify-center space-x-2 mb-6"
-            >
-              <MessageSquare className="h-8 w-8 text-emerald-500" />
-              <span className="text-emerald-600 font-semibold tracking-wide uppercase text-sm">Get in Touch</span>
-            </motion.div>
-
-            <h1 className="text-4xl md:text-6xl font-bold luxury-heading mb-6">
-              <span className="afro-text-gradient">Contact</span>
-              <br />
-              <span className="text-foreground">Us</span>
-            </h1>
-            <p className="text-xl text-muted-foreground luxury-text leading-relaxed">
-              We&apos;d love to hear from you! Whether you have questions about our jewellery,
-              need help with an order, or want to learn more about our cultural significance,
-              we&apos;re here to help.
-            </p>
-          </motion.div>
+      <section className="nav-clearance section-spacing pb-8">
+        <div className="gallery-container mx-auto max-w-3xl text-center">
+          <span className="caps-spacing text-xs text-brand-teal">Contact</span>
+          <h1 className="mt-3 font-heading text-4xl text-brand-umber md:text-5xl">We&apos;re here to help</h1>
+          <p className="mt-4 text-sm leading-relaxed text-brand-umber/75 md:text-base">
+            Questions about an order, bespoke work, or corporate gifting? Send a message and our team will
+            respond during business hours.
+          </p>
         </div>
       </section>
 
-      {/* Contact Form and Info */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
+      <section className="section-spacing pt-0">
+        <div className="gallery-container">
+          <div className="grid gap-10 lg:grid-cols-[1fr_minmax(0,340px)] lg:gap-12">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="rounded-3xl border border-brand-umber/10 bg-white/90 p-6 shadow-[0_20px_50px_rgba(74,43,40,0.1)] sm:p-8"
             >
-              <Card className="afro-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl luxury-heading">
-                    Send us a Message
-                  </CardTitle>
-                  <CardDescription className="luxury-text">
-                    Fill out the form below and we&apos;ll get back to you as soon as possible.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isSubmitted ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-12"
-                    >
-                      <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-                      <h3 className="text-2xl font-bold luxury-heading mb-2">
-                        Message Sent!
-                      </h3>
-                      <p className="text-muted-foreground luxury-text">
-                        Thank you for contacting us. We&apos;ll get back to you within 24 hours.
-                      </p>
-                    </motion.div>
-                  ) : (
-                    <form onSubmit={handleSubmit} noValidate className="space-y-6">
-                      {submitError && (
-                        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                          {submitError}
-                        </p>
-                      )}
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="name" className="block text-sm font-medium mb-2">
-                            Full Name *
-                          </label>
-                          <Input
-                            id="name"
-                            name="name"
-                            value={form.name}
-                            onChange={handleInputChange}
-                            aria-invalid={!!errors.name}
-                            aria-describedby={errors.name ? "name-error" : undefined}
-                            className={`h-12 ${errors.name ? 'border-red-500' : ''}`}
-                            placeholder="Your full name"
-                          />
-                          {errors.name && (
-                            <p id="name-error" role="alert" className="mt-1 text-xs text-red-600">{errors.name}</p>
-                          )}
-                        </div>
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-medium mb-2">
-                            Email Address *
-                          </label>
-                          <Input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value={form.email}
-                            onChange={handleInputChange}
-                            aria-invalid={!!errors.email}
-                            aria-describedby={errors.email ? "email-error" : undefined}
-                            className={`h-12 ${errors.email ? 'border-red-500' : ''}`}
-                            placeholder="your@email.com"
-                          />
-                          {errors.email && (
-                            <p id="email-error" role="alert" className="mt-1 text-xs text-red-600">{errors.email}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                            Phone Number
-                          </label>
-                          <Input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            value={form.phone}
-                            onChange={handleInputChange}
-                            className="h-12"
-                            placeholder="+254 704 800866"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="subject" className="block text-sm font-medium mb-2">
-                            Subject *
-                          </label>
-                          <Input
-                            id="subject"
-                            name="subject"
-                            value={form.subject}
-                            onChange={handleInputChange}
-                            aria-invalid={!!errors.subject}
-                            aria-describedby={errors.subject ? "subject-error" : undefined}
-                            className={`h-12 ${errors.subject ? 'border-red-500' : ''}`}
-                            placeholder="What's this about?"
-                          />
-                          {errors.subject && (
-                            <p id="subject-error" role="alert" className="mt-1 text-xs text-red-600">{errors.subject}</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div>
-                        <label htmlFor="message" className="block text-sm font-medium mb-2">
-                          Message *
-                        </label>
-                        <textarea
-                          id="message"
-                          name="message"
-                          value={form.message}
-                          onChange={handleInputChange}
-                          aria-invalid={!!errors.message}
-                          aria-describedby={errors.message ? "message-error" : undefined}
-                          rows={6}
-                          className={`w-full h-auto px-3 py-2 border rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent resize-none text-sm ${errors.message ? 'border-red-500' : 'border-input'}`}
-                          placeholder="Tell us more about your inquiry..."
-                        />
-                        {errors.message && (
-                          <p id="message-error" role="alert" className="mt-1 text-xs text-red-600">{errors.message}</p>
-                        )}
-                      </div>
-
-                      <Button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full h-12 text-lg"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="mr-2 h-5 w-5" />
-                            Send Message
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Contact Information */}
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="space-y-8"
-            >
-              <div className="space-y-6">
-                {contactInfo.map((info, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.3 + index * 0.1 }}
-                  >
-                    <Card className="afro-card p-6">
-                      <div className="flex items-start space-x-4">
-                        <div className="p-3 rounded-full bg-muted/50">
-                          {info.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold luxury-heading mb-1">
-                            {info.title}
-                          </h3>
-                          {info.details.href ? (
-                            <a href={info.details.href} className="text-primary font-semibold mb-1 hover:underline block">
-                              {info.details.label}
-                            </a>
-                          ) : (
-                            <p className="text-primary font-semibold mb-1">
-                              {info.details.label}
-                            </p>
-                          )}
-                          <p className="text-muted-foreground luxury-text text-sm">
-                            {info.description}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
+              <div className="mb-6 flex items-center gap-2 text-brand-umber">
+                <MessageSquare className="h-5 w-5 text-brand-teal" aria-hidden />
+                <h2 className="font-heading text-2xl">Send a message</h2>
               </div>
+
+              {isSubmitted ? (
+                <div className="py-10 text-center">
+                  <CheckCircle className="mx-auto mb-4 h-14 w-14 text-brand-teal" aria-hidden />
+                  <p className="font-heading text-xl text-brand-umber">Message sent</p>
+                  <p className="mt-2 text-sm text-brand-umber/70">We&apos;ll get back to you within 24 hours on business days.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                  {submitError ? (
+                    <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                      {submitError}
+                    </p>
+                  ) : null}
+
+                  {errorSummary.length > 0 ? (
+                    <div
+                      role="alert"
+                      aria-labelledby="contact-form-errors"
+                      className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                    >
+                      <p id="contact-form-errors" className="font-medium">
+                        Please fix the following:
+                      </p>
+                      <ul className="mt-2 list-inside list-disc space-y-1">
+                        {errorSummary.map((message) => (
+                          <li key={message}>{message}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-brand-umber">
+                        Full name <span className="text-brand-coral">*</span>
+                      </label>
+                      <Input
+                        id="name"
+                        name="name"
+                        value={form.name}
+                        onChange={handleInputChange}
+                        onBlur={() => handleBlur('name')}
+                        aria-invalid={showFieldError('name')}
+                        aria-describedby={showFieldError('name') ? 'name-error' : undefined}
+                        className={fieldClass(showFieldError('name'))}
+                        placeholder="Your name"
+                      />
+                      {showFieldError('name') ? (
+                        <p id="name-error" role="alert" className="mt-1 text-xs text-red-600">
+                          {errors.name}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-brand-umber">
+                        Email <span className="text-brand-coral">*</span>
+                      </label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autoComplete="email"
+                        value={form.email}
+                        onChange={handleInputChange}
+                        onBlur={() => handleBlur('email')}
+                        aria-invalid={showFieldError('email')}
+                        aria-describedby={showFieldError('email') ? 'email-error' : undefined}
+                        className={fieldClass(showFieldError('email'))}
+                        placeholder="you@example.com"
+                      />
+                      {showFieldError('email') ? (
+                        <p id="email-error" role="alert" className="mt-1 text-xs text-red-600">
+                          {errors.email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-brand-umber">
+                        Phone <span className="text-brand-umber/50">(optional)</span>
+                      </label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        autoComplete="tel"
+                        value={form.phone}
+                        onChange={handleInputChange}
+                        className={fieldClass(false)}
+                        placeholder="+254 …"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="subject" className="mb-1.5 block text-sm font-medium text-brand-umber">
+                        Subject <span className="text-brand-coral">*</span>
+                      </label>
+                      <Input
+                        id="subject"
+                        name="subject"
+                        value={form.subject}
+                        onChange={handleInputChange}
+                        onBlur={() => handleBlur('subject')}
+                        aria-invalid={showFieldError('subject')}
+                        aria-describedby={showFieldError('subject') ? 'subject-error' : undefined}
+                        className={fieldClass(showFieldError('subject'))}
+                        placeholder="How can we help?"
+                      />
+                      {showFieldError('subject') ? (
+                        <p id="subject-error" role="alert" className="mt-1 text-xs text-red-600">
+                          {errors.subject}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="message" className="mb-1.5 block text-sm font-medium text-brand-umber">
+                      Message <span className="text-brand-coral">*</span>
+                    </label>
+                    <textarea
+                      id="message"
+                      name="message"
+                      value={form.message}
+                      onChange={handleInputChange}
+                      onBlur={() => handleBlur('message')}
+                      aria-invalid={showFieldError('message')}
+                      aria-describedby={showFieldError('message') ? 'message-error' : undefined}
+                      rows={5}
+                      className={cn(fieldClass(showFieldError('message')), 'h-auto resize-none py-2.5')}
+                      placeholder="Tell us about your inquiry…"
+                    />
+                    {showFieldError('message') ? (
+                      <p id="message-error" role="alert" className="mt-1 text-xs text-red-600">
+                        {errors.message}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-11 w-full bg-brand-umber text-white hover:bg-brand-umber/90"
+                  >
+                    {isSubmitting ? (
+                      'Sending…'
+                    ) : (
+                      <>
+                        <Send className="mr-2 h-4 w-4" aria-hidden />
+                        Send message
+                      </>
+                    )}
+                  </Button>
+                </form>
+              )}
             </motion.div>
+
+            <aside className="space-y-4">
+              {contactInfo.map((info) => (
+                <div
+                  key={info.title}
+                  className="rounded-2xl border border-brand-teal/15 bg-white/85 p-5 shadow-[0_12px_32px_rgba(74,43,40,0.08)]"
+                >
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-teal/10 text-brand-teal">
+                      <info.icon className="h-5 w-5" aria-hidden />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-umber/70">
+                        {info.title}
+                      </h3>
+                      {info.href ? (
+                        <a
+                          href={info.href}
+                          className="mt-1 block font-medium text-brand-teal hover:underline"
+                        >
+                          {info.label}
+                        </a>
+                      ) : (
+                        <p className="mt-1 font-medium text-brand-umber">{info.label}</p>
+                      )}
+                      <p className="mt-1 text-sm text-brand-umber/65">{info.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div className="rounded-2xl border border-brand-umber/10 bg-brand-jade/10 p-5 text-sm text-brand-umber/75">
+                <p className="font-medium text-brand-umber">Virtual consultations</p>
+                <p className="mt-1">
+                  We offer video calls for bespoke and corporate orders. Workshop visits are not available.
+                </p>
+              </div>
+
+              <p className="text-center text-sm text-brand-umber/70 lg:text-left">
+                Prefer to browse first?{' '}
+                <Link href="/collections" className="font-medium text-brand-teal hover:underline">
+                  Shop collections
+                </Link>
+              </p>
+            </aside>
           </div>
         </div>
       </section>
-
-      {/* Quick FAQ */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold luxury-heading mb-6">
-              Quick <span className="afro-text-gradient">Answers</span>
-            </h2>
-            <p className="text-xl text-muted-foreground luxury-text max-w-3xl mx-auto">
-              Here are answers to some of the most common questions we receive.
-            </p>
-          </motion.div>
-
-          <div className="max-w-4xl mx-auto space-y-6">
-            {faqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                <Card className="afro-card p-6">
-                  <h3 className="text-lg font-semibold luxury-heading mb-3">
-                    {faq.question}
-                  </h3>
-                  <p className="text-muted-foreground luxury-text">
-                    {faq.answer}
-                  </p>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/5">
-        <div className="container mx-auto px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="max-w-3xl mx-auto"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold luxury-heading mb-6">
-              Ready to <span className="afro-text-gradient">Explore</span>?
-            </h2>
-            <p className="text-xl text-muted-foreground luxury-text mb-8">
-              Browse our collection of authentic African jewellery and discover
-              pieces that speak to your soul.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="text-lg px-8 py-6" asChild>
-                <Link href="/products">
-                  <Award className="mr-2 h-5 w-5" />
-                  Browse Collection
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6" asChild>
-                <Link href="/about">
-                  <Heart className="mr-2 h-5 w-5" />
-                  Our Story
-                </Link>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-    </div>
+    </main>
   )
 }

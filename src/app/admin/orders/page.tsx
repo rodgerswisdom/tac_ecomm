@@ -242,12 +242,10 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                       </td>
                       <td className="px-4 py-4">
                         <RowActions
-                          containerClassName="justify-end gap-2"
-                          buttonClassName="border border-border"
-                          deleteButtonClassName="border border-border text-rose-500 hover:text-rose-600"
                           viewHref={detailHref}
                           editHref={`${detailHref}#status-update`}
                           modalTitle={`Order ${order.orderNumber} Details`}
+                          editLabel="Update status"
                           viewContent={
                             <div className="space-y-6">
                               <div className="grid grid-cols-2 gap-6">

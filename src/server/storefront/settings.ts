@@ -4,6 +4,46 @@ import type { OfferOfTheMonth } from "@/types/offer"
 
 export type { OfferOfTheMonth }
 
+export type HeroContent = {
+  image: string
+  tagline: string
+  headline: string
+  description: string
+  ctaLabel: string
+  ctaHref: string
+}
+
+const DEFAULT_HERO: HeroContent = {
+  image:
+    "https://plus.unsplash.com/premium_photo-1666789257989-f2a5e8a2b972?auto=format&fit=crop&q=60&w=900",
+  tagline: "Heritage Atelier Spotlight",
+  headline: "Crafted by Heritage, Worn with Pride",
+  description:
+    "From the soil of Africa to the hands of its artisans, our jewellery is a symphony of earth and soul. Every design is a poetic expression of culture, artistry, and authenticity. These treasures are more than adornments — they are the heartbeat of Africa, worn close to yours.",
+  ctaLabel: "Shop Collections",
+  ctaHref: "/collections",
+}
+
+export async function getHeroContent(): Promise<HeroContent> {
+  const settings = await prisma.settings.findUnique({
+    where: { id: "singleton" },
+    select: {
+      heroImage: true,
+      heroHeadline: true,
+      heroTagline: true,
+    },
+  })
+
+  return {
+    image: settings?.heroImage?.trim() || DEFAULT_HERO.image,
+    tagline: settings?.heroTagline?.trim() || DEFAULT_HERO.tagline,
+    headline: settings?.heroHeadline?.trim() || DEFAULT_HERO.headline,
+    description: DEFAULT_HERO.description,
+    ctaLabel: DEFAULT_HERO.ctaLabel,
+    ctaHref: DEFAULT_HERO.ctaHref,
+  }
+}
+
 export async function getOfferOfTheMonth(): Promise<OfferOfTheMonth | null> {
   const settings = await prisma.settings.findUnique({
     where: { id: "singleton" },

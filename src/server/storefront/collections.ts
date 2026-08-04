@@ -10,6 +10,7 @@ const activeProductWhere = {
   isActive: true,
   isDraft: false,
   isArchived: false,
+  isBespoke: false,
 } as const
 
 export type HomePageCategoryCard = Pick<CollectionSummary, "id" | "name" | "slug" | "image">

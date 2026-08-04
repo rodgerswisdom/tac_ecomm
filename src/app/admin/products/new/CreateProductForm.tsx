@@ -53,18 +53,24 @@ const deriveComparePrice = (priceValue: string) => {
 
 type CreateProductFormProps = {
   categories: Array<{ id: string; name: string }>
+  /** When true, product is created for Bespoke & Limited Edition only. */
+  bespokeMode?: boolean
 }
 
 type AutosaveState = { status: "idle" | "saving" | "saved"; timestamp?: number }
 
-export function CreateProductForm({ categories }: CreateProductFormProps) {
+export function CreateProductForm({ categories, bespokeMode = false }: CreateProductFormProps) {
+  const autosaveKey = bespokeMode ? "admin:new-bespoke-product:draft" : AUTOSAVE_KEY
   const [state, formAction] = useActionState<CreateProductFormState, FormData>(
     createProductAction,
     createProductInitialState
   )
-  const [formValues, setFormValues] = useState<FormValues>(baseValues)
+  const [formValues, setFormValues] = useState<FormValues>({
+    ...baseValues,
+    productType: bespokeMode ? "BESPOKE" : baseValues.productType,
+  })
   const [hasInteracted, setHasInteracted] = useState(false)
-  const [hasEditedProductType, setHasEditedProductType] = useState(false)
+  const [hasEditedProductType, setHasEditedProductType] = useState(bespokeMode)
   const [hasEditedSku, setHasEditedSku] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [autosaveState, setAutosaveState] = useState<AutosaveState>({ status: "idle" })
@@ -80,12 +86,16 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
     try {
-      const stored = window.localStorage.getItem(AUTOSAVE_KEY)
+      const stored = window.localStorage.getItem(autosaveKey)
       let draftApplied = false
       if (stored) {
         const parsed = JSON.parse(stored) as { values?: Partial<FormValues>; timestamp?: number }
         if (parsed.values) {
-          setFormValues((prev) => ({ ...prev, ...parsed.values }))
+          setFormValues((prev) => ({
+            ...prev,
+            ...parsed.values,
+            ...(bespokeMode ? { productType: "BESPOKE" as const } : {}),
+          }))
           draftApplied = true
         }
         if (parsed.timestamp) {
@@ -102,7 +112,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
     } finally {
       setIsHydrated(true)
     }
-  }, [])
+  }, [autosaveKey, bespokeMode])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -113,7 +123,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
       const timestamp = Date.now()
       try {
         window.localStorage.setItem(
-          AUTOSAVE_KEY,
+          autosaveKey,
           JSON.stringify({ values: formValues, timestamp })
         )
         setAutosaveState({ status: "saved", timestamp })
@@ -123,7 +133,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
     }, 1200)
 
     return () => window.clearTimeout(timeout)
-  }, [formValues, hasInteracted, isHydrated])
+  }, [formValues, hasInteracted, isHydrated, autosaveKey])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -187,8 +197,8 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
   useEffect(() => {
     if (typeof window === "undefined") return
     if (state.status !== "idle") return
-    window.localStorage.removeItem(AUTOSAVE_KEY)
-  }, [state.status])
+    window.localStorage.removeItem(autosaveKey)
+  }, [state.status, autosaveKey])
 
   const categoryNameLookup = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {
@@ -312,6 +322,13 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
 
   return (
     <form action={formAction} className="space-y-8">
+      {bespokeMode ? (
+        <>
+          <input type="hidden" name="bespokeCatalog" value="true" />
+          <input type="hidden" name="returnTo" value="/admin/bespoke?tab=products" />
+          <input type="hidden" name="isBespoke" value="true" />
+        </>
+      ) : null}
       {showDraftSavedToast ? (
         <div
           className="fixed right-6 top-6 z-50 flex items-center gap-3 rounded-lg border border-emerald-200 bg-white px-4 py-3 text-sm shadow-lg"
@@ -504,7 +521,8 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                     name="productType"
                     value={formValues.productType}
                     onChange={handleFieldChange("productType")}
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm capitalize"
+                    disabled={bespokeMode}
+                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm capitalize disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {PRODUCT_TYPES.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -512,6 +530,7 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                       </option>
                     ))}
                   </select>
+                  {bespokeMode ? <input type="hidden" name="productType" value="BESPOKE" /> : null}
                 </div>
               </div>
 
@@ -521,13 +540,24 @@ export function CreateProductForm({ categories }: CreateProductFormProps) {
                   <label className="flex items-center gap-2">
                     <input type="checkbox" name="isFeatured" value="true" /> Featured
                   </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" name="isBespoke" value="true" /> Bespoke
-                  </label>
+                  {bespokeMode ? (
+                    <span className="inline-flex items-center gap-2 rounded-full border border-brand-teal/30 bg-brand-teal/10 px-3 py-1 text-brand-umber">
+                      Bespoke & Limited Edition
+                    </span>
+                  ) : (
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" name="isBespoke" value="true" /> Bespoke
+                    </label>
+                  )}
                   <label className="flex items-center gap-2">
                     <input type="checkbox" name="isCorporateGift" value="true" /> Corporate gift
                   </label>
                 </div>
+                {bespokeMode ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    This product will stay in Bespoke & Limited Edition and will not appear in regular collections.
+                  </p>
+                ) : null}
               </div>
 
               <div className="space-y-4 rounded-lg border border-dashed border-border/70 bg-muted/40 p-4">

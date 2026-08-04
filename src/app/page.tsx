@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { HomePageClient } from "./HomePageClient";
 import { getHomePageMainCategories } from "@/server/storefront/collections";
-import { getOfferOfTheMonth } from "@/server/storefront/settings";
+import { getHeroContent, getOfferOfTheMonth } from "@/server/storefront/settings";
 import { SEOService, SEO_PRESETS } from "@/lib/seo";
 
 const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://www.tacaccessories.co.ke";
@@ -54,13 +54,26 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
+  const fallbackHero = {
+    image:
+      "https://plus.unsplash.com/premium_photo-1666789257989-f2a5e8a2b972?auto=format&fit=crop&q=60&w=900",
+    tagline: "Heritage Atelier Spotlight",
+    headline: "Crafted by Heritage, Worn with Pride",
+    description:
+      "From the soil of Africa to the hands of its artisans, our jewellery is a symphony of earth and soul. Every design is a poetic expression of culture, artistry, and authenticity. These treasures are more than adornments — they are the heartbeat of Africa, worn close to yours.",
+    ctaLabel: "Shop Collections",
+    ctaHref: "/collections",
+  }
+
   let mainCategories: Awaited<ReturnType<typeof getHomePageMainCategories>> = []
   let offerOfTheMonth: Awaited<ReturnType<typeof getOfferOfTheMonth>> = null
+  let hero: Awaited<ReturnType<typeof getHeroContent>> = fallbackHero
 
   try {
-    ;[mainCategories, offerOfTheMonth] = await Promise.all([
+    ;[mainCategories, offerOfTheMonth, hero] = await Promise.all([
       getHomePageMainCategories(),
       getOfferOfTheMonth(),
+      getHeroContent(),
     ])
   } catch (error) {
     console.error("Failed to load home page data:", error)
@@ -86,7 +99,11 @@ export default async function HomePage() {
           __html: JSON.stringify(websiteStructuredData),
         }}
       />
-      <HomePageClient mainCategories={mainCategories} offerOfTheMonth={offerOfTheMonth} />
+      <HomePageClient
+        mainCategories={mainCategories}
+        hero={hero}
+        offerOfTheMonth={offerOfTheMonth}
+      />
     </>
   );
 }

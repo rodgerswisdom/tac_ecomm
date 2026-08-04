@@ -5,6 +5,7 @@
 
 import { zohoClient } from '../client'
 import { prisma } from '@/lib/prisma'
+import { notifyBackInStockIfRestocked } from '@/lib/stock-notify'
 import type {
   ZohoItem,
   ZohoResponse,
@@ -131,13 +132,22 @@ export async function syncStockFromZoho(productId: string): Promise<void> {
 
   // Update local stock if different
   if (zohoItem.stock_on_hand !== undefined && zohoItem.stock_on_hand !== product.stock) {
+    const previousStock = product.stock
+    const nextStock = zohoItem.stock_on_hand
+
     await prisma.product.update({
       where: { id: productId },
       data: {
-        stock: zohoItem.stock_on_hand,
+        stock: nextStock,
         lastSyncedAt: new Date(),
       },
     })
+
+    if (previousStock <= 0 && nextStock > 0) {
+      void notifyBackInStockIfRestocked(productId).catch((error) => {
+        console.error(`Failed to send back-in-stock emails for ${productId}:`, error)
+      })
+    }
   }
 }
 

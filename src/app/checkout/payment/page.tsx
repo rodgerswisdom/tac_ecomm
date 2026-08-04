@@ -3,6 +3,7 @@ import { PaymentMethod, PaymentStatus } from "@prisma/client";
 import { Navbar } from "@/components/Navbar";
 import { MpesaPaymentWaiting } from "@/components/checkout/MpesaPaymentWaiting";
 import { prisma } from "@/lib/prisma";
+import { STK_PAYMENT_ENABLED } from "@/lib/manual-payment";
 import {
   getTumaCallbackPublicOrigin,
   getTumaCallbackWarning,
@@ -30,6 +31,11 @@ export default async function MpesaPaymentPage({ searchParams }: PaymentPageProp
   const orderId = params.orderId?.trim();
   if (!orderId) {
     redirect("/checkout");
+  }
+
+  // STK waiting UI is unavailable while automatic payment is suspended.
+  if (!STK_PAYMENT_ENABLED) {
+    redirect(`/checkout/thank-you?orderId=${encodeURIComponent(orderId)}&status=pending`);
   }
 
   const order = await prisma.order.findUnique({

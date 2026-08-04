@@ -43,6 +43,7 @@ export const productUpdateSchema = z
         categoryId: z.string().min(1, "Category is required"),
         weight: z.coerce.number().nonnegative().optional().nullable(),
         dimensions: z.string().max(120).optional().nullable(),
+        isBespoke: z.boolean().default(false),
     })
     .refine(
         (data) => data.comparePrice == null || data.comparePrice >= data.price,
@@ -62,7 +63,14 @@ export const imageSchema = z.object({
     productId: z.string().cuid(),
     url: z.string().url(),
     alt: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
     order: z.coerce.number().int().nonnegative().optional().default(0),
+})
+
+export const updateImageSchema = z.object({
+    imageId: z.string().cuid(),
+    alt: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
 })
 
 export type ProductSortOption = "recent" | "priceAsc" | "priceDesc" | "stockAsc" | "stockDesc"
@@ -317,6 +325,8 @@ type MediaPayloadEntry = {
     format?: string
     width?: number
     height?: number
+    description?: string | null
+    alt?: string | null
 }
 
 type MediaValidationResult =
@@ -348,7 +358,7 @@ export function validateMediaPayload(raw: FormDataEntryValue | null): MediaValid
             return { success: false, error: "One of the images is invalid. Please remove it and try again." }
         }
 
-        const { url, publicId, bytes, format, width, height } = entry as MediaPayloadEntry
+        const { url, publicId, bytes, format, width, height, description, alt } = entry as MediaPayloadEntry
 
         if (!url || typeof url !== "string" || !url.startsWith("https://")) {
             return { success: false, error: "Images must be uploaded through Cloudinary." }
@@ -386,7 +396,20 @@ export function validateMediaPayload(raw: FormDataEntryValue | null): MediaValid
             return { success: false, error: "Image metadata is incomplete. Please upload again." }
         }
 
-        validated.push({ url, publicId, bytes, format, width, height })
+        const normalizedDescription =
+            typeof description === "string" && description.trim() ? description.trim() : null
+        const normalizedAlt = typeof alt === "string" && alt.trim() ? alt.trim() : null
+
+        validated.push({
+            url,
+            publicId,
+            bytes,
+            format,
+            width,
+            height,
+            description: normalizedDescription,
+            alt: normalizedAlt,
+        })
         seen.add(publicId)
     }
 

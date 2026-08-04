@@ -14,6 +14,7 @@ import {
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { EmailService, getEmailConfig } from '@/lib/email'
 import { formatProductImageLabel } from '@/lib/product-image-selection'
+import { STK_PAYMENT_ENABLED } from '@/lib/manual-payment'
 
 type CheckoutCartItem = {
   id: string
@@ -295,6 +296,12 @@ export async function POST(req: NextRequest) {
   const paymentAmount = payCurrencyCode === 'KSH' ? total : Math.round(convertFromBase(total, payCurrencyCode))
   const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
   const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
+  // STK temporarily suspended: force manual M-Pesa / bank-transfer style pending payment.
+  const effectivePaymentMethod =
+    !STK_PAYMENT_ENABLED &&
+    (normalizedPaymentMethod === PaymentMethod.TUMA || normalizedPaymentMethod == null)
+      ? PaymentMethod.BANK_TRANSFER
+      : normalizedPaymentMethod
 
   // Log order totals and payment amount so checkout display matches Tuma (amount in KES).
   console.info(
@@ -378,7 +385,7 @@ export async function POST(req: NextRequest) {
       shipping,
       total,
       currency: orderCurrency,
-      paymentMethod: normalizedPaymentMethod ?? undefined,
+      paymentMethod: effectivePaymentMethod ?? undefined,
       paymentStatus: PaymentStatus.PENDING,
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
@@ -428,7 +435,7 @@ export async function POST(req: NextRequest) {
         <p style="margin: 0 0 12px 0;"><strong>Email:</strong> ${emailTrim}</p>
         <p style="margin: 0 0 12px 0;"><strong>Phone:</strong> ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}</p>
         <p style="margin: 0 0 12px 0;"><strong>Total:</strong> KES ${Math.round(total).toLocaleString()}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${normalizedPaymentMethod ?? "Not specified"}</p>
+        <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${effectivePaymentMethod ?? "Not specified"}</p>
         <p style="margin: 0 0 6px 0;"><strong>Items</strong></p>
         <ul style="margin: 0 0 12px 0; padding-left: 18px;">${itemLinesHtml}</ul>
         <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
@@ -448,7 +455,7 @@ export async function POST(req: NextRequest) {
       `Email: ${emailTrim}\n` +
       `Phone: ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}\n` +
       `Total: KES ${Math.round(total).toLocaleString()}\n` +
-      `Payment method: ${normalizedPaymentMethod ?? "Not specified"}\n\n` +
+      `Payment method: ${effectivePaymentMethod ?? "Not specified"}\n\n` +
       `Items:\n${itemLinesText}\n\n` +
       `Shipping:\n` +
       `${firstNameTrim} ${lastNameTrim}\n` +
@@ -461,7 +468,7 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  if (normalizedPaymentMethod === PaymentMethod.TUMA) {
+  if (STK_PAYMENT_ENABLED && effectivePaymentMethod === PaymentMethod.TUMA) {
     const phoneRaw = phone != null ? String(phone).trim() : ''
     const mpesaPhone = phoneRaw ? normalizeKenyaPhone(phoneRaw) : null
     if (!mpesaPhone) {
@@ -572,9 +579,11 @@ export async function POST(req: NextRequest) {
       )
     }
   }
-  // Non-Tuma: order is created and ready immediately.
-  if (normalizedPaymentMethod !== PaymentMethod.TUMA) {
+  // Non-Tuma (or STK suspended): order is created and ready for manual payment confirmation.
+  if (!(STK_PAYMENT_ENABLED && effectivePaymentMethod === PaymentMethod.TUMA)) {
     await sendOpsNotification()
+    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
+    thankYouUrl = `${baseUrl}/checkout/thank-you?orderId=${encodeURIComponent(order.id)}&status=pending`
   }
 
   // Stock is decremented only when payment is confirmed:

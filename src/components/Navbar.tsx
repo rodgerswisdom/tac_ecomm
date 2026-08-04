@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -52,7 +52,7 @@ function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
       label: "Shop",
       submenu: shopSubmenu.length > 0 ? shopSubmenu : undefined,
     },
-    { href: "/bespoke", label: "Bespoke Studio" },
+    { href: "/bespoke", label: "Bespoke & Limited Edition" },
     { href: "/contact", label: "Contact" },
   ];
 }
@@ -79,6 +79,21 @@ export const Navbar = () => {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastScrollYRef = useRef(0);
+
+  const toggleDropdown = (href: string) => {
+    setActiveDropdown((prev) => (prev === href ? null : href));
+  };
+
+  const handleDropdownKeyDown = (event: KeyboardEvent, href: string) => {
+    if (event.key === "Escape") {
+      setActiveDropdown(null);
+      return;
+    }
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleDropdown(href);
+    }
+  };
 
   const handleSignOut = async () => {
     await signOut({ redirect: false });
@@ -244,6 +259,7 @@ export const Navbar = () => {
                   : pathname === link.href || pathname.startsWith(link.href);
 
               if (link.submenu) {
+                const isShopOpen = activeDropdown === link.href;
                 return (
                   <div
                     key={link.href}
@@ -251,18 +267,30 @@ export const Navbar = () => {
                     onMouseEnter={() => handleDropdownMouseEnter(link.href)}
                     onMouseLeave={handleDropdownMouseLeave}
                   >
-                    <Link
-                      href={link.href}
-                      className={cn(
-                        "relative flex items-center gap-1 text-xs font-medium text-brand-umber/80 transition-colors hover:text-brand-umber after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-brand-gold after:transition-transform after:duration-200 hover:after:scale-x-100 whitespace-nowrap",
-                        isActive && "text-brand-umber after:scale-x-100"
-                      )}
-                    >
-                      {link.label}
-                      <ChevronDown className="h-3 w-3" />
-                    </Link>
+                    <div className="flex items-center">
+                      <Link
+                        href={link.href}
+                        className={cn(
+                          "relative flex items-center gap-1 text-xs font-medium text-brand-umber/80 transition-colors hover:text-brand-umber after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-brand-gold after:transition-transform after:duration-200 hover:after:scale-x-100 whitespace-nowrap pr-0.5",
+                          isActive && "text-brand-umber after:scale-x-100"
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                      <button
+                        type="button"
+                        className="rounded-md p-1 text-brand-umber/80 hover:bg-brand-jade/10 hover:text-brand-umber focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal/40"
+                        aria-expanded={isShopOpen}
+                        aria-haspopup="true"
+                        aria-label={`${link.label} categories`}
+                        onClick={() => toggleDropdown(link.href)}
+                        onKeyDown={(event) => handleDropdownKeyDown(event, link.href)}
+                      >
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", isShopOpen && "rotate-180")} />
+                      </button>
+                    </div>
 
-                    {activeDropdown === link.href && (
+                    {isShopOpen && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}

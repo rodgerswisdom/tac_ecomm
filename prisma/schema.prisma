@@ -143,6 +143,7 @@ model Product {
   variants         ProductVariant[]
   reviews          Review[]
   matchingSets     ProductSet[]     @relation("ProductToProductSet")
+  stockNotifyRequests StockNotifyRequest[]
 
   // Zoho Books Integration
   zohoItemId     String?   @unique
@@ -159,15 +160,29 @@ model Product {
   @@index([zohoSyncStatus])
 }
 
+model StockNotifyRequest {
+  id         String    @id @default(cuid())
+  productId  String
+  email      String
+  createdAt  DateTime  @default(now())
+  notifiedAt DateTime?
+  product    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, email])
+  @@index([productId, notifiedAt])
+  @@index([email])
+}
+
 model ProductImage {
-  id        String      @id @default(cuid())
-  url       String
-  alt       String?
-  order     Int         @default(0)
-  productId String
-  product   Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems CartItem[]
-  orderItems OrderItem[]
+  id          String      @id @default(cuid())
+  url         String
+  alt         String?
+  description String?
+  order       Int         @default(0)
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
 
   @@index([productId])
 }
@@ -447,6 +462,9 @@ model Settings {
   offerCtaLabel   String?
   offerCtaHref    String?
   offerIsActive   Boolean   @default(false)
+  heroImage       String?
+  heroHeadline    String?
+  heroTagline     String?
 }
 
 // ============================================

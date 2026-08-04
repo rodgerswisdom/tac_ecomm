@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button"
 import { ClearCartClient } from "./ClearCartClient"
 import { PaymentStatusWatcherClient } from "./PaymentStatusWatcherClient"
 import { PurchaseTracker } from "./PurchaseTracker"
+import { ManualPaymentDetails } from "@/components/checkout/ManualPaymentDetails"
 import { PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
+import { STK_PAYMENT_ENABLED } from "@/lib/manual-payment"
 
 type StatusKind = "success" | "pending" | "cancelled" | "failed"
 
@@ -17,8 +19,8 @@ const statusCopy: Record<StatusKind, { title: string; body: string; tone: "succe
     tone: "success"
   },
   pending: {
-    title: "Payment pending",
-    body: "Check your phone to approve the M-Pesa STK push. You will receive an email as soon as payment clears.",
+    title: "Order placed — complete payment",
+    body: "Your order is reserved. Pay with M-Pesa using the details below, then we will confirm your order.",
     tone: "pending"
   },
   cancelled: {
@@ -47,7 +49,7 @@ function resolveStatusFromOrder(
   if (paymentStatus === PaymentStatus.CANCELLED) {
     return "cancelled"
   }
-  if (paymentStatus === PaymentStatus.PENDING && paymentMethod === PaymentMethod.TUMA) {
+  if (paymentStatus === PaymentStatus.PENDING) {
     return "pending"
   }
   return urlStatus
@@ -74,6 +76,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
     paymentStatus: PaymentStatus
     paymentMethod: PaymentMethod | null
     orderNumber: string
+    total: number
   } | null
 
   let orderData: any = null
@@ -85,7 +88,8 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
         select: {
           paymentStatus: true,
           paymentMethod: true,
-          orderNumber: true
+          orderNumber: true,
+          total: true,
         }
       }) as typeof order
     } catch (error) {
@@ -93,7 +97,13 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
     }
   }
 
+  const isManualPending =
+    order?.paymentStatus === PaymentStatus.PENDING &&
+    order.paymentMethod === PaymentMethod.BANK_TRANSFER
+
+  // Only redirect into the STK waiting UI when automatic STK is enabled.
   if (
+    STK_PAYMENT_ENABLED &&
     order &&
     order.paymentStatus === PaymentStatus.PENDING &&
     order.paymentMethod === PaymentMethod.TUMA
@@ -104,11 +114,19 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   const status = order
     ? resolveStatusFromOrder(urlStatus, order.paymentStatus, order.paymentMethod)
     : urlStatus
-  const copy = statusCopy[status] ?? statusCopy.pending
+  const copy =
+    isManualPending
+      ? statusCopy.pending
+      : status === "pending" && order?.paymentMethod === PaymentMethod.TUMA
+        ? {
+            title: "Payment pending",
+            body: "Check your phone to approve the M-Pesa STK push. You will receive an email as soon as payment clears.",
+            tone: "pending" as const,
+          }
+        : statusCopy[status] ?? statusCopy.pending
   const isPaymentCompleted = status === "success"
   const displayOrderNumber = order?.orderNumber ?? orderNumberParam
 
-  // Fetch full order details for analytics tracking if payment is completed
   if (isPaymentCompleted && orderId) {
     try {
       orderData = await prisma.order.findUnique({
@@ -142,14 +160,18 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
-      <ClearCartClient active={isPaymentCompleted} />
+      <ClearCartClient active={isPaymentCompleted || isManualPending} />
       <PaymentStatusWatcherClient
-        enabled={!isPaymentCompleted && status === "pending" && !!orderId}
+        enabled={
+          !isPaymentCompleted &&
+          !isManualPending &&
+          status === "pending" &&
+          !!orderId
+        }
         orderId={orderId}
         orderNumber={displayOrderNumber}
         trackingId={trackingId}
       />
-      {/* Track purchase in Google Analytics when payment is completed */}
       {isPaymentCompleted && orderData && (
         <PurchaseTracker
           orderId={orderData.id}
@@ -188,13 +210,24 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
               </div>
             ) : null}
           </div>
+
+          {isManualPending && order ? (
+            <div className="w-full max-w-xl">
+              <ManualPaymentDetails
+                amountKes={order.total}
+                orderNumber={order.orderNumber}
+                variant="thankyou"
+              />
+            </div>
+          ) : null}
+
           <div className="flex flex-wrap justify-center gap-4">
             {copy.tone === "error" && (
               <Button asChild variant="outline" className="border-brand-teal/40 text-brand-umber">
                 <Link href="/checkout">Try again</Link>
               </Button>
             )}
-            {copy.tone === "pending" && (
+            {copy.tone === "pending" && STK_PAYMENT_ENABLED && !isManualPending && (
               <Button asChild variant="outline" className="border-brand-teal/40 text-brand-umber">
                 <Link href={orderId ? `/checkout/payment?orderId=${encodeURIComponent(orderId)}` : "/checkout"}>
                   Complete payment

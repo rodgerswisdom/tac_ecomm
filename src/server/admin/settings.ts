@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { ProductType } from "@prisma/client"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import type { ActionResult } from "@/lib/admin/action-result"
@@ -131,6 +132,9 @@ const settingsSchema = z.object({
     emailFromName: z.string().min(2),
     offerProductId: z.string().optional().or(z.literal("")),
     offerIsActive: z.preprocess((val) => val === "true" || val === true, z.boolean()),
+    heroImage: z.string().optional().or(z.literal("")),
+    heroHeadline: z.string().max(160).optional().or(z.literal("")),
+    heroTagline: z.string().max(120).optional().or(z.literal("")),
 })
 
 export type SettingsFormState = {
@@ -208,6 +212,9 @@ export async function updateGlobalSettingsAction(
                 emailFromName: parsed.data.emailFromName,
                 offerProductId,
                 offerIsActive: parsed.data.offerIsActive,
+                heroImage: parsed.data.heroImage?.trim() || null,
+                heroHeadline: parsed.data.heroHeadline?.trim() || null,
+                heroTagline: parsed.data.heroTagline?.trim() || null,
             },
         })
         
@@ -267,9 +274,31 @@ export async function toggleProductFlagAction(formData: FormData): Promise<Actio
     }
 
     try {
+        const existing = await prisma.product.findUnique({
+            where: { id: parsed.data.productId },
+            select: { productType: true },
+        })
+        if (!existing) {
+            return { error: "Product not found" }
+        }
+
+        const data: { isFeatured?: boolean; isBespoke?: boolean; isCorporateGift?: boolean; isActive?: boolean; productType?: typeof existing.productType } = {
+            [parsed.data.field]: parsed.data.value,
+        }
+
+        if (parsed.data.field === "isBespoke") {
+            if (parsed.data.value) {
+                if (existing.productType === ProductType.READY_TO_WEAR || existing.productType === ProductType.MATCHING_SET) {
+                    data.productType = ProductType.BESPOKE
+                }
+            } else if (existing.productType === ProductType.BESPOKE) {
+                data.productType = ProductType.READY_TO_WEAR
+            }
+        }
+
         await prisma.product.update({
             where: { id: parsed.data.productId },
-            data: { [parsed.data.field]: parsed.data.value },
+            data,
         })
 
         await logAdminAction(
@@ -281,6 +310,9 @@ export async function toggleProductFlagAction(formData: FormData): Promise<Actio
 
         revalidatePath("/admin/settings")
         revalidatePath("/admin/products")
+        revalidatePath("/admin/bespoke")
+        revalidatePath("/bespoke")
+        revalidatePath("/collections")
         return { success: true }
     } catch (error) {
         console.error(error)

@@ -37,6 +37,16 @@ export function formatProductImageLabel(
   return `Design ${index + 1}`
 }
 
+/** Prefer design description; otherwise use product-level fallback copy. */
+export function resolveDesignDescription(
+  image: Pick<ProductGalleryImage, "description"> | null | undefined,
+  productFallback: string,
+): string {
+  const design = image?.description?.trim()
+  if (design) return design
+  return productFallback
+}
+
 export function getDefaultGalleryImage(images: ProductGalleryImage[]): ProductGalleryImage {
   return images[0] ?? { id: "", url: "", order: 0 }
 }

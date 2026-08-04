@@ -13,6 +13,7 @@ import {
   deleteProductImageAction,
   reorderImagesAction,
   updateProductAction,
+  updateProductImageAction,
 } from "@/server/admin/product-actions"
 import { getCategoryOptions } from "@/server/admin/categories"
 
@@ -98,7 +99,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               </div>
 
               <label className="block space-y-1">
-                <span className={fieldLabel}>Description</span>
+                <span className={fieldLabel}>Default description</span>
                 <textarea
                   name="description"
                   defaultValue={product.description}
@@ -107,6 +108,9 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   rows={3}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
+                <span className="text-xs text-muted-foreground">
+                  Used on the product page when a design has no description of its own. Also used for SEO.
+                </span>
               </label>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -148,6 +152,25 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </label>
               </div>
 
+              <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input type="hidden" name="isBespoke" value="false" />
+                  <input
+                    type="checkbox"
+                    name="isBespoke"
+                    value="true"
+                    defaultChecked={product.isBespoke}
+                    className="mt-1 h-4 w-4 rounded border-input"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Bespoke & Limited Edition</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      When enabled, this product appears only on the Bespoke & Limited Edition shop and is hidden from regular Collections.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
               <Button type="submit" className="w-full sm:w-auto">
                 Save changes
               </Button>
@@ -164,6 +187,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               productId={product.id}
               initialImages={product.images}
               onDeleteAction={deleteProductImageAction}
+              onUpdateAction={updateProductImageAction}
               onReorderAction={reorderImagesAction}
               compact
             />

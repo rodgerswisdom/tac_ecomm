@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
 import { decrementStock, restoreStock, toStockLineItems } from "@/lib/stock"
+import { scheduleBackInStockNotifications } from "@/lib/stock-notify"
 import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
 import type { ActionResult } from "@/lib/admin/action-result"
 
@@ -79,6 +80,8 @@ export async function updateOrderStatusAction(
         return { status: "error", message: "Order not found" }
     }
 
+    let restockedProductIds: string[] = []
+
     const didUpdate = await prisma.$transaction(async (tx) => {
         const transition = await tx.order.updateMany({
             where: { id: orderId, status: previousOrder.status },
@@ -107,11 +110,15 @@ export async function updateOrderStatusAction(
         }
 
         if (wasConfirmed && nowCancelledOrRefunded) {
-            await restoreStock(orderId, tx)
+            restockedProductIds = await restoreStock(orderId, tx)
         }
 
         return true
     })
+
+    if (restockedProductIds.length > 0) {
+        scheduleBackInStockNotifications(restockedProductIds)
+    }
 
     // Queue Zoho sync when order is confirmed
     if (didUpdate && status === OrderStatus.CONFIRMED && process.env.ZOHO_SYNC_ENABLED === 'true') {

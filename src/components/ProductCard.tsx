@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo } from "react";
+import { useState, memo, type MouseEvent } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -9,10 +9,17 @@ import {
   CardContent,
   CardTitle,
 } from "@/components/ui/card";
-import { Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ShoppingBag, Star } from "lucide-react";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useCart } from "@/contexts/CartContext";
 import { ProductCardData } from "@/types/product";
 import { getDiscountPercent, hasValidDiscount } from "@/lib/discount";
+import {
+  buildCartLineKey,
+  formatProductImageLabel,
+  getDefaultGalleryImage,
+} from "@/lib/product-image-selection";
 
 interface ProductCardProps {
   product: ProductCardData;
@@ -21,16 +28,41 @@ interface ProductCardProps {
 const ProductCardComponent = ({ product }: ProductCardProps) => {
   const router = useRouter();
   const { formatPrice } = useCurrency();
+  const { addToCart } = useCart();
   const [isHovered, setIsHovered] = useState(false);
+  const [justAdded, setJustAdded] = useState(false);
 
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
 
   const secondaryImage = product.gallery.length > 1 ? product.gallery[1] : product.image;
+  const defaultImage = getDefaultGalleryImage(product.galleryImages);
 
   const handleOpenProduct = () => {
     router.push(`/products/${product.slug}`);
+  };
+
+  const handleQuickAdd = (event: MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isOutOfStock) return;
+
+    const imageId = defaultImage.id || undefined;
+    addToCart({
+      id: product.id,
+      productId: product.id,
+      cartLineKey: buildCartLineKey(product.id, imageId),
+      productImageId: imageId,
+      selectedImageLabel: formatProductImageLabel(defaultImage, 0),
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: defaultImage.url || product.image,
+    });
+
+    setJustAdded(true);
+    window.setTimeout(() => setJustAdded(false), 1600);
   };
 
   const renderStars = () => {
@@ -95,7 +127,7 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
                   }
                   alt={product.name}
                   fill
-                  sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  sizes="(max-width: 1024px) 50vw, 40vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                   priority={Boolean(product.isBestSeller)}
                 />
@@ -137,6 +169,19 @@ const ProductCardComponent = ({ product }: ProductCardProps) => {
                 </span>
               )}
             </div>
+
+            <Button
+              type="button"
+              size="sm"
+              variant={isOutOfStock ? "outline" : "default"}
+              className="mt-1 w-full"
+              disabled={isOutOfStock}
+              onClick={handleQuickAdd}
+              aria-label={isOutOfStock ? `${product.name} is out of stock` : `Quick add ${product.name} to basket`}
+            >
+              <ShoppingBag className="mr-1.5 h-4 w-4" />
+              {isOutOfStock ? "Out of stock" : justAdded ? "Added" : "Quick add"}
+            </Button>
 
             {product.colors && product.colors.length > 0 && (
               <div className="flex items-center gap-2 pt-1">

@@ -21,12 +21,13 @@ import {
   generateDuplicateSku,
   variantSchema,
   imageSchema,
+  updateImageSchema,
 } from "./products"
 import type { CreateProductFormState } from "./products"
 import type { ActionResult } from "@/lib/admin/action-result"
 import { logAdminAction } from "./audit"
 import { queueProductSync } from "@/lib/zoho"
-import { archiveFieldsForStock, syncProductArchiveForStock } from "@/lib/admin/product-archive"
+import { notifyBackInStockIfRestocked } from "@/lib/stock-notify"
 
 export async function createProductAction(
   _prevState: CreateProductFormState,
@@ -40,6 +41,8 @@ export async function createProductAction(
   const isActive = !isDraft
   const formValues = collectFormValues(formData)
   const proposedSlug = optionalString(formData.get("customSlug"))
+  const bespokeCatalog = booleanFromForm(formData.get("bespokeCatalog"))
+  const returnToRaw = optionalString(formData.get("returnTo"))
 
   const payload = {
     name: formValues.name,
@@ -50,10 +53,12 @@ export async function createProductAction(
     stock: formData.get("stock"),
     sku: formValues.sku,
     categoryId: formValues.categoryId,
-    productType: (formValues.productType as ProductType) || ProductType.READY_TO_WEAR,
+    productType: bespokeCatalog
+      ? ProductType.BESPOKE
+      : (formValues.productType as ProductType) || ProductType.READY_TO_WEAR,
     isActive,
     isFeatured: booleanFromForm(formData.get("isFeatured")),
-    isBespoke: booleanFromForm(formData.get("isBespoke")),
+    isBespoke: bespokeCatalog || booleanFromForm(formData.get("isBespoke")),
     isCorporateGift: booleanFromForm(formData.get("isCorporateGift")),
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
@@ -111,7 +116,6 @@ export async function createProductAction(
     created = await prisma.product.create({
       data: {
         ...parsed.data,
-        ...archiveFieldsForStock(parsed.data.stock, isDraft),
         sku,
         shortDescription: parsed.data.shortDescription ?? null,
         materials: [],
@@ -136,7 +140,8 @@ export async function createProductAction(
     data: mediaValidation.items.map((asset, index) => ({
       productId: created.id,
       url: asset.url,
-      alt: `${created.name} image ${index + 1}`,
+      alt: asset.alt?.trim() || `${created.name} image ${index + 1}`,
+      description: asset.description?.trim() || null,
       order: index,
     })),
   })
@@ -155,9 +160,22 @@ export async function createProductAction(
 
   const message = isDraft
     ? "Draft saved successfully."
-    : "Product published successfully and is now live."
+    : bespokeCatalog
+      ? "Bespoke product published. It appears in Bespoke & Limited Edition only."
+      : "Product published successfully and is now live."
+
+  const safeReturnTo =
+    returnToRaw &&
+    returnToRaw.startsWith("/admin/") &&
+    !returnToRaw.startsWith("//")
+      ? returnToRaw
+      : null
+
   redirect(
-    buildAdminFlashUrl(`/admin/products/${created.id}`, { type: "success", message })
+    buildAdminFlashUrl(safeReturnTo ?? `/admin/products/${created.id}`, {
+      type: "success",
+      message,
+    })
   )
 }
 
@@ -175,6 +193,7 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
     categoryId: formData.get("categoryId")?.toString() ?? "",
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
+    isBespoke: formData.getAll("isBespoke").some((value) => booleanFromForm(value)),
   }
 
   const parsed = productUpdateSchema.safeParse(payload)
@@ -203,17 +222,17 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
   try {
     const existing = await prisma.product.findUnique({
       where: { id: parsed.data.id },
-      select: { stock: true, isArchived: true },
+      select: { stock: true, isArchived: true, productType: true },
     })
 
     if (!existing) {
       return { error: "Product not found" }
     }
 
-    const stockJustDepleted = existing.stock > 0 && parsed.data.stock <= 0
-    const archiveUpdate = stockJustDepleted
-      ? archiveFieldsForStock(parsed.data.stock, false)
-      : {}
+    const nextProductType = resolveProductTypeForBespoke(
+      existing.productType,
+      parsed.data.isBespoke,
+    )
 
     const updated = await prisma.product.update({
       where: { id: parsed.data.id },
@@ -226,12 +245,19 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
         categoryId: parsed.data.categoryId,
         weight: parsed.data.weight ?? null,
         dimensions: parsed.data.dimensions ?? null,
-        ...archiveUpdate,
+        isBespoke: parsed.data.isBespoke,
+        productType: nextProductType,
         sku,
         slug,
       },
-      select: { id: true, isActive: true, isDraft: true, isArchived: true, zohoItemId: true },
+      select: { id: true, isActive: true, isDraft: true, isArchived: true, zohoItemId: true, stock: true },
     })
+
+    if (existing.stock <= 0 && updated.stock > 0) {
+      void notifyBackInStockIfRestocked(updated.id).catch((error) => {
+        console.error("Failed to send back-in-stock emails:", error)
+      })
+    }
 
     // Queue Zoho sync for active products that are already synced
     if (
@@ -349,6 +375,7 @@ export async function duplicateProductAction(formData: FormData): Promise<Action
           productId: duplicated.id,
           url: image.url,
           alt: image.alt,
+          description: image.description,
           order: image.order,
         })),
       })
@@ -412,6 +439,77 @@ export async function unarchiveProductAction(formData: FormData): Promise<Action
     console.error(error)
     return { error: "Failed to restore product" }
   }
+}
+
+/**
+ * Move a product into or out of the Bespoke & Limited Edition catalog.
+ * Also keeps productType aligned when it is READY_TO_WEAR or BESPOKE.
+ */
+export async function setProductBespokeAction(formData: FormData): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
+
+  const productId = formData.get("productId")?.toString()
+  const raw = formData.get("isBespoke")?.toString()
+  const isBespoke = raw === "true" || raw === "1" || raw === "on"
+
+  if (!productId) {
+    return { error: "Product id is required" }
+  }
+
+  try {
+    const existing = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, productType: true, isBespoke: true, name: true },
+    })
+
+    if (!existing) {
+      return { error: "Product not found" }
+    }
+
+    const productType = resolveProductTypeForBespoke(existing.productType, isBespoke)
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { isBespoke, productType },
+    })
+
+    await logAdminAction(
+      isBespoke ? "MOVE_TO_BESPOKE" : "MOVE_FROM_BESPOKE",
+      "Product",
+      productId,
+      `${existing.name}: isBespoke ${existing.isBespoke} → ${isBespoke}`,
+    )
+
+    revalidateProductRoute(productId)
+    return {
+      success: true,
+      message: isBespoke
+        ? "Product moved to Bespoke & Limited Edition."
+        : "Product moved to regular collections.",
+    }
+  } catch (error) {
+    console.error(error)
+    return { error: "Failed to update bespoke status" }
+  }
+}
+
+function resolveProductTypeForBespoke(current: ProductType, isBespoke: boolean): ProductType {
+  if (isBespoke) {
+    if (current === ProductType.READY_TO_WEAR || current === ProductType.MATCHING_SET) {
+      return ProductType.BESPOKE
+    }
+    return current
+  }
+
+  if (current === ProductType.BESPOKE) {
+    return ProductType.READY_TO_WEAR
+  }
+
+  return current
 }
 
 export async function bulkArchiveProducts(
@@ -537,6 +635,7 @@ export async function addProductImageAction(formData: FormData): Promise<ActionR
     productId: formData.get("productId")?.toString(),
     url,
     alt: formData.get("alt")?.toString() || undefined,
+    description: formData.get("description")?.toString()?.trim() || undefined,
     order: formData.get("order") ?? 0,
   })
 
@@ -544,8 +643,42 @@ export async function addProductImageAction(formData: FormData): Promise<ActionR
     return { error: parsed.error.issues[0]?.message ?? "Invalid image data" }
   }
 
-  await prisma.productImage.create({ data: parsed.data })
+  await prisma.productImage.create({
+    data: {
+      productId: parsed.data.productId,
+      url: parsed.data.url,
+      alt: parsed.data.alt ?? null,
+      description: parsed.data.description?.trim() || null,
+      order: parsed.data.order ?? 0,
+    },
+  })
   revalidateProductRoute(parsed.data.productId)
+  return { success: true }
+}
+
+export async function updateProductImageAction(formData: FormData): Promise<ActionResult> {
+  await assertAdmin()
+
+  const parsed = updateImageSchema.safeParse({
+    imageId: formData.get("imageId")?.toString(),
+    alt: formData.get("alt")?.toString() ?? null,
+    description: formData.get("description")?.toString() ?? null,
+  })
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid image data" }
+  }
+
+  const alt = parsed.data.alt?.trim() || null
+  const description = parsed.data.description?.trim() || null
+
+  const updated = await prisma.productImage.update({
+    where: { id: parsed.data.imageId },
+    data: { alt, description },
+    select: { productId: true },
+  })
+
+  revalidateProductRoute(updated.productId)
   return { success: true }
 }
 
@@ -575,6 +708,10 @@ export async function reorderImagesAction(productId: string, imageIds: string[])
 
 function revalidateProductRoute(productId?: string) {
   revalidatePath("/admin/products")
+  revalidatePath("/admin/bespoke")
+  revalidatePath("/admin/settings")
+  revalidatePath("/collections")
+  revalidatePath("/bespoke")
   if (productId) {
     revalidatePath(`/admin/products/${productId}`)
   }

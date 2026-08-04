@@ -71,6 +71,71 @@ export async function updateBespokeRequestStatus(
   })
 }
 
+export async function getBespokeCatalogProducts(filters: {
+  search?: string
+  page?: number
+  pageSize?: number
+} = {}) {
+  await assertAdmin()
+  const page = Math.max(filters.page ?? 1, 1)
+  const pageSize = Math.min(filters.pageSize ?? 20, 50)
+  const search = filters.search?.trim()
+
+  const where = {
+    OR: [{ isBespoke: true }, { productType: "BESPOKE" as const }],
+    ...(search
+      ? {
+          AND: [
+            {
+              OR: [
+                { name: { contains: search, mode: "insensitive" as const } },
+                { sku: { contains: search, mode: "insensitive" as const } },
+              ],
+            },
+          ],
+        }
+      : {}),
+  }
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        sku: true,
+        price: true,
+        stock: true,
+        isActive: true,
+        isDraft: true,
+        isArchived: true,
+        isBespoke: true,
+        productType: true,
+        updatedAt: true,
+        images: {
+          take: 1,
+          orderBy: { order: "asc" },
+          select: { url: true },
+        },
+        category: { select: { name: true } },
+      },
+    }),
+    prisma.product.count({ where }),
+  ])
+
+  return {
+    products,
+    total,
+    page,
+    pageSize,
+    pageCount: Math.ceil(total / pageSize) || 1,
+  }
+}
+
 export type UpdateBespokeStatusFormState = { status: 'idle' | 'success' | 'error'; message?: string }
 
 export async function updateBespokeStatusAction(

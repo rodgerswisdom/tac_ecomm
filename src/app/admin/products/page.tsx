@@ -187,6 +187,11 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               Archived
             </Link>
           </div>
+          {isArchivedTab ? (
+            <p className="text-sm text-muted-foreground">
+              Out-of-stock products are no longer archived automatically. Unarchive a product here to show it on the site with an Out of stock badge and notify-me option.
+            </p>
+          ) : null}
         </CardHeader>
 
         <CardContent className="p-0">

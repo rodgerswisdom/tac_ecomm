@@ -27,8 +27,7 @@ export function ActiveFilterChips({
   type ActiveFilter =
     | { label: string; type: "category"; value: FilterState["category"] }
     | { label: string; type: "priceRange"; value: FilterState["priceRange"] }
-    | { label: string; type: "materials"; value: string }
-    | { label: string; type: "origin"; value: string };
+    | { label: string; type: "materials"; value: string };
 
   const activeFilters: ActiveFilter[] = [];
 
@@ -52,14 +51,10 @@ export function ActiveFilterChips({
     activeFilters.push({ label: material, type: "materials", value: material });
   });
 
-  filters.origin.forEach((origin) => {
-    activeFilters.push({ label: origin, type: "origin", value: origin });
-  });
-
   if (activeFilters.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="mb-6 flex flex-wrap items-center gap-2">
       <span className="text-sm font-medium text-brand-umber/70">Active filters:</span>
       {activeFilters.map((filter, index) => (
         <button
@@ -69,11 +64,6 @@ export function ActiveFilterChips({
               onRemoveFilter(
                 "materials",
                 filters.materials.filter((v) => v !== filter.value)
-              );
-            } else if (filter.type === "origin") {
-              onRemoveFilter(
-                "origin",
-                filters.origin.filter((v) => v !== filter.value)
               );
             } else {
               onRemoveFilter(filter.type, filter.value);

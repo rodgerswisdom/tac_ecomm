@@ -10,17 +10,7 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import { formatFreeShippingThreshold } from "@/lib/delivery";
 import { ArrowRight, Sparkles, Pause, Play } from "lucide-react";
 import type { OfferOfTheMonth } from "@/types/offer";
-
-const heritageSlide = {
-  id: "hero-heritage",
-  image:
-    "https://plus.unsplash.com/premium_photo-1666789257989-f2a5e8a2b972?auto=format&fit=crop&q=60&w=900",
-  title: "Heritage Atelier Spotlight",
-  subtitle: "Crafted by Heritage, Worn with Pride",
-  description:
-    "From the soil of Africa to the hands of its artisans, our jewellery is a symphony of earth and soul. Every design is a poetic expression of culture, artistry, and authenticity. These treasures are more than adornments — they are the heartbeat of Africa, worn close to yours.",
-  cta: { label: "Shop Collections", href: "/collections" },
-};
+import type { HeroContent } from "@/server/storefront/settings";
 
 interface Slide {
   id: string;
@@ -36,14 +26,24 @@ interface Slide {
 }
 
 interface HeroProps {
+  hero: HeroContent;
   offerOfTheMonth?: OfferOfTheMonth | null;
 }
 
 const DEFAULT_SLIDE_DURATION_MS = 10000;
 const FIRST_SLIDE_DURATION_MS = 15000;
 
-const HeroComponent = ({ offerOfTheMonth }: HeroProps) => {
+const HeroComponent = ({ hero, offerOfTheMonth }: HeroProps) => {
   const { formatPrice } = useCurrency();
+
+  const heritageSlide: Slide = {
+    id: "hero-heritage",
+    image: hero.image,
+    title: hero.tagline,
+    subtitle: hero.headline,
+    description: hero.description,
+    cta: { label: hero.ctaLabel, href: hero.ctaHref },
+  };
 
   const allSlides: Slide[] = [
     heritageSlide,

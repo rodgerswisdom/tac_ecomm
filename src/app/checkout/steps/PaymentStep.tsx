@@ -79,7 +79,7 @@ export function PaymentStep({ onNext }: { onNext?: (data: PaymentFormData) => vo
   );
 }
 
-export type PaymentMethod = "TUMA" | "PESAPAL" | "PAYPAL" | "CARD";
+export type PaymentMethod = "TUMA" | "PESAPAL" | "PAYPAL" | "CARD" | "BANK_TRANSFER";
 export type PaymentFormData = {
   method: PaymentMethod;
   card?: {

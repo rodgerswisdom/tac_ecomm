@@ -11,12 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { adminToast } from "@/lib/admin/feedback"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink, Megaphone } from "lucide-react"
+import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink, Megaphone, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { OfferProductPicker } from "@/components/admin/settings/OfferProductPicker"
+import { ImageUploader } from "@/components/ImageUploader"
 import type { OfferProductOption } from "@/server/admin/settings"
 
 export function GlobalSettingsForm({ 
@@ -163,6 +164,59 @@ export function GlobalSettingsForm({
                                         className="h-7 w-7 border-orange-900/40 data-[state=checked]:bg-orange-600 rounded-lg shadow-sm"
                                     />
                                 </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="bg-[#b8d3c2]/10 border-b border-[#2d3b34]/5">
+                            <div className="flex items-center gap-2">
+                                <ImageIcon className="h-5 w-5 text-[#2d3b34]/70" />
+                                <CardTitle className="text-xl">Homepage Hero</CardTitle>
+                            </div>
+                            <CardDescription>
+                                Edit the primary homepage hero photo, headline, and tagline. Leave blank to keep the site defaults.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-6 grid gap-6 md:grid-cols-2">
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="heroHeadline" className="font-semibold text-[#2d3b34]">Hero Headline</Label>
+                                <Input
+                                    id="heroHeadline"
+                                    name="heroHeadline"
+                                    defaultValue={initialData.heroHeadline ?? ""}
+                                    placeholder="Crafted by Heritage, Worn with Pride"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                                {state.errors?.heroHeadline && (
+                                    <p className="text-xs text-red-500 font-medium">{state.errors.heroHeadline[0]}</p>
+                                )}
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="heroTagline" className="font-semibold text-[#2d3b34]">Hero Tagline</Label>
+                                <Input
+                                    id="heroTagline"
+                                    name="heroTagline"
+                                    defaultValue={initialData.heroTagline ?? ""}
+                                    placeholder="Heritage Atelier Spotlight"
+                                    className="rounded-xl border-[#2d3b34]/10 bg-white"
+                                />
+                                {state.errors?.heroTagline && (
+                                    <p className="text-xs text-red-500 font-medium">{state.errors.heroTagline[0]}</p>
+                                )}
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                                <Label className="font-semibold text-[#2d3b34]">Hero Photo</Label>
+                                <ImageUploader
+                                    name="heroImage"
+                                    folder="hero"
+                                    tags={["hero", "settings", "admin"]}
+                                    defaultValue={initialData.heroImage ?? ""}
+                                    helperText="Upload a landscape image (JPG, PNG, or WebP). Recommended wider than tall."
+                                />
+                                {state.errors?.heroImage && (
+                                    <p className="text-xs text-red-500 font-medium">{state.errors.heroImage[0]}</p>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

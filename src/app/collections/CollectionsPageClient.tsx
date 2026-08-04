@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ProductCard } from "@/components/ProductCard";
@@ -35,12 +35,12 @@ function resolveInitialCategory(
   return options.some((option) => option.slug === slug) ? slug : "all";
 }
 
-function buildCollectionsUrl(filters: FilterState, searchQuery: string) {
+function buildShopUrl(basePath: string, filters: FilterState, searchQuery: string) {
   const params = new URLSearchParams();
   if (filters.category !== "all") params.set("category", filters.category);
   if (searchQuery.trim()) params.set("q", searchQuery.trim());
   const query = params.toString();
-  return query ? `/collections?${query}` : "/collections";
+  return query ? `${basePath}?${query}` : basePath;
 }
 
 interface CollectionsPageClientProps {
@@ -49,6 +49,12 @@ interface CollectionsPageClientProps {
   collections: CategoryOption[];
   initialCategory?: string;
   initialSearch?: string;
+  basePath?: string;
+  pageTitle?: string;
+  pageDescription?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
+  footer?: ReactNode;
 }
 
 export function CollectionsPageClient({
@@ -57,6 +63,12 @@ export function CollectionsPageClient({
   collections,
   initialCategory,
   initialSearch,
+  basePath = "/collections",
+  pageTitle = "Shop Collections",
+  pageDescription,
+  emptyTitle = "No products found",
+  emptyDescription = "Try adjusting your filters.",
+  footer,
 }: CollectionsPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,7 +79,6 @@ export function CollectionsPageClient({
     category: resolveInitialCategory(initialCategory, categories, collections),
     priceRange: null,
     materials: [],
-    origin: [],
   }));
 
   const [displayedCount, setDisplayedCount] = useState(PRODUCTS_PER_PAGE);
@@ -77,9 +88,9 @@ export function CollectionsPageClient({
 
   const syncUrl = useCallback(
     (nextFilters: FilterState, nextSearch: string) => {
-      router.replace(buildCollectionsUrl(nextFilters, nextSearch), { scroll: false });
+      router.replace(buildShopUrl(basePath, nextFilters, nextSearch), { scroll: false });
     },
-    [router],
+    [basePath, router],
   );
 
   useEffect(() => {
@@ -98,14 +109,6 @@ export function CollectionsPageClient({
       product.materials.forEach((material) => materials.add(material));
     });
     return Array.from(materials).sort();
-  }, [allProducts]);
-
-  const availableOrigins = useMemo(() => {
-    const origins = new Set<string>();
-    allProducts.forEach((product) => {
-      if (product.origin) origins.add(product.origin);
-    });
-    return Array.from(origins).sort();
   }, [allProducts]);
 
   const handleFiltersChange = useCallback(
@@ -157,10 +160,6 @@ export function CollectionsPageClient({
       );
     }
 
-    if (filters.origin.length > 0) {
-      filtered = filtered.filter((product) => filters.origin.includes(product.origin));
-    }
-
     return filtered;
   }, [allProducts, filters, searchQuery]);
 
@@ -197,10 +196,10 @@ export function CollectionsPageClient({
       setFilters((prev) => {
         let next: FilterState = prev;
 
-        if (type === "materials" || type === "origin") {
+        if (type === "materials") {
           next = {
             ...prev,
-            [type]: (value ?? []) as string[],
+            materials: (value ?? []) as string[],
           };
         } else if (type === "priceRange") {
           next = {
@@ -229,7 +228,6 @@ export function CollectionsPageClient({
       category: "all",
       priceRange: null,
       materials: [],
-      origin: [],
     };
     setFilters(cleared);
     syncUrl(cleared, "");
@@ -243,8 +241,13 @@ export function CollectionsPageClient({
       <section className="nav-clearance section-spacing">
         <div className="gallery-container text-center">
           <h1 className="font-heading text-3xl sm:text-4xl text-brand-umber md:text-5xl">
-            Shop Collections
+            {pageTitle}
           </h1>
+          {pageDescription ? (
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-umber/70 sm:text-base">
+              {pageDescription}
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -262,14 +265,14 @@ export function CollectionsPageClient({
               </button>
               <span aria-live="polite" className="text-xs text-brand-umber/60">{filteredProducts.length} products</span>
             </div>
-            <aside className={`w-full lg:w-64 lg:flex-shrink-0 ${filtersOpen ? 'block' : 'hidden lg:block'}`}>
+            <aside className={`w-full lg:w-72 lg:flex-shrink-0 ${filtersOpen ? "block" : "hidden lg:block"}`}>
               <ProductFilters
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
                 availableMaterials={availableMaterials}
-                availableOrigins={availableOrigins}
                 categories={categories}
                 collections={collections}
+                products={allProducts}
               />
             </aside>
 
@@ -308,7 +311,7 @@ export function CollectionsPageClient({
               {displayedProducts.length > 0 ? (
                 <>
                   <motion.div
-                    className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-3"
+                    className="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-2"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
@@ -346,10 +349,10 @@ export function CollectionsPageClient({
               ) : (
                 <div className="py-16 text-center">
                   <h3 className="mb-4 font-heading text-2xl text-brand-umber">
-                    No products found
+                    {emptyTitle}
                   </h3>
                   <p className="mb-6 text-brand-umber/70">
-                    Try adjusting your filters.
+                    {emptyDescription}
                   </p>
                   <Button onClick={handleClearAllFilters}>Clear All Filters</Button>
                 </div>
@@ -358,6 +361,8 @@ export function CollectionsPageClient({
           </div>
         </div>
       </section>
+
+      {footer}
 
     </main>
     </ErrorBoundary>

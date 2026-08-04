@@ -1,44 +1,17 @@
-import type { Prisma } from "@prisma/client"
+/**
+ * Stock-based auto-archive is disabled: out-of-stock products stay visible
+ * with an OOS badge. Manual archive/unarchive admin actions remain separate.
+ */
 
-import { prisma } from "@/lib/prisma"
-
-type ArchiveClient = Prisma.TransactionClient | typeof prisma
-
-export function archiveFieldsForStock(stock: number, isDraft: boolean) {
-  if (isDraft || stock > 0) {
-    return {}
-  }
-
-  return {
-    isArchived: true,
-    isActive: false,
-  }
+/** @deprecated Stock no longer drives archive; always returns {}. */
+export function archiveFieldsForStock(_stock: number, _isDraft: boolean) {
+  return {}
 }
 
+/** @deprecated No-op — products are not archived when stock hits zero. */
 export async function syncProductArchiveForStock(
-  productId: string,
-  client: ArchiveClient = prisma
+  _productId: string,
+  _client?: unknown,
 ) {
-  const product = await client.product.findUnique({
-    where: { id: productId },
-    select: { stock: true, isDraft: true, isArchived: true, isActive: true },
-  })
-
-  if (!product || product.isDraft) {
-    return
-  }
-
-  const archiveFields = archiveFieldsForStock(product.stock, product.isDraft)
-  if (!archiveFields.isArchived) {
-    return
-  }
-
-  if (product.isArchived && product.isActive === false) {
-    return
-  }
-
-  await client.product.update({
-    where: { id: productId },
-    data: archiveFields,
-  })
+  return
 }

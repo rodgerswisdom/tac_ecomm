@@ -3,12 +3,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { ShoppingBag, Eye } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/Navbar";
 import { Breadcrumb } from "@/components/Breadcrumb";
+import { AdditionalInfo } from "@/components/AdditionalInfo";
+import { BackInStockNotifyForm } from "@/components/BackInStockNotifyForm";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Product360Viewer } from "@/components/Product360Viewer";
@@ -21,6 +23,7 @@ import {
   buildCartLineKey,
   formatProductImageLabel,
   getDefaultGalleryImage,
+  resolveDesignDescription,
 } from "@/lib/product-image-selection";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
@@ -53,6 +56,11 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
     const match = product.galleryImages.find((image) => image.id === selectedImageId);
     return match ?? defaultImage;
   }, [defaultImage, product.galleryImages, selectedImageId]);
+
+  const activeDescription = useMemo(
+    () => resolveDesignDescription(selectedImage, product.description),
+    [product.description, selectedImage],
+  );
 
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
@@ -185,7 +193,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
             >
               <div className="space-y-3 sm:space-y-4">
                 <h1 className="font-heading text-2xl text-brand-umber sm:text-4xl md:text-5xl">{product.name}</h1>
-                <p className="text-sm leading-relaxed text-brand-umber/75 sm:text-base">{product.description}</p>
+                <p className="text-sm leading-relaxed text-brand-umber/75 sm:text-base">{activeDescription}</p>
               </div>
 
               <div className="flex flex-wrap items-center gap-3 border-y border-brand-umber/15 py-4 sm:gap-6 sm:py-6">
@@ -207,6 +215,8 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 )}
               </div>
 
+              <AdditionalInfo product={product} />
+
               {hasMultipleDesigns ? (
                 <ProductDesignPicker
                   images={product.galleryImages}
@@ -224,9 +234,24 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
                 />
               ) : null}
 
-              <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isAddDisabled}>
-                <ShoppingBag className="mr-2 h-5 w-5" /> {addButtonLabel}
-              </Button>
+              <p className="text-xs leading-relaxed text-brand-umber/65">
+                Handmade pieces may vary slightly in colour and finish.{" "}
+                <Link href="/shipping" className="font-medium text-brand-teal hover:underline">
+                  Shipping
+                </Link>
+                {" · "}
+                <Link href="/returns" className="font-medium text-brand-teal hover:underline">
+                  Returns
+                </Link>
+              </p>
+
+              {isOutOfStock ? (
+                <BackInStockNotifyForm productId={product.id} productName={product.name} />
+              ) : (
+                <Button size="lg" className="w-full" onClick={handleAddToCart} disabled={isAddDisabled}>
+                  <ShoppingBag className="mr-2 h-5 w-5" /> {addButtonLabel}
+                </Button>
+              )}
             </motion.div>
           </div>
 
@@ -256,23 +281,10 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 }
 
 function ProductSummary({ product }: { product: ProductCardData }) {
-  const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
   const discountPercent = getDiscountPercent(product.price, product.originalPrice);
   const isDiscounted = hasValidDiscount(product.price, product.originalPrice);
   const isOutOfStock = product.isOutOfStock === true;
-
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (isOutOfStock) return;
-    addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-    });
-  };
 
   return (
     <motion.article
@@ -280,83 +292,55 @@ function ProductSummary({ product }: { product: ProductCardData }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.7, ease: [0.33, 1, 0.68, 1] }}
-      className="group rounded-3xl border border-brand-teal/20 bg-white overflow-hidden shadow-[0_20px_50px_rgba(74,43,40,0.14)] backdrop-blur-sm transition-all duration-300 hover:border-brand-teal/35 hover:shadow-[0_26px_60px_rgba(74,43,40,0.16)]"
     >
-      <Link href={`/products/${product.slug}`}>
-        <div className="relative overflow-hidden aspect-[4/5]">
+      <Link
+        href={`/products/${product.slug}`}
+        className="group block rounded-3xl border border-brand-teal/20 bg-white overflow-hidden shadow-[0_20px_50px_rgba(74,43,40,0.14)] transition-all duration-300 hover:border-brand-teal/35 hover:shadow-[0_26px_60px_rgba(74,43,40,0.16)]"
+      >
+        <div className="relative aspect-[4/5] overflow-hidden">
           <Image
             src={product.image}
             alt={product.name}
             fill
-            className="object-cover transition duration-700 group-hover:scale-110"
+            className="object-cover transition duration-700 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-          <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              size="sm"
-              variant="secondary"
-              className="bg-white/95 backdrop-blur-sm hover:bg-white"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = `/products/${product.slug}`;
-              }}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Quick View
-            </Button>
-            <Button
-              size="sm"
-              className="bg-brand-teal/95 backdrop-blur-sm hover:bg-brand-teal"
-              disabled={isOutOfStock}
-              onClick={handleQuickAdd}
-            >
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              {isOutOfStock ? "Out of Stock" : "Add to Cart"}
-            </Button>
-          </div>
-          {isDiscounted && (
-            <div className="absolute top-3 left-3 bg-brand-coral text-white text-xs font-semibold px-2 py-1 rounded-full">
+          {isDiscounted ? (
+            <div className="absolute top-3 left-3 rounded-full bg-brand-coral px-2 py-1 text-xs font-semibold text-white">
               -{discountPercent}%
             </div>
-          )}
-          {isOutOfStock && (
-            <div className="absolute top-3 right-3 bg-red-600 text-white text-xs font-semibold px-2 py-1 rounded-full uppercase">
-              Out of Stock
+          ) : null}
+          {isOutOfStock ? (
+            <div className="absolute top-3 right-3 rounded-full bg-red-600 px-2 py-1 text-xs font-semibold uppercase text-white">
+              Out of stock
             </div>
-          )}
+          ) : null}
         </div>
-        <div className="p-6 space-y-3">
-          <div>
-            <h3 className="font-heading text-xl text-brand-umber group-hover:text-brand-teal transition-colors">
-              {product.name}
-            </h3>
-            {product.origin && (
-              <p className="text-xs text-brand-umber/60 mt-1">From {product.origin}</p>
-            )}
-          </div>
-          <div className="flex items-center justify-between">
+        <div className="space-y-3 p-6">
+          <h3 className="font-heading text-xl text-brand-umber transition-colors group-hover:text-brand-teal">
+            {product.name}
+          </h3>
+          {product.origin ? (
+            <p className="text-xs text-brand-umber/60">From {product.origin}</p>
+          ) : null}
+          <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <p className="text-lg font-semibold text-brand-coral">
-                {formatPrice(product.price)}
-              </p>
-              {isDiscounted && product.originalPrice && (
-                <p className="text-sm text-brand-umber/40 line-through">
-                  {formatPrice(product.originalPrice)}
-                </p>
-              )}
+              <p className="text-lg font-semibold text-brand-coral">{formatPrice(product.price)}</p>
+              {isDiscounted && product.originalPrice ? (
+                <p className="text-sm text-brand-umber/40 line-through">{formatPrice(product.originalPrice)}</p>
+              ) : null}
             </div>
-            {product.materials.length > 0 && (
-              <div className="flex gap-1">
+            {product.materials.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
                 {product.materials.slice(0, 2).map((material, idx) => (
                   <span
                     key={`${product.id}-material-${idx}`}
-                    className="text-xs px-2 py-1 rounded-full bg-brand-jade/20 text-brand-umber/70"
+                    className="rounded-full bg-brand-jade/20 px-2 py-1 text-xs text-brand-umber/70"
                   >
                     {material.split(" ")[0]}
                   </span>
                 ))}
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </Link>

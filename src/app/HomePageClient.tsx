@@ -5,15 +5,18 @@ import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { CategoryCard } from "@/components/CategoryCard";
 import type { HomePageCategoryCard } from "@/server/storefront/collections";
+import type { HeroContent } from "@/server/storefront/settings";
 import type { OfferOfTheMonth } from "@/types/offer";
 
 interface HomePageClientProps {
   mainCategories: HomePageCategoryCard[];
+  hero: HeroContent;
   offerOfTheMonth?: OfferOfTheMonth | null;
 }
 
 export function HomePageClient({
   mainCategories,
+  hero,
   offerOfTheMonth = null,
 }: HomePageClientProps) {
   const firstCategoryRow = mainCategories.slice(0, 3);
@@ -22,7 +25,7 @@ export function HomePageClient({
   return (
     <main className="relative overflow-hidden bg-brand-beige">
       <Navbar />
-      <Hero offerOfTheMonth={offerOfTheMonth} />
+      <Hero hero={hero} offerOfTheMonth={offerOfTheMonth} />
 
       {mainCategories.length > 0 ? (
         <section className="section-spacing bg-white" id="collection">

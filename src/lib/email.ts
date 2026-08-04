@@ -202,6 +202,33 @@ export class EmailService {
     })
   }
 
+  async sendBackInStockEmail(data: {
+    to: string
+    productName: string
+    productUrl: string
+  }): Promise<boolean> {
+    const subject = `${data.productName} is back in stock`
+    const html = `
+      <div style="font-family: Georgia, serif; max-width: 560px; margin: 0 auto; color: #4a2b28;">
+        <h1 style="font-size: 24px;">Good news</h1>
+        <p><strong>${data.productName}</strong> is available again at TAC Accessories.</p>
+        <p style="margin: 24px 0;">
+          <a href="${data.productUrl}" style="display:inline-block;background:#0f766e;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:600;">
+            View product
+          </a>
+        </p>
+        <p style="font-size: 13px; color: #6b5b58;">You asked to be notified when this piece returned. Stock can move quickly — shop soon if you still want it.</p>
+      </div>
+    `
+    const text = `${data.productName} is back in stock.\n\nView product: ${data.productUrl}\n\nYou asked to be notified when this piece returned.`
+    return this.sendEmail({
+      to: data.to,
+      subject,
+      html,
+      text,
+    })
+  }
+
   async sendPasswordResetEmail(customerEmail: string, resetLink: string): Promise<boolean> {
     const template = this.getPasswordResetTemplate(resetLink)
     return this.sendEmail({

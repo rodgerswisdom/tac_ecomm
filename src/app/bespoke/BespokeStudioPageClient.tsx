@@ -2,9 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { CustomDropdown } from "@/components/ui/custom-dropdown";
 import { ImageUploader } from "@/components/ImageUploader";
@@ -74,7 +73,7 @@ const budgetOptions = [
   { value: "5000+", label: "$5,000+" },
 ];
 
-export function BespokeStudioPageClient() {
+export function BespokeCommissionSection() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -171,28 +170,16 @@ export function BespokeStudioPageClient() {
     : null;
 
   return (
-    <main className="relative overflow-hidden bg-brand-beige">
-      <Navbar />
-
-      {/* Hero Section with How It Works */}
-      <section className="nav-clearance section-spacing bg-brand-beige">
+    <div className="space-y-0">
+      <section className="section-spacing bg-brand-beige">
         <div className="gallery-container">
-          <div className="text-center mb-12">
-            <h1 className="font-heading text-4xl text-brand-umber md:text-5xl mb-4">
-              Bespoke Studio
-            </h1>
-            <p className="text-lg text-brand-umber/70 max-w-2xl mx-auto mb-12">
-              Create custom pieces tailored to your vision with Tac Accessories.
+          <div className="mb-12 text-center">
+            <h2 className="mb-4 font-heading text-3xl text-brand-umber md:text-4xl">
+              Commission a custom piece
+            </h2>
+            <p className="mx-auto max-w-2xl text-base text-brand-umber/70">
+              Prefer something made only for you? Share your vision and our studio will guide the process.
             </p>
-
-            {/* <div className="mb-12">
-              <h2 className="font-heading text-3xl text-brand-umber mb-4">
-                How It Works
-              </h2>
-              <p className="text-base text-brand-umber/70 max-w-xl mx-auto mb-8">
-                Our team guides you through the bespoke creation process.
-              </p>
-            </div> */}
           </div>
 
           <div className="grid gap-8 md:grid-cols-3">
@@ -204,34 +191,29 @@ export function BespokeStudioPageClient() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="flex justify-center mb-6">
+                <div className="mb-6 flex justify-center">
                   <div className="relative">
-                    <div className="w-16 h-16 bg-gradient-to-br from-brand-gold to-brand-teal rounded-full flex items-center justify-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-brand-gold to-brand-teal">
                       <step.icon className="h-8 w-8 text-white" />
                     </div>
-                    <div className="absolute -top-1 -right-1 w-7 h-7 bg-brand-umber text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg">
+                    <div className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-brand-umber text-xs font-bold text-white shadow-lg">
                       {step.step}
                     </div>
                   </div>
                 </div>
-                <h3 className="font-heading text-xl text-brand-umber mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-brand-umber/70">
-                  {step.description}
-                </p>
+                <h3 className="mb-3 font-heading text-xl text-brand-umber">{step.title}</h3>
+                <p className="text-brand-umber/70">{step.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Consultation Form */}
-      <section className="section-spacing bg-white">
+      <section id="bespoke-request" className="section-spacing bg-white">
         <div className="gallery-container">
-          <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8">
-              <h2 className="font-heading text-3xl text-brand-umber mb-4">
+          <div className="mx-auto max-w-2xl">
+            <div className="mb-8 text-center">
+              <h2 className="mb-4 font-heading text-3xl text-brand-umber">
                 Request a Consultation
               </h2>
               <p className="text-base text-brand-umber/70">
@@ -239,13 +221,13 @@ export function BespokeStudioPageClient() {
               </p>
             </div>
 
-            <Card className="border-brand-umber/10 bg-white/80 backdrop-blur-sm overflow-hidden">
-              <CardHeader className="p-5 sm:p-6 pb-2 text-center">
+            <Card className="overflow-hidden border-brand-umber/10 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="p-5 pb-2 text-center sm:p-6">
                 <CardTitle className="text-center text-brand-umber">
                   Bespoke Request Form
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-2">
+              <CardContent className="p-4 pt-2 sm:p-6">
                 {submitSuccess ? (
                   <div className="rounded-lg border border-brand-teal/30 bg-brand-jade/10 p-8 text-center">
                     <h3 className="font-heading text-xl text-brand-umber mb-2">Thank you</h3>
@@ -450,6 +432,6 @@ export function BespokeStudioPageClient() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
