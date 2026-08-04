@@ -48,6 +48,11 @@ export const authConfig = {
     },
     session: {
         strategy: "jwt",
+        /** Absolute session lifetime: 23 hours from sign-in. */
+        maxAge: 23 * 60 * 60,
+    },
+    jwt: {
+        maxAge: 23 * 60 * 60,
     },
     pages: {
         signIn: "/auth/signin",
