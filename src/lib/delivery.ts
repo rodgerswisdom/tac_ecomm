@@ -13,7 +13,7 @@ export const FREE_SHIPPING_KENYA_KSH_THRESHOLD = 5000;
 /** Base shipping fees stored in KSH (same base unit as product prices). */
 export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
   kenya_standard: 300,
-  kenya_express: 800,
+  kenya_express: 500,
   international_standard: 2500,
   international_express: 4500,
 };

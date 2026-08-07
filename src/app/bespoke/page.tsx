@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { CollectionsPageClient } from "@/app/collections/CollectionsPageClient";
-import { BespokeCommissionSection } from "./BespokeStudioPageClient";
+import { BespokePageClient } from "./BespokePageClient";
 import { getBespokeProductCards } from "@/server/storefront/products";
 
 export const metadata: Metadata = {
@@ -40,18 +39,11 @@ export default async function BespokeLimitedEditionPage({
 
   return (
     <Suspense fallback={null}>
-      <CollectionsPageClient
+      <BespokePageClient
         initialProducts={products}
         categories={categories}
-        collections={[]}
         initialCategory={initialCategory}
         initialSearch={initialSearch}
-        basePath="/bespoke"
-        pageTitle="Bespoke & Limited Edition"
-        pageDescription="One-of-one and limited release pieces. Each work is curated for collectors who want something singular."
-        emptyTitle="No limited edition pieces yet"
-        emptyDescription="Check back soon, or commission a custom piece below."
-        footer={<BespokeCommissionSection />}
       />
     </Suspense>
   );

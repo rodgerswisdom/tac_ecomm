@@ -105,13 +105,12 @@ export default function ShopifyCheckout() {
         setError(data.error || "Failed to place order. Please try again.");
         return;
       }
+      setOrderPlaced(true);
+      clearCart();
       if (data.thankYouUrl || data.redirectUrl) {
-        setPlacingOrder(false);
         window.location.href = data.thankYouUrl || data.redirectUrl;
         return;
       }
-      setOrderPlaced(true);
-      clearCart();
     } catch {
       setError("Failed to place order. Please try again.");
     } finally {

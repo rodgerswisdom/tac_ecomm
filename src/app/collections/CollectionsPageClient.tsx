@@ -54,6 +54,7 @@ interface CollectionsPageClientProps {
   pageDescription?: string;
   emptyTitle?: string;
   emptyDescription?: string;
+  heroAction?: ReactNode;
   footer?: ReactNode;
 }
 
@@ -68,6 +69,7 @@ export function CollectionsPageClient({
   pageDescription,
   emptyTitle = "No products found",
   emptyDescription = "Try adjusting your filters.",
+  heroAction,
   footer,
 }: CollectionsPageClientProps) {
   const router = useRouter();
@@ -247,6 +249,9 @@ export function CollectionsPageClient({
             <p className="mx-auto mt-3 max-w-2xl text-sm text-brand-umber/70 sm:text-base">
               {pageDescription}
             </p>
+          ) : null}
+          {heroAction ? (
+            <div className="mt-6 flex justify-center">{heroAction}</div>
           ) : null}
         </div>
       </section>
