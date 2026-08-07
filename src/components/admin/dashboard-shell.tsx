@@ -242,8 +242,8 @@ export function AdminDashboardShell({
         </aside>
 
         <main className="flex-1 min-w-0 flex flex-col bg-background">
-          <div className="flex-1 px-3 py-8 sm:px-4 lg:px-6">
-            <div className="mx-auto w-full max-w-7xl">
+          <div className="flex-1 px-3 py-6 sm:px-4 lg:px-6 xl:px-8">
+            <div className="mx-auto w-full max-w-none xl:max-w-full 2xl:max-w-[1600px]">
               {children}
             </div>
           </div>

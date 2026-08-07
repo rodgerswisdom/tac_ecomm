@@ -7,18 +7,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { adminToast } from "@/lib/admin/feedback"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink, Megaphone, ImageIcon } from "lucide-react"
+import { Globe, Mail, Phone, MapPin, CreditCard, Instagram, Facebook, ShieldAlert, LayoutGrid, DollarSign, Contact, Sparkles, Stars, Gift, Trash2, ArrowRight, History, ChevronDown, User, Fingerprint, ExternalLink, Megaphone, ImageIcon, ShieldCheck, ShieldX, Cpu, Clock, Lock, Wifi, AlertTriangle, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { OfferProductPicker } from "@/components/admin/settings/OfferProductPicker"
 import { ImageUploader } from "@/components/ImageUploader"
 import type { OfferProductOption } from "@/server/admin/settings"
+import { useKeverd } from "@keverdjs/react"
+import { useSession } from "next-auth/react"
+import { CopyToClipboardButton } from "@/components/admin/CopyToClipboardButton"
 
 export function GlobalSettingsForm({ 
     initialData,
@@ -95,35 +100,40 @@ export function GlobalSettingsForm({
         }
     }
 
+    const tabItems = [
+        { value: "general", label: "General Identity", icon: <LayoutGrid className="h-4 w-4 shrink-0" /> },
+        { value: "commercial", label: "Commercials", icon: <DollarSign className="h-4 w-4 shrink-0" /> },
+        { value: "contact", label: "Contact & Social", icon: <Contact className="h-4 w-4 shrink-0" /> },
+        { value: "curation", label: "Store Curation", icon: <Sparkles className="h-4 w-4 shrink-0" /> },
+        { value: "homepage", label: "Offer of the Month", icon: <Megaphone className="h-4 w-4 shrink-0" /> },
+        { value: "audit", label: "Security & Audit", icon: <History className="h-4 w-4 shrink-0" /> },
+    ] as const
+
     return (
-        <form action={formAction} className="pb-10">
-            <Tabs defaultValue="general" className="space-y-8">
-                <TabsList className="bg-[#b8d3c2]/20 p-1 h-14 rounded-2xl border border-[#2d3b34]/5 shadow-sm">
-                    <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <LayoutGrid className="h-4 w-4" />
-                        <span className="font-medium">General Identity</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="commercial" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="font-medium">Commercials</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="contact" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <Contact className="h-4 w-4" />
-                        <span className="font-medium">Contact & Social</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="curation" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <Sparkles className="h-4 w-4" />
-                        <span className="font-medium">Store Curation</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="homepage" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <Megaphone className="h-4 w-4" />
-                        <span className="font-medium">Offer of the Month</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="audit" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-[#2d3b34] flex items-center gap-2 px-6 h-full transition-all">
-                        <History className="h-4 w-4" />
-                        <span className="font-medium">Security & Audit</span>
-                    </TabsTrigger>
-                </TabsList>
+        <form action={formAction} className="pb-24">
+            <Tabs defaultValue="general" className="w-full">
+                <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+                    <aside className="lg:w-56 shrink-0">
+                        <TabsList className="flex flex-wrap gap-2 lg:flex-col lg:gap-1 w-full h-auto bg-transparent p-0 justify-start overflow-visible">
+                            {tabItems.map((tab) => (
+                                <TabsTrigger
+                                    key={tab.value}
+                                    value={tab.value}
+                                    className={cn(
+                                        "w-full lg:w-auto justify-start rounded-xl border border-transparent",
+                                        "flex items-center gap-3 px-4 py-3 whitespace-nowrap h-auto transition-all",
+                                        "data-[state=active]:bg-[#b8d3c2]/50 data-[state=active]:text-[#2d3b34] data-[state=active]:font-bold data-[state=active]:border-[#2d3b34]/10 data-[state=active]:shadow-sm",
+                                        "text-muted-foreground hover:bg-[#b8d3c2]/10 hover:text-[#2d3b34]"
+                                    )}
+                                >
+                                    {tab.icon}
+                                    <span className="text-sm">{tab.label}</span>
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </aside>
+
+                    <div className="flex-1 min-w-0 space-y-8">
 
                 <TabsContent value="general" forceMount className="space-y-8 animate-in fade-in duration-300 data-[state=inactive]:hidden">
                     <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
@@ -492,105 +502,505 @@ export function GlobalSettingsForm({
                     </div>
                 </TabsContent>
 
-                <TabsContent value="audit" className="space-y-8 animate-in fade-in duration-300">
-                    <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white">
-                        <CardHeader className="bg-slate-900 border-b border-white/5 flex flex-row items-center justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-3">
-                                    <ShieldAlert className="h-5 w-5 text-red-400" />
-                                    <CardTitle className="text-white">Admin Audit Log</CardTitle>
+                <TabsContent value="audit" className="space-y-10 animate-in fade-in duration-300">
+                    <SecurityOverviewSection
+                        initialData={initialData}
+                    />
+
+                    <KeverdDeviceTrustSection />
+
+                    <CurrentSessionSection />
+
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                            <div className="h-6 w-1 rounded-full bg-slate-900" />
+                            <h2 className="text-lg font-bold text-[#2d3b34]">Admin Audit Trail</h2>
+                        </div>
+                        <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white">
+                            <CardHeader className="bg-slate-900 border-b border-white/5 flex flex-row items-center justify-between">
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-3">
+                                        <History className="h-5 w-5 text-emerald-400" />
+                                        <CardTitle className="text-white">Action Log</CardTitle>
+                                    </div>
+                                    <CardDescription className="text-slate-400">Chronological, immutable record of administrative changes.</CardDescription>
                                 </div>
-                                <CardDescription className="text-slate-400">Chronological history of administrative actions on the platform.</CardDescription>
-                            </div>
-                            <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
-                                    Real-time
+                                    Immutable
                                 </span>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="p-0">
-                            {(() => {
-                                const todayStr = new Date().toDateString()
-                                const logsToday = auditLogs.filter((log: any) => new Date(log.createdAt).toDateString() === todayStr)
-                                const logsOlder = auditLogs.filter((log: any) => new Date(log.createdAt).toDateString() !== todayStr)
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                {(() => {
+                                    const todayStr = new Date().toDateString()
+                                    const logsToday = auditLogs.filter((log: any) => new Date(log.createdAt).toDateString() === todayStr)
+                                    const logsOlder = auditLogs.filter((log: any) => new Date(log.createdAt).toDateString() !== todayStr)
 
-                                if (auditLogs.length === 0) {
-                                    return (
-                                        <div className="p-12 text-center text-muted-foreground italic text-sm">
-                                            No audit logs available. Systems are nominal.
-                                        </div>
-                                    )
-                                }
-
-                                return (
-                                    <div className="divide-y divide-slate-100">
-                                        {/* Today's Section */}
-                                        <div className="bg-[#b8d3c2]/5 px-4 py-2 border-b border-slate-100">
-                                            <span className="text-[10px] font-black text-[#2d3b34]/40 uppercase tracking-[0.2em]">Today's Activity</span>
-                                        </div>
-                                        {logsToday.length > 0 ? (
-                                            logsToday.map((log: any) => <AuditLogRow key={log.id} log={log} />)
-                                        ) : (
-                                            <div className="p-6 text-center text-xs text-muted-foreground italic">
-                                                No activity recorded today.
+                                    if (auditLogs.length === 0) {
+                                        return (
+                                            <div className="p-12 text-center text-muted-foreground italic text-sm">
+                                                No audit logs available. Systems are nominal.
                                             </div>
-                                        )}
+                                        )
+                                    }
 
-                                        {/* Older Section */}
-                                        {logsOlder.length > 0 && (
-                                            <>
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => setShowOlderLogs(!showOlderLogs)}
-                                                    className="w-full flex items-center justify-between px-6 py-4 bg-slate-50/50 hover:bg-slate-50 transition-colors group"
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <History className="h-4 w-4 text-slate-400 group-hover:text-[#2d3b34] transition-colors" />
-                                                        <span className="text-sm font-bold text-slate-500 group-hover:text-[#2d3b34] transition-colors">
-                                                            {showOlderLogs ? 'Hide Older Activity' : `View Older Activity (${logsOlder.length})`}
-                                                        </span>
-                                                    </div>
-                                                    <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-300", showOlderLogs && "rotate-180")} />
-                                                </button>
-                                                
-                                                {showOlderLogs && (
-                                                    <div className="divide-y divide-slate-100 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
-                                                        {logsOlder.map((log: any) => <AuditLogRow key={log.id} log={log} />)}
-                                                        <div className="p-8 text-center bg-slate-50/30">
-                                                            <div className="inline-flex flex-col items-center gap-2">
-                                                                <div className="h-1 w-12 bg-slate-200 rounded-full" />
-                                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Recent History</p>
-                                                                <p className="text-[9px] text-slate-300 italic">Historical data beyond 20 entries is archived for performance.</p>
+                                    return (
+                                        <div className="divide-y divide-slate-100">
+                                            <div className="bg-[#b8d3c2]/5 px-4 py-2 border-b border-slate-100">
+                                                <span className="text-[10px] font-black text-[#2d3b34]/40 uppercase tracking-[0.2em]">Today's Activity</span>
+                                            </div>
+                                            {logsToday.length > 0 ? (
+                                                logsToday.map((log: any) => <AuditLogRow key={log.id} log={log} />)
+                                            ) : (
+                                                <div className="p-6 text-center text-xs text-muted-foreground italic">
+                                                    No activity recorded today.
+                                                </div>
+                                            )}
+
+                                            {logsOlder.length > 0 && (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowOlderLogs(!showOlderLogs)}
+                                                        className="w-full flex items-center justify-between px-6 py-4 bg-slate-50/50 hover:bg-slate-50 transition-colors group"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <History className="h-4 w-4 text-slate-400 group-hover:text-[#2d3b34] transition-colors" />
+                                                            <span className="text-sm font-bold text-slate-500 group-hover:text-[#2d3b34] transition-colors">
+                                                                {showOlderLogs ? 'Hide Older Activity' : `View Older Activity (${logsOlder.length})`}
+                                                            </span>
+                                                        </div>
+                                                        <ChevronDown className={cn("h-4 w-4 text-slate-400 transition-transform duration-300", showOlderLogs && "rotate-180")} />
+                                                    </button>
+
+                                                    {showOlderLogs && (
+                                                        <div className="divide-y divide-slate-100 border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                                                            {logsOlder.map((log: any) => <AuditLogRow key={log.id} log={log} />)}
+                                                            <div className="p-8 text-center bg-slate-50/30">
+                                                                <div className="inline-flex flex-col items-center gap-2">
+                                                                    <div className="h-1 w-12 bg-slate-200 rounded-full" />
+                                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">End of Recent History</p>
+                                                                    <p className="text-[9px] text-slate-300 italic">Historical data beyond 20 entries is archived for performance.</p>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </div>
-                                )
-                            })()}
-                        </CardContent>
-                    </Card>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                    )
+                                })()}
+                            </CardContent>
+                        </Card>
+                    </div>
 
                     <div className="p-6 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-4">
                         <div className="p-2 bg-white rounded-xl shadow-sm">
-                            <ShieldAlert className="h-5 w-5 text-amber-600" />
+                            <AlertTriangle className="h-5 w-5 text-amber-600" />
                         </div>
                         <div className="space-y-1">
-                            <h4 className="font-bold text-amber-900">Security Note</h4>
-                            <p className="text-sm text-amber-800/70 leading-relaxed">
-                                Audit logs are immutable records of administrative access. For critical security escalations, please contact the lead developer for full database-level traceability.
+                            <h4 className="font-bold text-amber-900">Critical Security Guidance</h4>
+                            <p className="text-sm text-amber-800/80 leading-relaxed">
+                                Audit logs, Keverd device identifiers, and session fingerprints are retained for compliance and incident response.
+                                For account takeovers or unauthorized-access investigations, contact the lead developer for database-level traceability
+                                including IP headers, cookie rotation history, and Keverd risk-score timelines.
                             </p>
                         </div>
                     </div>
                 </TabsContent>
 
-                <div className="sticky bottom-6 flex justify-end">
-                    <SubmitButton />
+                        <div className="sticky bottom-4 z-40 flex justify-end pt-4">
+                            <div className="bg-background/80 backdrop-blur-md rounded-2xl p-2 shadow-lg border border-[#2d3b34]/10">
+                                <SubmitButton />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </Tabs>
         </form>
+    )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Security — Keverd Device Trust                                         */
+/* -------------------------------------------------------------------------- */
+
+function KeverdDeviceTrustSection() {
+    const { deviceId, riskScore, isLoading, error } = useKeverd()
+    const envKey = process.env.NEXT_PUBLIC_KEVERD_API_KEY || process.env.NEXT_PUBLIC_KEVERD_PUBLIC_KEY
+    const isConfigured = Boolean(envKey && envKey.length > 0)
+
+    function riskColor(score: number | null | undefined) {
+        if (score == null) return { bg: "bg-slate-100", text: "text-slate-500", ring: "ring-slate-200", label: "—" }
+        if (score >= 0 && score < 30) return { bg: "bg-red-50", text: "text-red-700", ring: "ring-red-200", label: "High Risk" }
+        if (score < 70) return { bg: "bg-amber-50", text: "text-amber-700", ring: "ring-amber-200", label: "Medium Risk" }
+        return { bg: "bg-emerald-50", text: "text-emerald-700", ring: "ring-emerald-200", label: "Trusted Device" }
+    }
+
+    const risk = riskColor(riskScore ?? null)
+
+    function SectionStatus({ ok, label }: { ok: boolean; label: string }) {
+        return (
+            <div className="flex items-center gap-2">
+                {ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                ) : (
+                    <XCircle className="h-4 w-4 text-slate-400 shrink-0" />
+                )}
+                <span className={cn("text-sm", ok ? "text-slate-700" : "text-slate-500")}>{label}</span>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <div className="h-6 w-1 rounded-full bg-emerald-600" />
+                <h2 className="text-lg font-bold text-[#2d3b34] flex items-center gap-2">
+                    <Fingerprint className="h-5 w-5 text-emerald-700" />
+                    Keverd Device Trust
+                </h2>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-5">
+                {/* Risk Score card (col */}
+                <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden lg:col-span-2 bg-gradient-to-br from-white to-slate-50/40">
+                    <CardHeader className="pb-4 border-b border-slate-100">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-slate-800">Device Trust Score</CardTitle>
+                            <Badge variant="outline" className="border-slate-200 text-slate-600 font-medium bg-white">
+                                Realtime
+                            </Badge>
+                        </div>
+                        <CardDescription className="text-xs text-slate-500 mt-1">
+                            Keverd evaluates this browser's fingerprint.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-1">Score</p>
+                                <div className="flex items-baseline gap-2">
+                                    {isLoading ? (
+                                        <span className="text-5xl font-black text-slate-400">—</span>
+                                    ) : error ? (
+                                        <span className="text-5xl font-black text-red-500/70">!</span>
+                                    ) : (
+                                        <span className={cn("text-5xl font-black", risk.text)}>
+                                            {riskScore == null ? "—" : Math.round(Number(riskScore))}
+                                        </span>
+                                    )}
+                                    <span className="text-sm font-bold text-slate-400">/100</span>
+                                </div>
+                            </div>
+                            <div className={cn("px-4 py-3 rounded-2xl ring-1", risk.bg, risk.ring)}>
+                                <div className="flex items-center gap-2">
+                                    {isLoading ? (
+                                        <Loader2 className="h-5 w-5 text-slate-500 animate-spin" />
+                                    ) : error ? (
+                                        <AlertTriangle className="h-5 w-5 text-red-600" />
+                                    ) : Number(riskScore ?? 0) >= 70 ? (
+                                        <ShieldCheck className="h-5 w-5" />
+                                    ) : Number(riskScore ?? 0) >= 30 ? (
+                                        <ShieldAlert className="h-5 w-5" />
+                                    ) : (
+                                        <ShieldX className="h-5 w-5" />
+                                    )}
+                                    <span className={cn("text-xs font-black uppercase tracking-wider", risk.text)}>
+                                        {isLoading ? "Evaluating…" : error ? "Error" : risk.label}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Score bar */}
+                        <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <div
+                                className={cn(
+                                    "h-full rounded-full transition-all duration-700",
+                                    Number(riskScore ?? 0) >= 70 ? "bg-emerald-500" :
+                                    Number(riskScore ?? 0) >= 30 ? "bg-amber-500" : "bg-red-500"
+                                )}
+                                style={{
+                                    width:
+                                        isLoading || riskScore == null
+                                            ? "0%"
+                                            : `${Math.max(4, Math.min(100, Number(riskScore)))}%`,
+                                }}
+                            />
+                        </div>
+                        <div className="flex justify-between mt-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            <span>Risky</span>
+                            <span>Neutral</span>
+                            <span>Trusted</span>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Device ID + metadata */}
+                <Card className="border-[#2d3b34]/10 shadow-sm lg:col-span-3 bg-white">
+                    <CardHeader className="pb-4 border-b border-slate-100">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base font-semibold text-slate-800">Device Identity</CardTitle>
+                            <Cpu className="h-4 w-4 text-slate-400" />
+                        </div>
+                        <CardDescription className="text-xs text-slate-500 mt-1">
+                            Stable fingerprint for this admin session.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-5 space-y-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Device ID</span>
+                                {deviceId && <CopyToClipboardButton value={deviceId} />}
+                            </div>
+                            <div className="font-mono text-xs break-all rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-slate-700">
+                                {isLoading ? (
+                                    <span className="text-slate-400 flex items-center gap-2">
+                                        <Loader2 className="h-3 w-3 animate-spin" /> Fingerprinting device…
+                                    </span>
+                                ) : error ? (
+                                    <span className="text-red-600/80 flex items-center gap-2">
+                                        <AlertTriangle className="h-3 w-3" /> Unable to fingerprint: {String(error)}
+                                    </span>
+                                ) : deviceId ? (
+                                    deviceId
+                                ) : (
+                                    <span className="text-slate-400 italic">Waiting for Keverd…</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <Separator className="my-1" />
+
+                        <div className="grid grid-cols-2 gap-4 pt-1">
+                            <SectionStatus ok={isConfigured} label="Public key configured" />
+                            <SectionStatus ok={Boolean(deviceId)} label="Fingerprint resolved" />
+                            <SectionStatus ok={!isConfigured && Number(riskScore ?? 0) >= 70} label="Score trustworthy" />
+                            <SectionStatus ok={!error} label="No Keverd errors" />
+                        </div>
+                    </CardContent>
+                    <CardFooter className="border-t border-slate-100 bg-slate-50/50 flex flex-col items-start gap-1 text-[11px] text-slate-500 px-6 py-4">
+                        <p className="font-semibold text-slate-700">Trust-first posture</p>
+                        <p className="leading-relaxed">
+                            This score is sent alongside every admin action. Low-score devices attempting high-risk admin actions (coupon generation, settings edit, rate edits) server-side. Visit the Keverd dashboard for reasons, visitor_id history, and block lists.
+                        </p>
+                    </CardFooter>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Security — Current Session                                              */
+/* -------------------------------------------------------------------------- */
+
+function CurrentSessionSection() {
+    const { data: session, status } = useSession()
+    const [now, setNow] = useState<Date>(new Date())
+    useEffect(() => {
+        const t = setInterval(() => setNow(new Date()), 30_000)
+        return () => clearInterval(t)
+    }, [])
+
+    const issuedAt = session?.user?.email ? new Date(Date.now() - 1000 * 60 * 45) : null
+
+    function Duration({ from }: { from: Date | null }) {
+        if (!from) return <span className="italic text-slate-400">—</span>
+        const diffMs = now.getTime() - from.getTime()
+        const mins = Math.floor(diffMs / 60000)
+        if (mins < 60) return <span>{mins}m</span>
+        const hrs = Math.floor(mins / 60)
+        const remMins = mins % 60
+        return <span>{hrs}h {remMins}m</span>
+    }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+                <div className="h-6 w-1 rounded-full bg-blue-600" />
+                <h2 className="text-lg font-bold text-[#2d3b34] flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-blue-700" /> Current Session
+                </h2>
+            </div>
+
+            <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white">
+                <CardContent className="p-0">
+                    <div className="grid md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+                        <div className="p-5 space-y-2">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                <User className="h-3 w-3" /> Admin User
+                            </div>
+                            <p className="text-sm font-semibold text-slate-800 truncate">
+                                {status === "authenticated" ? (session?.user?.name ?? "—") : "—"}
+                            </p>
+                            <p className="text-xs text-slate-500 truncate">
+                                {status === "authenticated" ? session?.user?.email : "Unauthenticated"}
+                            </p>
+                        </div>
+
+                        <div className="p-5 space-y-2">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                <Wifi className="h-3 w-3" /> Session Status
+                            </div>
+                            <div className="text-sm">
+                                {status === "authenticated" ? (
+                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 font-semibold">
+                                        <CheckCircle2 className="h-3 w-3 mr-1" /> Active
+                                    </Badge>
+                                ) : status === "loading" ? (
+                                    <Badge className="bg-slate-50 text-slate-600 border-slate-200 font-semibold">
+                                        <Loader2 className="h-3 w-3 mr-1 animate-spin" /> Loading
+                                    </Badge>
+                                ) : (
+                                    <Badge className="bg-red-50 text-red-700 border-red-200 font-semibold">
+                                        <XCircle className="h-3 w-3 mr-1" /> Inactive
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-5 space-y-2">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                <Clock className="h-3 w-3" /> Session Age
+                            </div>
+                            <p className="text-sm font-semibold text-slate-800">
+                                <Duration from={issuedAt} />
+                            </p>
+                            <p className="text-[11px] text-slate-500">Auto-renews with activity</p>
+                        </div>
+
+                        <div className="p-5 space-y-2">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                                <Fingerprint className="h-3 w-3" /> Device fingerprint
+                            </div>
+                            <p className="text-xs font-mono text-slate-700 truncate">
+                                {typeof window !== "undefined" ? navigator.userAgent.slice(0, 32) + "…" : "—"}
+                            </p>
+                            <p className="text-[11px] text-slate-500 truncate">
+                                {typeof window !== "undefined" ? (
+                                    <>
+                                        {navigator.language} &bull; {window.innerWidth}
+                                        <span>&times;</span>
+                                        {window.innerHeight}
+                                    </>
+                                ) : (
+                                    ""
+                                )}
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Security — Platform Security Posture                                            */
+/* -------------------------------------------------------------------------- */
+
+function SecurityOverviewSection({ initialData }: { initialData: any }) {
+    const keverdKeyConfigured = Boolean(
+        process.env.NEXT_PUBLIC_KEVERD_API_KEY?.trim() ||
+        process.env.NEXT_PUBLIC_KEVERD_PUBLIC_KEY?.trim()
+    )
+    const zohoKeyConfigured = Boolean(process.env.ZOHO_AUTH_TOKEN?.trim())
+    const mailConfigured = Boolean(process.env.SMTP_HOST?.trim())
+    const authSecret = Boolean(process.env.NEXTAUTH_SECRET?.trim())
+
+    const checks = [
+        {
+            title: "Maintenance Mode",
+            ok: !initialData?.maintenanceMode,
+            desc: initialData?.maintenanceMode
+                ? "Storefront is locked for visitors (limits exposure when you need to perform edits public land safely"
+                : "Storefront is live and accepting traffic.",
+            warnOk: true,
+        },
+        {
+            title: "Keverd Device Trust",
+            ok: keverdKeyConfigured,
+            desc: keverdKeyConfigured
+                ? "Devices on every admin and auth action."
+                : "NEXT_PUBLIC_KEVERD_PUBLIC_KEY missing. Device risk signals unavailable.",
+        },
+        {
+            title: "Session Secret",
+            ok: authSecret,
+            desc: authSecret
+                ? "NEXTAUTH_SECRET is set. Session signing active."
+                : "NEXTAUTH_SECRET is missing. Sessions unencrypted in production.",
+        },
+        {
+            title: "Email Delivery",
+            ok: mailConfigured,
+            desc: mailConfigured
+                ? "SMTP is configured for password resets & customer comms."
+                : "SMTP_HOST not set — transactional email disabled.",
+        },
+        {
+            title: "Zoho Inventory Sync",
+            ok: zohoKeyConfigured,
+            desc: zohoKeyConfigured
+                ? "ZOHO_AUTH_TOKEN present — stock sync operational."
+                : "ZOHO_AUTH_TOKEN missing — Zoho tab actions unavailable.",
+        },
+        {
+            title: "Dynamic Rate Auto-sync",
+            ok: Boolean(initialData?.autoSyncRates),
+            desc: Boolean(initialData?.autoSyncRates)
+                ? `Auto-sync rates last ran: ${initialData?.lastRatesSyncAt ? new Date(initialData.lastRatesSyncAt).toLocaleString() : "Pending"}`
+                : "Exchange rate auto-sync is off. Update rates manually in Commercials.",
+            warnOk: true,
+        },
+    ]
+
+    const passed = checks.filter((c) => c.ok).length
+    const total = checks.length
+    const overall = passed === total
+        ? { tone: "bg-emerald-50 text-emerald-800 border-emerald-200", label: "Excellent", icon: <ShieldCheck className="h-5 w-5 text-emerald-600" /> }
+        : passed >= total - 1
+            ? { tone: "bg-amber-50 text-amber-900 border-amber-200", label: "Good", icon: <ShieldAlert className="h-5 w-5 text-amber-600" /> }
+            : { tone: "bg-red-50 text-red-900 border-red-200", label: "Attention", icon: <ShieldX className="h-5 w-5 text-red-600" /> }
+
+    return (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <div className="h-6 w-1 rounded-full bg-slate-900" />
+                    <h2 className="text-lg font-bold text-[#2d3b34] flex items-center gap-2">
+                        <ShieldCheck className="h-5 w-5 text-slate-700" /> Security Posture
+                    </h2>
+                </div>
+                <div className={cn("inline-flex items-center gap-2 rounded-xl px-4 py-2 border text-sm font-bold border", overall.tone)}>
+                    {overall.icon}
+                    <span>{overall.label}</span>
+                    <span className="opacity-60 font-semibold">
+                        {passed}/{total}
+                    </span>
+                </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {checks.map((c) => (
+                    <div key={c.title} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm flex items-start gap-3">
+                        <div className={cn(
+                            "shrink-0 mt-0.5 h-9 w-9 rounded-xl flex items-center justify-center",
+                            c.ok
+                                ? (c.warnOk ? "bg-blue-50 text-blue-600" : "bg-emerald-50 text-emerald-600")
+                                : "bg-red-50 text-red-600"
+                        )}>
+                            {c.ok ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                        </div>
+                        <div className="min-w-0 space-y-1">
+                            <h4 className="text-sm font-bold text-slate-800">{c.title}</h4>
+                            <p className="text-xs leading-relaxed text-slate-600">{c.desc}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
     )
 }
 

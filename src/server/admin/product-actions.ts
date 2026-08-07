@@ -710,6 +710,7 @@ function revalidateProductRoute(productId?: string) {
   revalidatePath("/admin/products")
   revalidatePath("/admin/bespoke")
   revalidatePath("/admin/settings")
+  revalidatePath("/admin/global-store")
   revalidatePath("/collections")
   revalidatePath("/bespoke")
   if (productId) {

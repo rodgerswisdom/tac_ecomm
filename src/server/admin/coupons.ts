@@ -61,6 +61,7 @@ export async function createCouponAction(formData: FormData): Promise<ActionResu
 
     revalidatePath("/admin/coupons")
     revalidatePath("/admin/settings")
+    revalidatePath("/admin/global-store")
     return { success: true }
   } catch (error) {
     console.error(error)
@@ -91,6 +92,7 @@ export async function updateCouponAction(id: string, formData: FormData): Promis
 
     revalidatePath("/admin/coupons")
     revalidatePath("/admin/settings")
+    revalidatePath("/admin/global-store")
     revalidatePath(`/admin/coupons/${id}/edit`)
     return { success: true }
   } catch (error) {
@@ -113,6 +115,7 @@ export async function deleteCouponAction(id: string): Promise<ActionResult> {
 
     revalidatePath("/admin/coupons")
     revalidatePath("/admin/settings")
+    revalidatePath("/admin/global-store")
     return { success: true }
   } catch (error) {
     console.error(error)

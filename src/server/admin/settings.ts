@@ -242,6 +242,7 @@ export async function updateGlobalSettingsAction(
         )
 
         revalidatePath("/admin/settings")
+        revalidatePath("/admin/global-store")
         revalidatePath("/")
         return { status: "success", message: "Settings updated successfully" }
     } catch (error) {
@@ -309,6 +310,7 @@ export async function toggleProductFlagAction(formData: FormData): Promise<Actio
         )
 
         revalidatePath("/admin/settings")
+        revalidatePath("/admin/global-store")
         revalidatePath("/admin/products")
         revalidatePath("/admin/bespoke")
         revalidatePath("/bespoke")
@@ -355,6 +357,7 @@ export async function toggleCouponAction(formData: FormData): Promise<ActionResu
         )
 
         revalidatePath("/admin/settings")
+        revalidatePath("/admin/global-store")
         revalidatePath("/admin/coupons")
         return { success: true }
     } catch (error) {
