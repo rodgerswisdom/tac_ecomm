@@ -114,7 +114,7 @@ export function OfferProductPicker({ initialProduct = null }: OfferProductPicker
           ) : null}
 
           {open && (results.length > 0 || query.trim().length >= 2) ? (
-            <div className="absolute z-20 mt-2 max-h-72 w-full overflow-auto rounded-2xl border border-[#2d3b34]/10 bg-white shadow-lg">
+            <div className="absolute z-20 mt-2 max-h-72 w-full overflow-y-auto rounded-2xl border border-[#2d3b34]/10 bg-white shadow-lg">
               {results.length === 0 && !isPending ? (
                 <p className="px-4 py-6 text-center text-sm text-muted-foreground">
                   No products found for “{query.trim()}”

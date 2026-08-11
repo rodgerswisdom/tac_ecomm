@@ -407,8 +407,8 @@ export function GlobalSettingsForm({
                 </TabsContent>
 
                 <TabsContent value="homepage" forceMount className="space-y-8 animate-in fade-in duration-300 data-[state=inactive]:hidden">
-                    <Card className="border-[#2d3b34]/10 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
-                        <CardHeader className="bg-[#b8d3c2]/10 border-b border-[#2d3b34]/5">
+                    <Card className="border-[#2d3b34]/10 shadow-sm bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="bg-[#b8d3c2]/10 border-b border-[#2d3b34]/5 rounded-t-xl">
                             <div className="flex items-center gap-2">
                                 <Megaphone className="h-5 w-5 text-[#2d3b34]/70" />
                                 <CardTitle className="text-xl">Offer of the Month</CardTitle>
