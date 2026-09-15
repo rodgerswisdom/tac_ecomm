@@ -23,6 +23,7 @@ export interface ProductCardData {
   productType?: string
   isCorporateGift?: boolean
   isBespoke?: boolean
+  isToy?: boolean
   communityImpact?: string
   sourcingStory?: string
   artisan: {

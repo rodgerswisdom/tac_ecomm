@@ -126,6 +126,7 @@ model Product {
   isDigital        Boolean          @default(false)
   isBespoke        Boolean          @default(false)
   isCorporateGift  Boolean          @default(false)
+  isToy            Boolean          @default(false)
   productType      ProductType      @default(READY_TO_WEAR)
   categoryId       String
   artisanId        String?
@@ -156,6 +157,7 @@ model Product {
   @@index([isArchived])
   @@index([isFeatured])
   @@index([isBespoke])
+  @@index([isToy])
   @@index([productType])
   @@index([zohoSyncStatus])
 }
@@ -528,6 +530,7 @@ enum ProductType {
   BESPOKE
   CORPORATE_GIFT
   MATCHING_SET
+  TOY
 }
 
 enum OrderStatus {

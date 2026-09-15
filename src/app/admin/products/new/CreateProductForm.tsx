@@ -18,6 +18,7 @@ const PRODUCT_TYPES = [
   { value: "READY_TO_WEAR", label: "Ready to wear" },
   { value: "BESPOKE", label: "Bespoke" },
   { value: "CORPORATE_GIFT", label: "Corporate gift" },
+  { value: "TOY", label: "Toy" },
 ] as const
 
 const AUTOSAVE_KEY = "admin:new-product:draft"
@@ -238,6 +239,8 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
     if (!label) return undefined
     const normalized = label.toLowerCase()
     if (normalized.includes("bespoke") || normalized.includes("custom")) return "BESPOKE"
+    if (normalized.includes("toy")) return "TOY"
+    if (normalized.includes("corporate")) return "CORPORATE_GIFT"
     return undefined
   }
 
@@ -551,6 +554,9 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
                   )}
                   <label className="flex items-center gap-2">
                     <input type="checkbox" name="isCorporateGift" value="true" /> Corporate gift
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" name="isToy" value="true" /> Toy
                   </label>
                 </div>
                 {bespokeMode ? (

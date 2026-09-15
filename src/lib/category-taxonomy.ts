@@ -4,6 +4,7 @@ export type CategoryTaxonomyNode = {
   name: string
   slug: string
   description?: string
+  showOnHomepage?: boolean
 }
 
 export const CATEGORY_TAXONOMY: CategoryTaxonomyNode[] = [
@@ -41,6 +42,12 @@ export const CATEGORY_TAXONOMY: CategoryTaxonomyNode[] = [
     name: "Matching Sets",
     slug: "matching-sets",
     description: "Curated ensembles crafted as cohesive heirloom sets.",
+  },
+  {
+    name: "Toys",
+    slug: "toys",
+    description: "Handcrafted toys and play pieces from African artisans.",
+    showOnHomepage: false,
   },
 ]
 
@@ -92,9 +99,9 @@ export function getTopLevelCategoryOptions() {
 }
 
 export function getBespokeCategoryOptions() {
-  return CATEGORY_TAXONOMY.filter((c) => c.slug !== "african-arts" && c.slug !== "accessories").map(
-    (c) => ({ value: c.slug, label: c.name })
-  )
+  return CATEGORY_TAXONOMY.filter(
+    (c) => c.slug !== "african-arts" && c.slug !== "accessories" && c.slug !== "toys",
+  ).map((c) => ({ value: c.slug, label: c.name }))
 }
 
 export const BESPOKE_CATEGORY_VALUES = [

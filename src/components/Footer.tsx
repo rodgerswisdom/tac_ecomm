@@ -10,6 +10,9 @@ import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 import { getCollectionsHref } from "@/lib/collections-url";
 
 const discoverLinks = [
+  { key: "toys", label: "Toys", href: "/toys" },
+  { key: "corporate", label: "Corporate", href: "/corporate" },
+  { key: "bespoke", label: "Bespoke & Limited Edition", href: "/bespoke" },
   { key: "about", label: "About TAC", href: "/about" },
 ];
 

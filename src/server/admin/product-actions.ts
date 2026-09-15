@@ -59,7 +59,11 @@ export async function createProductAction(
     isActive,
     isFeatured: booleanFromForm(formData.get("isFeatured")),
     isBespoke: bespokeCatalog || booleanFromForm(formData.get("isBespoke")),
-    isCorporateGift: booleanFromForm(formData.get("isCorporateGift")),
+    isCorporateGift:
+      booleanFromForm(formData.get("isCorporateGift")) ||
+      formValues.productType === ProductType.CORPORATE_GIFT,
+    isToy:
+      booleanFromForm(formData.get("isToy")) || formValues.productType === ProductType.TOY,
     artisanId: optionalString(formData.get("artisanId")),
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
@@ -194,6 +198,8 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
     weight: optionalNumber(formData.get("weight")),
     dimensions: optionalString(formData.get("dimensions")),
     isBespoke: formData.getAll("isBespoke").some((value) => booleanFromForm(value)),
+    isCorporateGift: formData.getAll("isCorporateGift").some((value) => booleanFromForm(value)),
+    isToy: formData.getAll("isToy").some((value) => booleanFromForm(value)),
   }
 
   const parsed = productUpdateSchema.safeParse(payload)
@@ -229,10 +235,11 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
       return { error: "Product not found" }
     }
 
-    const nextProductType = resolveProductTypeForBespoke(
-      existing.productType,
-      parsed.data.isBespoke,
-    )
+    const nextProductType = resolveCatalogProductType(existing.productType, {
+      isBespoke: parsed.data.isBespoke,
+      isToy: parsed.data.isToy,
+      isCorporateGift: parsed.data.isCorporateGift,
+    })
 
     const updated = await prisma.product.update({
       where: { id: parsed.data.id },
@@ -246,6 +253,8 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
         weight: parsed.data.weight ?? null,
         dimensions: parsed.data.dimensions ?? null,
         isBespoke: parsed.data.isBespoke,
+        isCorporateGift: parsed.data.isCorporateGift,
+        isToy: parsed.data.isToy,
         productType: nextProductType,
         sku,
         slug,
@@ -359,6 +368,7 @@ export async function duplicateProductAction(formData: FormData): Promise<Action
         isDigital: product.isDigital,
         isBespoke: product.isBespoke,
         isCorporateGift: product.isCorporateGift,
+        isToy: product.isToy,
         productType: product.productType,
         categoryId: product.categoryId,
         artisanId: product.artisanId,
@@ -463,14 +473,18 @@ export async function setProductBespokeAction(formData: FormData): Promise<Actio
   try {
     const existing = await prisma.product.findUnique({
       where: { id: productId },
-      select: { id: true, productType: true, isBespoke: true, name: true },
+      select: { id: true, productType: true, isBespoke: true, isToy: true, isCorporateGift: true, name: true },
     })
 
     if (!existing) {
       return { error: "Product not found" }
     }
 
-    const productType = resolveProductTypeForBespoke(existing.productType, isBespoke)
+    const productType = resolveCatalogProductType(existing.productType, {
+      isBespoke,
+      isToy: existing.isToy,
+      isCorporateGift: existing.isCorporateGift,
+    })
 
     await prisma.product.update({
       where: { id: productId },
@@ -497,15 +511,51 @@ export async function setProductBespokeAction(formData: FormData): Promise<Actio
   }
 }
 
-function resolveProductTypeForBespoke(current: ProductType, isBespoke: boolean): ProductType {
-  if (isBespoke) {
-    if (current === ProductType.READY_TO_WEAR || current === ProductType.MATCHING_SET) {
+function resolveCatalogProductType(
+  current: ProductType,
+  flags: { isBespoke: boolean; isToy: boolean; isCorporateGift: boolean },
+): ProductType {
+  if (flags.isBespoke) {
+    if (
+      current === ProductType.READY_TO_WEAR ||
+      current === ProductType.MATCHING_SET ||
+      current === ProductType.TOY ||
+      current === ProductType.CORPORATE_GIFT
+    ) {
       return ProductType.BESPOKE
     }
     return current
   }
 
-  if (current === ProductType.BESPOKE) {
+  if (flags.isToy) {
+    if (
+      current === ProductType.READY_TO_WEAR ||
+      current === ProductType.MATCHING_SET ||
+      current === ProductType.BESPOKE ||
+      current === ProductType.CORPORATE_GIFT
+    ) {
+      return ProductType.TOY
+    }
+    return current
+  }
+
+  if (flags.isCorporateGift) {
+    if (
+      current === ProductType.READY_TO_WEAR ||
+      current === ProductType.MATCHING_SET ||
+      current === ProductType.BESPOKE ||
+      current === ProductType.TOY
+    ) {
+      return ProductType.CORPORATE_GIFT
+    }
+    return current
+  }
+
+  if (
+    current === ProductType.BESPOKE ||
+    current === ProductType.TOY ||
+    current === ProductType.CORPORATE_GIFT
+  ) {
     return ProductType.READY_TO_WEAR
   }
 
@@ -713,6 +763,8 @@ function revalidateProductRoute(productId?: string) {
   revalidatePath("/admin/global-store")
   revalidatePath("/collections")
   revalidatePath("/bespoke")
+  revalidatePath("/toys")
+  revalidatePath("/corporate")
   if (productId) {
     revalidatePath(`/admin/products/${productId}`)
   }

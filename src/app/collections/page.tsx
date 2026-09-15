@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { CollectionsPageClient } from "./CollectionsPageClient";
 import { getProductCardData } from "@/server/storefront/products";
 import { getCollectionSummaries } from "@/server/storefront/collections";
 import { prisma } from "@/lib/prisma";
+import { getCollectionsHref } from "@/lib/collections-url";
+import { isSpecialCatalogSlug, SHOP_NAV_EXCLUDED_SLUGS } from "@/lib/special-catalogs";
 
 export const metadata: Metadata = {
   alternates: {
@@ -25,18 +28,27 @@ export default async function CollectionsPage({
   const initialCategory = parseParam(params.category);
   const initialSearch = parseParam(params.q);
 
+  if (isSpecialCatalogSlug(initialCategory)) {
+    const dest = new URL(getCollectionsHref(initialCategory), "http://localhost");
+    if (initialSearch) dest.searchParams.set("q", initialSearch);
+    redirect(`${dest.pathname}${dest.search}`);
+  }
+
   const products = await getProductCardData();
-  const categories = await prisma.category.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      slug: true,
-      name: true,
-    },
-  });
+  const categories = (
+    await prisma.category.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        slug: true,
+        name: true,
+      },
+    })
+  ).filter((category) => !SHOP_NAV_EXCLUDED_SLUGS.has(category.slug));
   const collectionSummaries = await getCollectionSummaries({ includeVirtual: true });
   const categorySlugs = new Set(categories.map((category) => category.slug));
   const collections = collectionSummaries
     .filter((collection) => !categorySlugs.has(collection.slug))
+    .filter((collection) => !SHOP_NAV_EXCLUDED_SLUGS.has(collection.slug))
     .map((collection) => ({ slug: collection.slug, name: collection.name }));
 
   return (

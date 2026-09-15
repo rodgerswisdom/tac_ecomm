@@ -152,7 +152,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 </label>
               </div>
 
-              <div className="rounded-xl border border-border bg-muted/30 p-4">
+              <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
                 <label className="flex cursor-pointer items-start gap-3">
                   <input type="hidden" name="isBespoke" value="false" />
                   <input
@@ -166,6 +166,38 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                     <span className="block text-sm font-medium">Bespoke & Limited Edition</span>
                     <span className="mt-0.5 block text-xs text-muted-foreground">
                       When enabled, this product appears only on the Bespoke & Limited Edition shop and is hidden from regular Collections.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input type="hidden" name="isCorporateGift" value="false" />
+                  <input
+                    type="checkbox"
+                    name="isCorporateGift"
+                    value="true"
+                    defaultChecked={product.isCorporateGift}
+                    className="mt-1 h-4 w-4 rounded border-input"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Corporate</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Show this product on the Corporate gifting page.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input type="hidden" name="isToy" value="false" />
+                  <input
+                    type="checkbox"
+                    name="isToy"
+                    value="true"
+                    defaultChecked={product.isToy}
+                    className="mt-1 h-4 w-4 rounded border-input"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">Toys</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      Show this product on the Toys page.
                     </span>
                   </span>
                 </label>

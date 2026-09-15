@@ -21,6 +21,7 @@ export const productInputSchema = z
         isFeatured: z.boolean().default(false),
         isBespoke: z.boolean().default(false),
         isCorporateGift: z.boolean().default(false),
+        isToy: z.boolean().default(false),
         artisanId: z.string().optional().nullable(),
         weight: z.coerce.number().nonnegative().optional().nullable(),
         dimensions: z.string().max(120).optional().nullable(),
@@ -44,6 +45,8 @@ export const productUpdateSchema = z
         weight: z.coerce.number().nonnegative().optional().nullable(),
         dimensions: z.string().max(120).optional().nullable(),
         isBespoke: z.boolean().default(false),
+        isCorporateGift: z.boolean().default(false),
+        isToy: z.boolean().default(false),
     })
     .refine(
         (data) => data.comparePrice == null || data.comparePrice >= data.price,

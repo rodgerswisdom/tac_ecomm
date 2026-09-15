@@ -10,6 +10,7 @@ type CategoryRule = {
 const CATEGORY_RULES: CategoryRule[] = [
   { slug: "accessories", priority: 100, pattern: /magnet|key\s*holder|keyholder/i },
   { slug: "african-arts", priority: 100, pattern: /batik|canvas|banana\s*fibre|wall\s*hang/i },
+  { slug: "toys", priority: 100, pattern: /\btoy\b|doll|puzzle|playset|wooden\s*car/i },
   { slug: "arm-bands", priority: 100, pattern: /arm\s*band|global.*flag.*arm|flag.*arm\s*band/i },
   { slug: "bracelets-bangles", priority: 95, pattern: /hammered|handcuff|cuff|bangle|wrap/i },
   { slug: "necklaces-chains", priority: 94, pattern: /chock|collar|bead.*strand|beaded.*layer|tribal|necklace|pendant/i },

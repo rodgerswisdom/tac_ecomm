@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma, ProductType } from "@prisma/client"
 
 import { prisma } from "@/lib/prisma"
 import { getCategorySlugsForFilter } from "@/lib/category-tree"
@@ -33,6 +33,8 @@ export type ProductCardQueryOptions = {
   corporateGiftsOnly?: boolean
   /** When true, only return isBespoke products. When false/undefined, exclude them. */
   bespokeOnly?: boolean
+  /** When true, only return toy catalog products. */
+  toysOnly?: boolean
 }
 
 export async function getProductCardData(options: ProductCardQueryOptions = {}): Promise<ProductCardData[]> {
@@ -63,6 +65,18 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
 
   if (options.corporateGiftsOnly) {
     where.isCorporateGift = true
+  }
+
+  if (options.toysOnly) {
+    where.AND = [
+      {
+        OR: [
+          { isToy: true },
+          { productType: ProductType.TOY },
+          { category: { slug: "toys" } },
+        ],
+      },
+    ]
   }
 
   if (options.search?.trim()) {
@@ -101,9 +115,21 @@ export async function getBespokeProductCards() {
   return getProductCardData({ bespokeOnly: true })
 }
 
+export async function getToyProductCards() {
+  return getProductCardData({ toysOnly: true })
+}
+
+export async function getCorporateProductCards() {
+  return getProductCardData({ corporateGiftsOnly: true })
+}
+
 export async function getCollectionProductCards(slug: string) {
   if (slug === "corporate-gifts") {
     return getProductCardData({ corporateGiftsOnly: true })
+  }
+
+  if (slug === "toys") {
+    return getProductCardData({ toysOnly: true })
   }
 
   return getProductCardData({ categorySlug: slug })
@@ -242,6 +268,7 @@ function mapProductToCard(product: ProductWithRelations): ProductCardData {
     productType: product.productType,
     isCorporateGift: product.isCorporateGift,
     isBespoke: product.isBespoke,
+    isToy: product.isToy,
     communityImpact: product.communityImpact ?? undefined,
     sourcingStory: product.sourcingStory ?? undefined,
     artisan,

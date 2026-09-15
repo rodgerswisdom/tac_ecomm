@@ -23,14 +23,14 @@ export async function seedCategoryTaxonomy(client: SeedClient) {
       update: {
         name: category.name,
         description: category.description ?? null,
-        showOnHomepage: true,
+        showOnHomepage: category.showOnHomepage ?? true,
         homepageOrder,
       },
       create: {
         name: category.name,
         slug: category.slug,
         description: category.description ?? null,
-        showOnHomepage: true,
+        showOnHomepage: category.showOnHomepage ?? true,
         homepageOrder,
       },
     })

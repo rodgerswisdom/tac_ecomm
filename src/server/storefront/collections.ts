@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { SHOP_NAV_EXCLUDED_SLUGS } from "@/lib/special-catalogs"
 import { TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
 import type { CollectionSummary, CollectionHighlight, CollectionSpotlight, CollectionCta } from "@/types/collection"
@@ -119,6 +120,15 @@ export async function getCollectionSummaryBySlug(slug: string) {
     })
   }
 
+  if (slug === "toys") {
+    return buildVirtualCollectionSummary({
+      slug,
+      name: "Toys",
+      description: "Handcrafted toys and play pieces from African artisans.",
+      query: { toysOnly: true },
+    })
+  }
+
   const category = await prisma.category.findUnique({
     where: { slug },
   })
@@ -139,31 +149,21 @@ export async function getCollectionSlugs() {
 
 /** Lightweight list of collection slug+name for navbar Shop submenu. */
 export async function getNavShopCategories(): Promise<{ slug: string; name: string }[]> {
-  const [categories, corporateGiftCount] = await Promise.all([
-    prisma.category.findMany({
-      orderBy: { name: "asc" },
-      select: { slug: true, name: true },
-    }),
-    prisma.product.count({
-      where: { ...activeProductWhere, isCorporateGift: true },
-    }),
-  ])
+  const categories = await prisma.category.findMany({
+    orderBy: { name: "asc" },
+    select: { slug: true, name: true },
+  })
 
   const navItems: { slug: string; name: string }[] = []
   const seenSlugs = new Set<string>()
 
   for (const category of categories) {
-    if (seenSlugs.has(category.slug)) continue
+    if (seenSlugs.has(category.slug) || SHOP_NAV_EXCLUDED_SLUGS.has(category.slug)) continue
     seenSlugs.add(category.slug)
     navItems.push({
       slug: category.slug,
       name: category.name,
     })
-  }
-
-  if (corporateGiftCount > 0 && !seenSlugs.has("corporate-gifts")) {
-    navItems.push({ slug: "corporate-gifts", name: "Corporate Gifts" })
-    seenSlugs.add("corporate-gifts")
   }
 
   return navItems

@@ -592,7 +592,7 @@ export const featuredCollections: CollectionCategory[] = [
     },
     ctas: [
       { label: "Explore Sets", href: "/collections?category=matching-sets", variant: "primary" },
-      { label: "Corporate Gift Concierge", href: "/collections?category=corporate-gifts", variant: "secondary" }
+      { label: "Corporate Gift Concierge", href: "/corporate", variant: "secondary" }
     ],
     featuredProductIds: ["1", "2", "3", "4", "5", "6"]
   }
