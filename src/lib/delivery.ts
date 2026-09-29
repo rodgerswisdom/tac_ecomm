@@ -5,7 +5,17 @@ export type DeliveryMethod =
   | "kenya_standard"
   | "kenya_express"
   | "international_standard"
-  | "international_express";
+  | "international_express"
+  | "pickup";
+
+/** Where "Pickup" orders are collected. Edit here to change what checkout, admin and emails show. */
+export const PICKUP_LOCATION = {
+  name: "City Market",
+  address: "City Market, Nairobi",
+  city: "Nairobi",
+  country: "KE",
+  instructions: "We'll call or email you when your order is ready for collection.",
+} as const;
 
 /** Kenya-only free shipping when merchandise subtotal (KSH) meets this threshold. */
 export const FREE_SHIPPING_KENYA_KSH_THRESHOLD = 5000;
@@ -16,6 +26,7 @@ export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
   kenya_express: 500,
   international_standard: 2500,
   international_express: 4500,
+  pickup: 0,
 };
 
 export const DELIVERY_OPTIONS: {
@@ -55,6 +66,7 @@ export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   kenya_express: "Kenya Express (1-2 business days)",
   international_standard: "International Standard (3-7 business days)",
   international_express: "International Express (2-5 business days)",
+  pickup: `Pickup — ${PICKUP_LOCATION.address}`,
 };
 
 export function isKenyaDestination(country: string | null | undefined): boolean {
@@ -64,7 +76,7 @@ export function isKenyaDestination(country: string | null | undefined): boolean 
 }
 
 export function isDeliveryMethod(value: string): value is DeliveryMethod {
-  return DELIVERY_OPTIONS.some((option) => option.id === value);
+  return value === "pickup" || DELIVERY_OPTIONS.some((option) => option.id === value);
 }
 
 export function getDeliveryOptionsForCountry(country: string | null | undefined) {
@@ -76,10 +88,12 @@ export function getDeliveryOptionsForCountry(country: string | null | undefined)
   });
 }
 
+/** Shipping methods for a destination. Pickup is chosen separately (Ship / Pickup toggle). */
 export function isDeliveryMethodValidForCountry(
   method: DeliveryMethod,
   country: string | null | undefined
 ): boolean {
+  if (method === "pickup") return true;
   return getDeliveryOptionsForCountry(country).some((option) => option.id === method);
 }
 
@@ -152,6 +166,7 @@ export function getEstimatedDeliveryDays(method: DeliveryMethod): number {
     kenya_express: 1,
     international_standard: 5,
     international_express: 3,
+    pickup: 1,
   };
   return estimates[method] ?? 5;
 }

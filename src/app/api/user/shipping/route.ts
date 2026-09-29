@@ -30,6 +30,7 @@ export async function GET() {
       email: user.email,
       phone: addr.phone ?? '',
       address: addr.address1,
+      apartment: addr.address2 ?? '',
       city: addr.city,
       state: addr.state,
       zipCode: addr.postalCode,
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
   const firstName = (body.firstName?.trim() || nameParts.shift() || '') as string
   const lastName = (body.lastName?.trim() || nameParts.join(' ')) as string
   const address = body.address?.trim()
+  const address2 = (body.apartment ?? body.address2)?.trim() || null
   const city = body.city?.trim()
   const state = body.state?.trim() || ''
   const zipCode = (body.zipCode ?? body.postalCode)?.trim() || ''
@@ -80,40 +82,30 @@ export async function POST(req: NextRequest) {
     data: { isDefault: false }
   })
 
-  const defaultAddress = await prisma.address.findFirst({
-    where: { userId: user.id }
+  // Orders keep their shipping address as an Address row too — only ever edit a saved
+  // address that no order points at, so past orders' addresses never change.
+  const savedAddress = await prisma.address.findFirst({
+    where: { userId: user.id, orders: { none: {} } },
+    orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }]
   })
 
-  if (defaultAddress) {
-    await prisma.address.update({
-      where: { id: defaultAddress.id },
-      data: {
-        firstName,
-        lastName,
-        address1: address,
-        city,
-        state,
-        postalCode: zipCode,
-        country,
-        phone,
-        isDefault: true
-      }
-    })
+  const data = {
+    firstName,
+    lastName,
+    address1: address,
+    address2,
+    city,
+    state,
+    postalCode: zipCode,
+    country,
+    phone,
+    isDefault: true
+  }
+
+  if (savedAddress) {
+    await prisma.address.update({ where: { id: savedAddress.id }, data })
   } else {
-    await prisma.address.create({
-      data: {
-        userId: user.id,
-        firstName,
-        lastName,
-        address1: address,
-        city,
-        state,
-        postalCode: zipCode,
-        country,
-        phone,
-        isDefault: true
-      }
-    })
+    await prisma.address.create({ data: { ...data, userId: user.id } })
   }
 
   return NextResponse.json({ success: true })

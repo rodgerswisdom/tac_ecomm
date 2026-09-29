@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { EmailService, getEmailConfig } from "@/lib/email";
+import { DELIVERY_LABELS, type DeliveryMethod } from "@/lib/delivery";
 
 const OPS_EMAILS = [
   "info@tacaccessories.co.ke",
@@ -31,6 +32,7 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
           lastName: true,
           phone: true,
           address1: true,
+          address2: true,
           city: true,
           state: true,
           postalCode: true,
@@ -59,7 +61,10 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
   });
   const totalLine = `KES ${Math.round(order.total).toLocaleString()}`;
   const paymentLine = order.paymentMethod ?? "Not specified";
-  const deliveryLine = order.shippingMethod ?? "Not specified";
+  const deliveryLine = order.shippingMethod
+    ? DELIVERY_LABELS[order.shippingMethod as DeliveryMethod] ?? order.shippingMethod
+    : "Not specified";
+  const streetLines = [addr.address1, addr.address2].filter(Boolean) as string[];
 
   const subject = `New paid order: ${order.orderNumber}`;
   const html = `
@@ -80,7 +85,7 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
       <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
       <p style="margin: 0;">
         ${escapeHtml(customerName)}<br />
-        ${escapeHtml(addr.address1)}<br />
+        ${streetLines.map((line) => `${escapeHtml(line)}<br />`).join("")}
         ${escapeHtml(locality)}<br />
         ${escapeHtml(addr.country)}
       </p>
@@ -96,7 +101,7 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
     `Payment method: ${paymentLine}\n` +
     `Delivery: ${deliveryLine}\n\n` +
     `Items:\n${itemLines.map((line) => `- ${line}`).join("\n")}\n\n` +
-    `Shipping:\n${customerName}\n${addr.address1}\n${locality}\n${addr.country}\n`;
+    `Shipping:\n${customerName}\n${streetLines.join("\n")}\n${locality}\n${addr.country}\n`;
 
   const emailService = new EmailService(getEmailConfig());
   await Promise.all(

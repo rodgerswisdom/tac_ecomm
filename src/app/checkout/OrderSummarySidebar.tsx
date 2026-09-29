@@ -27,7 +27,7 @@ export function OrderSummarySidebar({
   className = "",
 }: OrderSummarySidebarProps) {
   const { cart, getCartTotal, getCartItemCount } = useCart();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
 
   const subtotal = getCartTotal();
   const discount = appliedCoupon?.discount ?? 0;
@@ -201,7 +201,7 @@ export function OrderSummarySidebar({
           <dt>Shipping</dt>
           <dd className="tabular-nums">
             {!deliveryMethod ? (
-              <span className="text-brand-umber/55">Select delivery</span>
+              <span className="text-brand-umber/55">Enter shipping address</span>
             ) : shippingCost === 0 ? (
               <span className="text-brand-teal">Free</span>
             ) : (
@@ -211,7 +211,10 @@ export function OrderSummarySidebar({
         </div>
         <div className="flex items-baseline justify-between border-t border-brand-teal/20 pt-4 text-brand-umber">
           <dt className="text-base font-semibold">Total</dt>
-          <dd className="font-heading text-2xl font-semibold tabular-nums">{formatPrice(total)}</dd>
+          <dd className="flex items-baseline gap-2">
+            <span className="text-xs font-medium text-brand-umber/55">{currency === "KSH" ? "KES" : currency}</span>
+            <span className="font-heading text-2xl font-semibold tabular-nums">{formatPrice(total)}</span>
+          </dd>
         </div>
       </dl>
     </aside>

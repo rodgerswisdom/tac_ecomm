@@ -6,6 +6,7 @@ import {
   calculateShippingKsh,
   isDeliveryMethod,
   isDeliveryMethodValidForCountry,
+  PICKUP_LOCATION,
   type DeliveryMethod,
 } from '@/lib/delivery'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
@@ -13,13 +14,6 @@ import { formatProductImageLabel } from '@/lib/product-image-selection'
 import { PAYMENT_WINDOW_MS, startPaystackPayment } from '@/lib/paystack'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-/** Address rows keep first/last name columns; checkout collects a single full name. */
-function splitFullName(fullName: string) {
-  const parts = fullName.trim().split(/\s+/)
-  const firstName = parts.shift() ?? ''
-  return { firstName, lastName: parts.join(' ') }
-}
 
 type CheckoutCartItem = {
   id: string
@@ -52,13 +46,16 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   const body = await req.json()
   const {
-    name, email, phone, address, city, postalCode, country,
+    firstName, lastName, email, phone, address, apartment, city, postalCode, country,
     shippingMethod, cartItems: clientCartItems,
-    couponCode
+    couponCode, marketingOptIn
   } = body
 
-  // Only what is needed to take payment and deliver the order.
-  const required = { name, email, phone, address, city, country }
+  // Pickup orders are collected at PICKUP_LOCATION, so no delivery address is needed.
+  const isPickup = shippingMethod === 'pickup'
+  const required = isPickup
+    ? { firstName, lastName, email, phone }
+    : { firstName, lastName, email, phone, address, city, country }
   for (const [key, value] of Object.entries(required)) {
     if (value == null || String(value).trim() === '') {
       return NextResponse.json({ error: `Missing required field: ${key}` }, { status: 400 })
@@ -76,12 +73,16 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { firstName: firstNameTrim, lastName: lastNameTrim } = splitFullName(String(name))
+  const firstNameTrim = String(firstName).trim()
+  const lastNameTrim = String(lastName).trim()
   const phoneTrim = String(phone).trim()
-  const addressTrim = String(address).trim()
-  const cityTrim = String(city).trim()
-  const postalCodeTrim = postalCode != null ? String(postalCode).trim() : ''
-  const countryTrim = String(country).trim()
+  const optionalTrim = (value: unknown) => (value != null ? String(value).trim() : '')
+  // For pickup, the "address" on the order is the pickup point, so fulfilment sees where it goes.
+  const addressTrim = isPickup ? `Pickup — ${PICKUP_LOCATION.address}` : String(address).trim()
+  const apartmentTrim = isPickup ? '' : optionalTrim(apartment)
+  const cityTrim = isPickup ? PICKUP_LOCATION.city : String(city).trim()
+  const postalCodeTrim = isPickup ? '' : optionalTrim(postalCode)
+  const countryTrim = isPickup ? PICKUP_LOCATION.country : String(country).trim()
 
   // Fetch cart for logged-in user from DB, else use clientCartItems for guest
   let cartItems: CheckoutCartItem[] = []
@@ -351,12 +352,24 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  // "Email me with news and offers" — opt-in only; leaving it unticked never unsubscribes anyone.
+  if (marketingOptIn === true) {
+    await prisma.newsletter
+      .upsert({
+        where: { email: user.email },
+        create: { email: user.email },
+        update: { isActive: true },
+      })
+      .catch((error) => console.error('[order] newsletter opt-in failed', error))
+  }
+
   // Create shipping address
   const shippingAddress = await prisma.address.create({
     data: {
       firstName: firstNameTrim,
       lastName: lastNameTrim,
       address1: addressTrim,
+      address2: apartmentTrim || null,
       city: cityTrim,
       state: '',
       postalCode: postalCodeTrim,
