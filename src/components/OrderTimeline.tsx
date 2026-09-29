@@ -19,6 +19,7 @@ const STEP_ICON_MAP: Record<OrderStatus, LucideIcon> = {
   [OrderStatus.DELIVERED]: CheckCircle2,
   [OrderStatus.CANCELLED]: X,
   [OrderStatus.REFUNDED]: X,
+  [OrderStatus.EXPIRED]: Clock,
 }
 
 // Step state types
@@ -48,7 +49,7 @@ const getStepState = (
   isCancelled: boolean,
   isRefunded: boolean
 ): StepState => {
-  if (isCancelled && stepStatus === OrderStatus.CANCELLED) return 'cancelled'
+  if (isCancelled && (stepStatus === OrderStatus.CANCELLED || stepStatus === OrderStatus.EXPIRED)) return 'cancelled'
   if (isRefunded && stepStatus === OrderStatus.REFUNDED) return 'refunded'
   if (isStepCompleted(status, stepStatus)) return 'completed'
   if (isStepCurrent(status, stepStatus)) return 'current'
@@ -112,7 +113,7 @@ interface OrderTimelineProps {
 
 export function OrderTimeline({ status, className }: OrderTimelineProps) {
   const steps = getOrderTimelineSteps(status)
-  const isCancelled = status === OrderStatus.CANCELLED
+  const isCancelled = status === OrderStatus.CANCELLED || status === OrderStatus.EXPIRED
   const isRefunded = status === OrderStatus.REFUNDED
 
   return (
@@ -201,7 +202,7 @@ export function OrderTimelineCompact({
   className,
 }: OrderTimelineCompactProps) {
   const steps = getOrderTimelineSteps(status)
-  const isCancelled = status === OrderStatus.CANCELLED
+  const isCancelled = status === OrderStatus.CANCELLED || status === OrderStatus.EXPIRED
   const isRefunded = status === OrderStatus.REFUNDED
 
   // Helper function to determine circle styling based on step state

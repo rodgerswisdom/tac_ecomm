@@ -273,6 +273,13 @@ model Order {
   shippingMethod    String?
   trackingNumber    String?
   notes             String?
+  couponCode        String?
+  couponDiscount    Float?
+  paidAt            DateTime?
+  // Legacy DPO payment-hold fields (unused since Paystack replaced DPO).
+  paymentExpiresAt  DateTime?
+  stockReserved     Boolean       @default(false)
+  paymentAttempt    Int           @default(1)
   userId            String
   shippingAddressId String
   createdAt         DateTime      @default(now())
@@ -293,6 +300,7 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([zohoSyncStatus])
+  @@index([paymentExpiresAt, status, paymentStatus])
 }
 
 model OrderItem {
@@ -321,7 +329,7 @@ model Payment {
   currency        String        @default("USD")
   method          PaymentMethod
   status          PaymentStatus @default(PENDING)
-  transactionId   String?
+  transactionId   String?       @unique
   gatewayResponse String?
   orderId         String
   createdAt       DateTime      @default(now())
@@ -337,6 +345,22 @@ model Payment {
   @@index([orderId])
   @@index([status])
   @@index([zohoSyncStatus])
+}
+
+/// Legacy: created for the DPO integration; not used since Paystack replaced DPO.
+model FulfillmentJob {
+  id          String    @id @default(cuid())
+  orderId     String
+  type        String
+  status      String    @default("pending")
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
+
+  @@unique([orderId, type])
+  @@index([status, type])
 }
 
 model Newsletter {
@@ -541,6 +565,7 @@ enum OrderStatus {
   DELIVERED
   CANCELLED
   REFUNDED
+  EXPIRED
 }
 
 enum PaymentStatus {
@@ -558,6 +583,10 @@ enum PaymentMethod {
   BANK_TRANSFER
   TUMA
   PAYSTACK
+  // Legacy providers replaced by Paystack. Kept because historical orders reference them.
+  PAYAZA
+  DPO_CARD
+  DPO_MOBILE
 }
 
 enum CouponType {

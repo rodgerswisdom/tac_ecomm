@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { OrderStatus, PaymentStatus } from "@prisma/client"
+import { OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client"
 import { FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +11,8 @@ import { getOrderDetail } from "@/server/admin/orders"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
 import { getOrderItemProductName, getOrderItemProductSku } from "@/lib/order-item-display"
 import { StatusUpdateForm } from "./StatusUpdateForm"
+import { recheckPaystackPaymentAction } from "@/server/admin/orders"
+import { parsePaystackMeta } from "@/lib/paystack"
 
 interface OrderDetailPageProps {
   params: Promise<{ orderId: string }>
@@ -24,6 +26,7 @@ const orderStatusVariantMap: Record<OrderStatus, "success" | "warning" | "danger
   DELIVERED: "success",
   CANCELLED: "danger",
   REFUNDED: "danger",
+  EXPIRED: "warning",
 }
 
 const paymentStatusVariantMap: Record<PaymentStatus, "success" | "warning" | "danger" | "info"> = {
@@ -192,23 +195,55 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
             </section>
 
             <section>
-              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Payments</h4>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                  Payments
+                  {order.paymentMethod === PaymentMethod.PAYSTACK && order.paymentAttempt > 1
+                    ? ` · ${order.paymentAttempt} attempts`
+                    : ""}
+                </h4>
+                {order.paymentMethod === PaymentMethod.PAYSTACK && order.paymentStatus !== PaymentStatus.COMPLETED ? (
+                  <form action={recheckPaystackPaymentAction}>
+                    <input type="hidden" name="orderId" value={order.id} />
+                    <Button type="submit" size="sm" variant="outline" className="border border-border bg-white">
+                      Re-check with Paystack
+                    </Button>
+                  </form>
+                ) : null}
+              </div>
               <div className="mt-3 space-y-3">
                 {order.payments.length > 0 ? (
-                  order.payments.map((payment) => (
+                  order.payments.map((payment) => {
+                    const paystack = payment.method === PaymentMethod.PAYSTACK ? parsePaystackMeta(payment.gatewayResponse) : null
+                    return (
                     <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border p-3 text-sm">
-                      <div>
+                      <div className="min-w-0 space-y-0.5">
                         <p className="font-semibold capitalize">
                           {payment.method.toLowerCase()} · {payment.status.toLowerCase()}
+                          {paystack?.channel ? ` · ${paystack.channel.replace(/_/g, " ")}` : ""}
                         </p>
                         <p className="text-xs text-muted-foreground">{formatOrderDate(payment.createdAt)}</p>
+                        {paystack?.reference ? (
+                          <p className="text-xs text-muted-foreground">
+                            Ref <span className="font-mono">{paystack.reference}</span>
+                          </p>
+                        ) : null}
+                        {paystack?.gateway_response && payment.status !== PaymentStatus.COMPLETED ? (
+                          <p className="text-xs text-muted-foreground">Paystack: {paystack.gateway_response}</p>
+                        ) : null}
+                        {paystack?.review ? (
+                          <p className="rounded-md bg-amber-50 px-2 py-1 text-xs font-medium text-amber-800">
+                            Needs review: {paystack.review}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Amount</p>
                         <p className="text-base font-semibold"><AdminFormattedPrice amount={payment.amount} amountCurrency={payment.currency === "KSH" ? undefined : payment.currency} /></p>
                       </div>
                     </div>
-                  ))
+                    )
+                  })
                 ) : (
                   <p className="rounded-2xl border border-dashed border-border p-4 text-sm text-muted-foreground">
                     No payment records yet.

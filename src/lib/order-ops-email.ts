@@ -103,3 +103,24 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
     OPS_EMAILS.map((to) => emailService.sendEmail({ to, subject, html, text })),
   );
 }
+
+/** Alert the ops team to a payment that needs a human decision (refund, restock, etc.). */
+export async function sendOpsAlertEmail({
+  subject,
+  lines,
+}: {
+  subject: string;
+  lines: string[];
+}): Promise<void> {
+  const html = `
+    <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+      <h2 style="margin: 0 0 12px 0; color: #b42318;">${escapeHtml(subject)}</h2>
+      ${lines.map((line) => `<p style="margin: 0 0 8px 0;">${escapeHtml(line)}</p>`).join("")}
+    </div>
+  `;
+  const text = `${subject}\n\n${lines.join("\n")}\n`;
+  const emailService = new EmailService(getEmailConfig());
+  await Promise.all(
+    OPS_EMAILS.map((to) => emailService.sendEmail({ to, subject: `[Action needed] ${subject}`, html, text })),
+  );
+}

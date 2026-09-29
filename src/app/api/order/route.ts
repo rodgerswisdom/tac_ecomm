@@ -10,7 +10,7 @@ import {
 } from '@/lib/delivery'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { formatProductImageLabel } from '@/lib/product-image-selection'
-import { initializeTransaction } from '@/lib/paystack'
+import { PAYMENT_WINDOW_MS, startPaystackPayment } from '@/lib/paystack'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -379,8 +379,12 @@ export async function POST(req: NextRequest) {
       currency: orderCurrency,
       paymentMethod: PaymentMethod.PAYSTACK,
       paymentStatus: PaymentStatus.PENDING,
+      paymentAttempt: 1,
+      paymentExpiresAt: new Date(Date.now() + PAYMENT_WINDOW_MS),
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
+      couponCode: appliedCoupon?.code ?? null,
+      couponDiscount: appliedCoupon ? couponDiscountKsh : null,
       items: {
         create: validatedItems.map(({ productId, variantId, quantity, price, productImageId, selectedImageUrl, selectedImageLabel, name, sku }) => ({
           productId,
@@ -400,20 +404,16 @@ export async function POST(req: NextRequest) {
   const baseUrl = (process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin).replace(/\/$/, '')
   let authorizationUrl: string
   try {
-    const transaction = await initializeTransaction({
+    authorizationUrl = await startPaystackPayment({
+      order,
       email: user.email,
-      amountKes: total,
-      reference: order.orderNumber,
-      callbackUrl: `${baseUrl}/api/payment/paystack/callback`,
-      cancelUrl: `${baseUrl}/checkout`,
+      attempt: 1,
+      baseUrl,
       metadata: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
         customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
         phone: phoneTrim,
       },
     })
-    authorizationUrl = transaction.authorization_url
   } catch (error) {
     console.error('[order] Paystack initialization failed', error)
     await prisma.order.update({
@@ -429,19 +429,8 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  // Stock is decremented, and the ops team notified, only when Paystack confirms
-  // payment (callback redirect or webhook — see src/lib/paystack.ts).
-
-  if (appliedCoupon) {
-    try {
-      await prisma.coupon.update({
-        where: { id: appliedCoupon.id },
-        data: { usedCount: { increment: 1 } }
-      })
-    } catch {
-      // Ignore coupon update errors
-    }
-  }
+  // Stock is decremented, coupon usage counted and the ops team notified only when
+  // Paystack confirms payment (see confirmPaystackPayment in src/lib/paystack.ts).
   return NextResponse.json({
     success: true,
     orderId: order.id,

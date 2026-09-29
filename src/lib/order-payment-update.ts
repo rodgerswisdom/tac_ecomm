@@ -10,6 +10,8 @@ export type GatewayPaymentStatus = 'completed' | 'pending' | 'failed' | 'cancell
 export type ApplyPaymentUpdateInput = {
   orderId: string
   method: PaymentMethod
+  /** Update this specific Payment row (e.g. one Paystack attempt) instead of the latest for `method`. */
+  paymentId?: string
   gatewayStatus: GatewayPaymentStatus
   transactionId: string
   amount?: number
@@ -39,7 +41,7 @@ export async function applyPaymentUpdate(input: ApplyPaymentUpdateInput): Promis
         }
       },
       payments: {
-        where: { method: input.method },
+        where: input.paymentId ? { id: input.paymentId } : { method: input.method },
         orderBy: { createdAt: 'desc' },
         take: 1,
         select: { id: true }
@@ -103,7 +105,7 @@ export async function applyPaymentUpdate(input: ApplyPaymentUpdateInput): Promis
     if (order.status === OrderStatus.PENDING && nextOrderStatus === OrderStatus.CONFIRMED) {
       const transition = await tx.order.updateMany({
         where: { id: order.id, status: OrderStatus.PENDING },
-        data: { paymentStatus, status: OrderStatus.CONFIRMED }
+        data: { paymentStatus, status: OrderStatus.CONFIRMED, paidAt: new Date() }
       })
 
       if (transition.count > 0) {

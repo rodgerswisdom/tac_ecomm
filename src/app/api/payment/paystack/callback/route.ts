@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PaymentStatus } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { confirmPaystackPayment } from '@/lib/paystack'
 
 function statusParam(paymentStatus: PaymentStatus | null): string {
@@ -32,8 +33,13 @@ export async function GET(req: NextRequest) {
     if (result.orderId) thankYou.searchParams.set('orderId', result.orderId)
     thankYou.searchParams.set('status', statusParam(result.paymentStatus))
   } catch (error) {
-    // The webhook will still settle the order; show the pending state meanwhile.
-    console.error('[paystack/callback] verification failed:', error)
+    // Show the pending page with the real order id so it keeps re-checking with
+    // Paystack (see reconcilePaystackOrder) instead of getting stuck.
+    console.error('[paystack/callback] verification failed:', { reference, error })
+    const order = await prisma.order
+      .findUnique({ where: { orderNumber: reference }, select: { id: true } })
+      .catch(() => null)
+    if (order) thankYou.searchParams.set('orderId', order.id)
     thankYou.searchParams.set('orderNumber', reference)
     thankYou.searchParams.set('status', 'pending')
   }

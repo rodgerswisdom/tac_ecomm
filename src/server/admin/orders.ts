@@ -5,6 +5,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
+import { reconcilePaystackOrder } from "@/lib/paystack"
 import type { ActionResult } from "@/lib/admin/action-result"
 
 export type OrderFilters = {
@@ -202,4 +203,16 @@ export async function deleteOrderAction(formData: FormData): Promise<ActionResul
         console.error(error)
         return { error: "Failed to delete order" }
     }
+}
+
+/** Ask Paystack for the latest status of every payment attempt on an order (admin "Re-check"). */
+export async function recheckPaystackPaymentAction(formData: FormData): Promise<void> {
+    await assertAdmin()
+    const orderId = formData.get("orderId")?.toString()
+    if (!orderId) return
+
+    await reconcilePaystackOrder({ id: orderId }, { force: true })
+
+    revalidatePath("/admin/orders")
+    revalidatePath(`/admin/orders/${orderId}`)
 }

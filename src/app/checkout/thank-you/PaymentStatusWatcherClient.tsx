@@ -52,6 +52,18 @@ export function PaymentStatusWatcherClient({
           router.replace(`${thankYou.pathname}${thankYou.search}`);
           return;
         }
+        if (data?.isUnderReview) {
+          // Server renders the "we've received your payment" state.
+          router.refresh();
+          return;
+        }
+        if (data?.isFailed) {
+          const thankYou = new URL("/checkout/thank-you", window.location.origin);
+          thankYou.searchParams.set("orderId", orderId);
+          thankYou.searchParams.set("status", "failed");
+          router.replace(`${thankYou.pathname}${thankYou.search}`);
+          return;
+        }
       } catch {
         // ignore polling failures and retry
       }

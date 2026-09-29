@@ -42,6 +42,7 @@ const orderStatusVariantMap: Record<OrderStatus, "success" | "warning" | "danger
   DELIVERED: "success",
   CANCELLED: "danger",
   REFUNDED: "danger",
+  EXPIRED: "warning",
 }
 
 const paymentStatusVariantMap: Record<PaymentStatus, "success" | "warning" | "danger" | "info"> = {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { paystackReviewReason, reconcilePaystackOrder } from "@/lib/paystack";
 
 function formatKes(amount: number) {
   return `KES ${Math.round(amount).toLocaleString()}`;
@@ -23,7 +24,9 @@ function parseGatewayMeta(gatewayResponse: string | null | undefined) {
         ? parsed.failure_reason
         : typeof parsed.result_desc === "string"
           ? parsed.result_desc
-          : null;
+          : typeof parsed.gateway_response === "string" // Paystack
+            ? parsed.gateway_response
+            : null;
     const mpesaReceiptNumber =
       typeof parsed.mpesa_receipt_number === "string"
         ? parsed.mpesa_receipt_number
@@ -49,6 +52,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Missing orderId" }, { status: 400 });
   }
 
+  // Paystack orders: ask Paystack directly rather than waiting for a webhook.
+  await reconcilePaystackOrder({ id: orderId });
+
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     select: {
@@ -61,12 +67,13 @@ export async function GET(request: Request) {
       updatedAt: true,
       payments: {
         where: {
-          method: { in: [PaymentMethod.TUMA, PaymentMethod.PESAPAL] },
+          method: { in: [PaymentMethod.TUMA, PaymentMethod.PESAPAL, PaymentMethod.PAYSTACK] },
         },
         orderBy: { createdAt: "desc" },
         take: 1,
         select: {
           id: true,
+          method: true,
           status: true,
           transactionId: true,
           currency: true,
@@ -88,7 +95,8 @@ export async function GET(request: Request) {
   const isComplete = paymentStatus === PaymentStatus.COMPLETED;
   const isFailed =
     paymentStatus === PaymentStatus.FAILED || paymentStatus === PaymentStatus.CANCELLED;
-  const isPending = !isComplete && !isFailed;
+  const isUnderReview = !isComplete && Boolean(paystackReviewReason(order.payments));
+  const isPending = !isComplete && !isFailed && !isUnderReview;
 
   return NextResponse.json({
     paymentStatus,
@@ -105,6 +113,7 @@ export async function GET(request: Request) {
     isComplete,
     isFailed,
     isPending,
+    isUnderReview,
     payment: payment
       ? {
           id: payment.id,
