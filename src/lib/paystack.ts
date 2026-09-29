@@ -3,7 +3,8 @@ import { OrderStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/clien
 import { prisma } from '@/lib/prisma'
 import { applyPaymentUpdate, type GatewayPaymentStatus } from '@/lib/order-payment-update'
 import { sendNewOrderOpsEmail, sendOpsAlertEmail } from '@/lib/order-ops-email'
-import { InsufficientStockError } from '@/lib/stock'
+import { InsufficientStockError, releaseOrderStock } from '@/lib/stock'
+import { scheduleBackInStockNotifications } from '@/lib/stock-notify'
 
 const PAYSTACK_API_BASE = 'https://api.paystack.co'
 
@@ -138,6 +139,9 @@ type PaystackPaymentMeta = {
   paid_at?: string | null
   /** Set when a human must decide what to do (refund, restock…). */
   review?: string
+  /** Total processed refunds in the currency subunit, and which refunds were counted. */
+  refunded_subunits?: number
+  refund_ids?: number[]
 }
 
 export function parsePaystackMeta(gatewayResponse: string | null | undefined): PaystackPaymentMeta {
@@ -354,7 +358,15 @@ export async function confirmPaystackPayment(reference: string): Promise<Confirm
   // Already settled for this exact attempt, or waiting on a person — nothing to re-check.
   const attemptPayment = findAttemptPayment(order, reference)
   const attemptMeta = parsePaystackMeta(attemptPayment?.gatewayResponse)
-  if (attemptMeta.review || attemptPayment?.status === PaymentStatus.COMPLETED) return done
+  if (
+    attemptMeta.review ||
+    attemptPayment?.status === PaymentStatus.COMPLETED ||
+    attemptPayment?.status === PaymentStatus.REFUNDED
+  ) {
+    return done
+  }
+  // Refunds are handled by syncPaystackRefunds; never re-open a refunded order.
+  if (order.paymentStatus === PaymentStatus.REFUNDED) return done
 
   const transaction = await verifyTransaction(reference)
   const gatewayStatus = mapPaystackStatus(transaction.status)
@@ -453,10 +465,13 @@ export async function reconcilePaystackOrder(
     where,
     select: { id: true, orderNumber: true, paymentMethod: true, paymentStatus: true, paymentAttempt: true },
   })
+  // Only unpaid orders need re-checking — including expired ones, which a late payment can
+  // still settle. Paid/refunded orders are settled (refunds: syncPaystackRefunds).
   if (
     !order ||
     order.paymentMethod !== PaymentMethod.PAYSTACK ||
-    order.paymentStatus === PaymentStatus.COMPLETED
+    order.paymentStatus === PaymentStatus.COMPLETED ||
+    order.paymentStatus === PaymentStatus.REFUNDED
   ) {
     return
   }
@@ -540,4 +555,127 @@ export async function reconcileAndExpirePaystackOrders(opts: { limit?: number; b
   }
 
   return { checked: candidates.length, confirmed, expired }
+}
+
+
+// ---------------------------------------------------------------------------
+// Refunds (Paystack dashboard refunds, bank reversals)
+// ---------------------------------------------------------------------------
+
+type PaystackRefund = {
+  id: number
+  amount: number
+  currency: string
+  status: string
+  transaction?: number | { id?: number; reference?: string }
+  transaction_reference?: string
+}
+
+/** Processed refunds for one transaction. Filters client-side so an unfiltered API list can't leak in. */
+async function listProcessedRefunds(transactionId: string, reference: string): Promise<PaystackRefund[]> {
+  const query = new URLSearchParams({ transaction: transactionId, reference, perPage: '100' })
+  const refunds = await paystackRequest<PaystackRefund[]>(`/refund?${query.toString()}`)
+  return (refunds ?? []).filter((refund) => {
+    const tx = refund.transaction
+    const matches =
+      String(typeof tx === 'object' ? tx?.id : tx) === transactionId ||
+      (typeof tx === 'object' && tx?.reference === reference) ||
+      refund.transaction_reference === reference
+    return matches && refund.status === 'processed'
+  })
+}
+
+async function appendOrderNote(orderId: string, note: string) {
+  const current = await prisma.order.findUnique({ where: { id: orderId }, select: { notes: true } })
+  if (current?.notes?.includes(note)) return
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { notes: current?.notes ? `${note}\n${current.notes}` : note },
+  })
+}
+
+/**
+ * Bring an order in line with refunds processed on Paystack for one payment attempt.
+ * Full refund of the payment that paid the order → order REFUNDED and stock returned
+ * (unless shipped). Refund of an extra payment (duplicate/mismatch) → only that payment.
+ * Partial refunds are noted for staff. Safe to call repeatedly.
+ */
+export async function syncPaystackRefunds(reference: string): Promise<void> {
+  const order = await loadOrderForConfirm(orderNumberFromReference(reference))
+  if (!order) return
+  const payment = findAttemptPayment(order, reference)
+  if (!payment?.transactionId) return
+  if (payment.status !== PaymentStatus.COMPLETED && payment.status !== PaymentStatus.REFUNDED) return
+
+  const meta = parsePaystackMeta(payment.gatewayResponse)
+  const refunds = await listProcessedRefunds(payment.transactionId, reference)
+  const refundedSubunits = refunds.reduce((sum, refund) => sum + refund.amount, 0)
+  if (refundedSubunits === 0 || refundedSubunits === meta.refunded_subunits) return
+
+  const fullDetails = await prisma.payment.findUnique({ where: { id: payment.id }, select: { amount: true } })
+  const paidSubunits = toPaystackAmount(fullDetails?.amount ?? 0)
+  const isFull = refundedSubunits >= paidSubunits
+  const refundedKes = (refundedSubunits / 100).toLocaleString()
+
+  const nextMeta: PaystackPaymentMeta = {
+    ...meta,
+    refunded_subunits: refundedSubunits,
+    refund_ids: refunds.map((refund) => refund.id),
+  }
+
+  if (!isFull) {
+    await prisma.payment.update({ where: { id: payment.id }, data: { gatewayResponse: JSON.stringify(nextMeta) } })
+    await appendOrderNote(order.id, `[Refund] Partial refund of KES ${refundedKes} processed on Paystack (ref ${reference}).`)
+    return
+  }
+
+  // A refunded extra payment (duplicate / amount mismatch) resolves its review; the order is untouched.
+  const otherPaid = order.payments.some((p) => p.id !== payment.id && p.status === PaymentStatus.COMPLETED)
+  const paidTheOrder = order.paymentStatus === PaymentStatus.COMPLETED && !otherPaid
+  delete nextMeta.review
+
+  const current = await prisma.order.findUnique({ where: { id: order.id }, select: { status: true } })
+  const shipped = current?.status === OrderStatus.SHIPPED || current?.status === OrderStatus.DELIVERED
+  let restocked: string[] = []
+
+  await prisma.$transaction(async (tx) => {
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: { status: PaymentStatus.REFUNDED, gatewayResponse: JSON.stringify(nextMeta) },
+    })
+    if (!paidTheOrder) return
+    await tx.order.update({
+      where: { id: order.id },
+      data: { paymentStatus: PaymentStatus.REFUNDED, status: OrderStatus.REFUNDED },
+    })
+    if (!shipped) restocked = await releaseOrderStock(order.id, tx)
+  })
+
+  if (restocked.length > 0) scheduleBackInStockNotifications(restocked)
+
+  await appendOrderNote(
+    order.id,
+    paidTheOrder
+      ? `[Refund] Full refund of KES ${refundedKes} processed on Paystack (ref ${reference}).${
+          shipped ? ' Stock not returned because the order had shipped.' : ''
+        }`
+      : `[Refund] Extra payment of KES ${refundedKes} refunded on Paystack (ref ${reference}); order unchanged.`
+  )
+}
+
+/** Check refunds for every paid Paystack attempt on an order (admin re-check). */
+export async function syncPaystackRefundsForOrder(orderId: string): Promise<void> {
+  const payments = await prisma.payment.findMany({
+    where: { orderId, method: PaymentMethod.PAYSTACK, status: { in: [PaymentStatus.COMPLETED, PaymentStatus.REFUNDED] } },
+    select: { gatewayResponse: true },
+  })
+  for (const payment of payments) {
+    const reference = parsePaystackMeta(payment.gatewayResponse).reference
+    if (!reference) continue
+    try {
+      await syncPaystackRefunds(reference)
+    } catch (error) {
+      console.error('[paystack] refund sync failed:', { reference, error })
+    }
+  }
 }

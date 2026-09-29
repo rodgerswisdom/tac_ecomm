@@ -202,7 +202,7 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                     ? ` · ${order.paymentAttempt} attempts`
                     : ""}
                 </h4>
-                {order.paymentMethod === PaymentMethod.PAYSTACK && order.paymentStatus !== PaymentStatus.COMPLETED ? (
+                {order.paymentMethod === PaymentMethod.PAYSTACK ? (
                   <form action={recheckPaystackPaymentAction}>
                     <input type="hidden" name="orderId" value={order.id} />
                     <Button type="submit" size="sm" variant="outline" className="border border-border bg-white">

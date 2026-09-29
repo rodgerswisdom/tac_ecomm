@@ -1,12 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { confirmPaystackPayment, isValidWebhookSignature } from '@/lib/paystack'
+import { confirmPaystackPayment, isValidWebhookSignature, syncPaystackRefunds } from '@/lib/paystack'
 
 type PaystackWebhookEvent = {
   event?: string
-  data?: { reference?: string }
+  data?: {
+    reference?: string
+    // Refund events identify the charge this way rather than with `reference`.
+    transaction_reference?: string
+    transaction?: { reference?: string } | number
+  }
 }
 
-const HANDLED_EVENTS = new Set(['charge.success', 'charge.failed', 'refund.processed'])
+const CHARGE_EVENTS = new Set(['charge.success'])
+const REFUND_EVENTS = new Set(['refund.processed'])
+
+function chargeReference(event: PaystackWebhookEvent): string | undefined {
+  const data = event.data
+  if (!data) return undefined
+  const fromTransaction = typeof data.transaction === 'object' ? data.transaction?.reference : undefined
+  return (data.transaction_reference ?? fromTransaction ?? data.reference)?.trim() || undefined
+}
 
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
@@ -22,16 +35,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const reference = event.data?.reference?.trim()
-  if (!event.event || !HANDLED_EVENTS.has(event.event) || !reference) {
+  const name = event.event ?? ''
+  const isCharge = CHARGE_EVENTS.has(name)
+  const isRefund = REFUND_EVENTS.has(name)
+  const reference = isCharge ? event.data?.reference?.trim() : isRefund ? chargeReference(event) : undefined
+  if (!reference) {
     return NextResponse.json({ received: true })
   }
 
   try {
-    // Re-verify with the API rather than trusting the payload's status/amount.
-    await confirmPaystackPayment(reference)
+    // Both re-read state from Paystack's API rather than trusting the payload.
+    if (isCharge) await confirmPaystackPayment(reference)
+    else await syncPaystackRefunds(reference)
   } catch (error) {
-    console.error('[paystack/webhook] processing failed:', { event: event.event, reference, error })
+    console.error('[paystack/webhook] processing failed:', { event: name, reference, error })
     // Non-2xx makes Paystack retry later.
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 })
   }

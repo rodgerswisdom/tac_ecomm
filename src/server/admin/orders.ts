@@ -5,7 +5,24 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "./auth"
-import { reconcilePaystackOrder } from "@/lib/paystack"
+import { reconcilePaystackOrder, syncPaystackRefundsForOrder } from "@/lib/paystack"
+import { InsufficientStockError, releaseOrderStock, takeOrderStock } from "@/lib/stock"
+import { scheduleBackInStockNotifications } from "@/lib/stock-notify"
+
+/** Order statuses where the items have been taken out of stock. */
+const STOCK_TAKEN_STATUSES = new Set<OrderStatus>([
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.SHIPPED,
+    OrderStatus.DELIVERED,
+])
+/** Statuses that back an order out — stock goes back unless it already shipped. */
+const STOCK_RETURNED_STATUSES = new Set<OrderStatus>([
+    OrderStatus.PENDING,
+    OrderStatus.CANCELLED,
+    OrderStatus.REFUNDED,
+    OrderStatus.EXPIRED,
+])
 import type { ActionResult } from "@/lib/admin/action-result"
 
 export type OrderFilters = {
@@ -148,23 +165,56 @@ export async function updateOrderStatusAction(
     }
 
     try {
-        await prisma.order.update({
-            where: { id: parsed.data.orderId },
-            data: {
-                status: parsed.data.status,
-                paymentStatus: parsed.data.paymentStatus,
-                notes: parsed.data.note ?? undefined,
-            },
+        const { orderId, status: nextStatus } = parsed.data
+        const current = await prisma.order.findUnique({ where: { id: orderId }, select: { status: true } })
+        if (!current) {
+            return { status: "error", message: "Order not found" }
+        }
+
+        const shipped = current.status === OrderStatus.SHIPPED || current.status === OrderStatus.DELIVERED
+        let restockedProductIds: string[] = []
+        let stockMessage = ""
+
+        await prisma.$transaction(async (tx) => {
+            await tx.order.update({
+                where: { id: orderId },
+                data: {
+                    status: nextStatus,
+                    paymentStatus: parsed.data.paymentStatus,
+                    notes: parsed.data.note ?? undefined,
+                },
+            })
+
+            // Keep stock in step with the order: taken once it's confirmed, returned if it
+            // is backed out before shipping (Order.stockReserved makes both idempotent).
+            if (STOCK_TAKEN_STATUSES.has(nextStatus)) {
+                if (await takeOrderStock(orderId, tx)) stockMessage = " Stock updated."
+            } else if (STOCK_RETURNED_STATUSES.has(nextStatus)) {
+                if (shipped) {
+                    stockMessage = " Stock was not returned because the order had shipped — if items came back, adjust stock in Products."
+                } else {
+                    restockedProductIds = await releaseOrderStock(orderId, tx)
+                    if (restockedProductIds.length > 0) stockMessage = " Stock returned."
+                }
+            }
         })
 
+        if (restockedProductIds.length > 0) scheduleBackInStockNotifications(restockedProductIds)
+
         revalidatePath("/admin/orders")
-        revalidatePath(`/admin/orders/${parsed.data.orderId}`)
+        revalidatePath(`/admin/orders/${orderId}`)
 
         return {
             status: "success",
-            message: "Order status updated",
+            message: `Order status updated.${stockMessage}`,
         }
     } catch (error) {
+        if (error instanceof InsufficientStockError) {
+            return {
+                status: "error",
+                message: "Not enough stock to confirm this order. Restock the items (or refund the customer) first.",
+            }
+        }
         return {
             status: "error",
             message: error instanceof Error ? error.message : "Unable to update order",
@@ -205,13 +255,14 @@ export async function deleteOrderAction(formData: FormData): Promise<ActionResul
     }
 }
 
-/** Ask Paystack for the latest status of every payment attempt on an order (admin "Re-check"). */
+/** Ask Paystack for the latest status of every payment attempt, and any refunds, on an order. */
 export async function recheckPaystackPaymentAction(formData: FormData): Promise<void> {
     await assertAdmin()
     const orderId = formData.get("orderId")?.toString()
     if (!orderId) return
 
     await reconcilePaystackOrder({ id: orderId }, { force: true })
+    await syncPaystackRefundsForOrder(orderId)
 
     revalidatePath("/admin/orders")
     revalidatePath(`/admin/orders/${orderId}`)

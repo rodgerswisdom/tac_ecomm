@@ -173,3 +173,39 @@ export async function restoreStock(orderId: string, tx?: StockClient): Promise<s
 
   return restoreStockItems(toStockLineItems(order.items), client)
 }
+
+/**
+ * Take stock for an order exactly once. `Order.stockReserved` records that stock has been
+ * decremented, so repeated calls (webhook + callback, admin re-saves) never double-count.
+ * Throws InsufficientStockError (rolling back the caller's transaction) if stock ran out.
+ */
+export async function takeOrderStock(orderId: string, tx?: StockClient): Promise<boolean> {
+  const client = getStockClient(tx)
+  const claimed = await client.order.updateMany({
+    where: { id: orderId, stockReserved: false },
+    data: { stockReserved: true },
+  })
+  if (claimed.count === 0) return false
+
+  const order = await client.order.findUnique({
+    where: { id: orderId },
+    select: { items: { select: { productId: true, variantId: true, quantity: true } } },
+  })
+  await decrementStock(toStockLineItems(order?.items ?? []), client)
+  return true
+}
+
+/**
+ * Return an order's stock exactly once — only if it was taken (see takeOrderStock).
+ * Older orders confirmed before this flag existed are left alone rather than risk
+ * adding stock that was never removed.
+ */
+export async function releaseOrderStock(orderId: string, tx?: StockClient): Promise<string[]> {
+  const client = getStockClient(tx)
+  const released = await client.order.updateMany({
+    where: { id: orderId, stockReserved: true },
+    data: { stockReserved: false },
+  })
+  if (released.count === 0) return []
+  return restoreStock(orderId, client)
+}

@@ -1,6 +1,6 @@
 import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { decrementStock, restoreStock, toStockLineItems } from '@/lib/stock'
+import { releaseOrderStock, takeOrderStock } from '@/lib/stock'
 import { scheduleBackInStockNotifications } from '@/lib/stock-notify'
 import { deriveOrderStatus } from '@/lib/order-status'
 import { sendPaidOrderConfirmedEmail } from '@/lib/order-email'
@@ -109,7 +109,7 @@ export async function applyPaymentUpdate(input: ApplyPaymentUpdateInput): Promis
       })
 
       if (transition.count > 0) {
-        await decrementStock(toStockLineItems(order.items), tx)
+        await takeOrderStock(order.id, tx)
         shouldSendPaidEmail = true
         return
       }
@@ -128,7 +128,7 @@ export async function applyPaymentUpdate(input: ApplyPaymentUpdateInput): Promis
       })
 
       if (transition.count > 0) {
-        restockedProductIds = await restoreStock(order.id, tx)
+        restockedProductIds = await releaseOrderStock(order.id, tx)
         return
       }
 

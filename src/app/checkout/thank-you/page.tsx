@@ -21,6 +21,7 @@ type StatusKind =
   | "notCompleted"
   | "expired"
   | "cancelled"
+  | "refunded"
 
 type Tone = "success" | "pending" | "error"
 
@@ -58,6 +59,11 @@ const statusCopy: Record<StatusKind, { title: string; body: string; tone: Tone }
   cancelled: {
     title: "Order cancelled",
     body: "This order was cancelled. Contact us if you think this is a mistake.",
+    tone: "error",
+  },
+  refunded: {
+    title: "Order refunded",
+    body: "This order has been refunded. Refunds usually reach your M-Pesa or card within a few working days.",
     tone: "error",
   },
 }
@@ -277,7 +283,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
                 label={status === "failed" ? "Try again" : "Resume payment"}
               />
             ) : null}
-            {!isPaystack && copy.tone === "error" && status !== "expired" && status !== "cancelled" && (
+            {!isPaystack && copy.tone === "error" && status !== "expired" && status !== "cancelled" && status !== "refunded" && (
               <Button asChild variant="outline" className="border-brand-teal/40 text-brand-umber">
                 <Link href="/checkout">Try again</Link>
               </Button>
@@ -333,6 +339,7 @@ function resolveStatus(
     const allowed: StatusKind[] = ["success", "pending", "failed", "cancelled"]
     return allowed.includes(urlStatus as StatusKind) ? (urlStatus as StatusKind) : "pending"
   }
+  if (order.paymentStatus === PaymentStatus.REFUNDED || order.status === OrderStatus.REFUNDED) return "refunded"
   if (order.paymentStatus === PaymentStatus.COMPLETED) return "success"
   if (reviewReason) return "review"
   if (order.status === OrderStatus.EXPIRED) return "expired"
