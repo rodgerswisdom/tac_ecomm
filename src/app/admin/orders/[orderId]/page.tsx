@@ -13,6 +13,7 @@ import { getOrderItemProductName, getOrderItemProductSku } from "@/lib/order-ite
 import { StatusUpdateForm } from "./StatusUpdateForm"
 import { recheckPaystackPaymentAction } from "@/server/admin/orders"
 import { parsePaystackMeta } from "@/lib/paystack"
+import { DELIVERY_LABELS, type DeliveryMethod } from "@/lib/delivery"
 
 interface OrderDetailPageProps {
   params: Promise<{ orderId: string }>
@@ -143,6 +144,18 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 <p className="text-base font-semibold"><AdminFormattedPrice amount={order.total} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
             </div>
+
+            {order.deliveryInstructions ? (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">
+                  Customer&apos;s delivery arrangement · no shipping charged
+                </p>
+                <p className="mt-1 whitespace-pre-line font-medium text-foreground">{order.deliveryInstructions}</p>
+                <p className="mt-2 text-xs text-amber-800">
+                  Call the customer to agree the handover time and place in Nairobi CBD.
+                </p>
+              </div>
+            ) : null}
 
             {order.notes ? (
               <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm">
@@ -275,7 +288,11 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                   </div>
                   <div className="rounded-lg border border-border p-3">
                     <p className="text-muted-foreground">Shipping method</p>
-                    <p className="font-semibold">{order.shippingMethod ?? "Not assigned"}</p>
+                    <p className="font-semibold">
+                      {order.shippingMethod
+                        ? DELIVERY_LABELS[order.shippingMethod as DeliveryMethod] ?? order.shippingMethod
+                        : "Not assigned"}
+                    </p>
                     {order.trackingNumber ? (
                       <p className="text-xs text-muted-foreground">Tracking {order.trackingNumber}</p>
                     ) : null}

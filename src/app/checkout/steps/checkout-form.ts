@@ -13,6 +13,8 @@ export type CheckoutFormData = {
   city: string;
   postalCode: string;
   phone: string;
+  /** Only used with "Arrange your own delivery". */
+  deliveryInstructions: string;
 };
 
 export type CheckoutField = Exclude<keyof CheckoutFormData, "marketingOptIn" | "deliveryType">;
@@ -30,6 +32,7 @@ export const EMPTY_CHECKOUT_FORM: CheckoutFormData = {
   city: "",
   postalCode: "",
   phone: "",
+  deliveryInstructions: "",
 };
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,6 +62,9 @@ export function validateField(field: CheckoutField, form: CheckoutFormData): str
       return shipping && !value ? "Enter a city" : undefined;
     case "country":
       return shipping && !value ? "Select a country/region" : undefined;
+    // Required only for "Arrange your own delivery" — checked by validateDeliveryInstructions.
+    case "deliveryInstructions":
+      return undefined;
     default:
       return undefined;
   }
@@ -73,6 +79,13 @@ const VALIDATED_FIELDS: CheckoutField[] = [
   "city",
   "phone",
 ];
+
+export function validateDeliveryInstructions(value: string, maxLength: number): string | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return "Tell us how you'd like your order delivered";
+  if (trimmed.length > maxLength) return `Keep it under ${maxLength} characters`;
+  return undefined;
+}
 
 export function validateCheckoutForm(form: CheckoutFormData): CheckoutFieldErrors {
   const errors: CheckoutFieldErrors = {};
@@ -98,9 +111,10 @@ export function loadGuestDetails(): Partial<CheckoutFormData> | null {
 
 export function saveGuestDetails(form: CheckoutFormData) {
   try {
-    // Marketing consent is asked fresh each time, never remembered.
+    // Marketing consent and per-order delivery instructions are never remembered.
     const details: Partial<CheckoutFormData> = { ...form };
     delete details.marketingOptIn;
+    delete details.deliveryInstructions;
     window.localStorage.setItem(GUEST_DETAILS_KEY, JSON.stringify(details));
   } catch {
     // Storage unavailable — nothing to remember.

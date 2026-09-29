@@ -6,6 +6,7 @@ import {
   calculateShippingKsh,
   isDeliveryMethod,
   isDeliveryMethodValidForCountry,
+  CUSTOMER_ARRANGED_DELIVERY,
   PICKUP_LOCATION,
   type DeliveryMethod,
 } from '@/lib/delivery'
@@ -48,8 +49,21 @@ export async function POST(req: NextRequest) {
   const {
     firstName, lastName, email, phone, address, apartment, city, postalCode, country,
     shippingMethod, cartItems: clientCartItems,
-    couponCode, marketingOptIn
+    couponCode, marketingOptIn, deliveryInstructions
   } = body
+
+  // "Arrange your own delivery" needs the customer's instructions; other methods ignore them.
+  const isCustomerArranged = shippingMethod === 'customer_arranged'
+  const deliveryInstructionsTrim = isCustomerArranged ? String(deliveryInstructions ?? '').trim() : ''
+  if (isCustomerArranged && !deliveryInstructionsTrim) {
+    return NextResponse.json({ error: 'Tell us how you would like your order delivered.' }, { status: 400 })
+  }
+  if (deliveryInstructionsTrim.length > CUSTOMER_ARRANGED_DELIVERY.instructionsMaxLength) {
+    return NextResponse.json(
+      { error: `Delivery instructions must be ${CUSTOMER_ARRANGED_DELIVERY.instructionsMaxLength} characters or fewer.` },
+      { status: 400 }
+    )
+  }
 
   // Pickup orders are collected at PICKUP_LOCATION, so no delivery address is needed.
   const isPickup = shippingMethod === 'pickup'
@@ -396,6 +410,7 @@ export async function POST(req: NextRequest) {
       paymentExpiresAt: new Date(Date.now() + PAYMENT_WINDOW_MS),
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
+      deliveryInstructions: deliveryInstructionsTrim || null,
       couponCode: appliedCoupon?.code ?? null,
       couponDiscount: appliedCoupon ? couponDiscountKsh : null,
       items: {

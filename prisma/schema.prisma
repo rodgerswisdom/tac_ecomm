@@ -273,6 +273,8 @@ model Order {
   shippingMethod    String?
   trackingNumber    String?
   notes             String?
+  /// Customer's own delivery arrangement ("Arrange your own delivery"); null otherwise.
+  deliveryInstructions String?
   couponCode        String?
   couponDiscount    Float?
   paidAt            DateTime?

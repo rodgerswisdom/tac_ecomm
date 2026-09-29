@@ -12,6 +12,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { MANUAL_PAYMENT, STK_PAYMENT_ENABLED } from "@/lib/manual-payment"
 import { parsePaystackMeta, paystackReviewReason, reconcilePaystackOrder } from "@/lib/paystack"
+import { CUSTOMER_ARRANGED_DELIVERY, PICKUP_LOCATION } from "@/lib/delivery"
 
 type StatusKind =
   | "success"
@@ -107,6 +108,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
     paymentMethod: string | null
     orderNumber: string
     total: number
+    shippingMethod: string | null
     payments: { method: PaymentMethod; gatewayResponse: string | null }[]
   } | null = null
 
@@ -123,6 +125,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           paymentMethod: true,
           orderNumber: true,
           total: true,
+          shippingMethod: true,
           payments: {
             orderBy: { createdAt: "desc" },
             select: { method: true, gatewayResponse: true },
@@ -243,6 +246,14 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">{copy.title}</h1>
           <div className="max-w-2xl space-y-2">
             <p className="text-base text-brand-umber/70">{message ?? copy.body}</p>
+            {isPaymentCompleted && order?.shippingMethod === "customer_arranged" ? (
+              <p className="text-sm font-medium text-brand-umber">{CUSTOMER_ARRANGED_DELIVERY.handover}</p>
+            ) : null}
+            {isPaymentCompleted && order?.shippingMethod === "pickup" ? (
+              <p className="text-sm font-medium text-brand-umber">
+                Collect from {PICKUP_LOCATION.address}. {PICKUP_LOCATION.instructions}
+              </p>
+            ) : null}
             {failureReason ? (
               <p className="text-sm text-brand-umber/60">
                 Paystack said: <span className="font-medium text-brand-umber">{failureReason}</span>

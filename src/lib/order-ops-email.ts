@@ -25,6 +25,7 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
       total: true,
       paymentMethod: true,
       shippingMethod: true,
+      deliveryInstructions: true,
       user: { select: { email: true } },
       shippingAddress: {
         select: {
@@ -77,6 +78,11 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
       <p style="margin: 0 0 12px 0;"><strong>Total:</strong> ${totalLine}</p>
       <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${escapeHtml(paymentLine)}</p>
       <p style="margin: 0 0 12px 0;"><strong>Delivery:</strong> ${escapeHtml(deliveryLine)}</p>
+      ${
+        order.deliveryInstructions
+          ? `<p style="margin: 0 0 12px 0; padding: 10px 12px; background: #fff7e6; border-radius: 6px;"><strong>Customer's delivery instructions:</strong><br />${escapeHtml(order.deliveryInstructions)}<br /><em>Call the customer to agree the handover in Nairobi CBD. No shipping was charged.</em></p>`
+          : ""
+      }
       <p style="margin: 0 0 6px 0;"><strong>Items</strong></p>
       <ul style="margin: 0 0 12px 0; padding-left: 18px;">${itemLines
         .map((line) => `<li>${escapeHtml(line)}</li>`)
@@ -99,7 +105,11 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
     `Phone: ${phone}\n` +
     `Total: ${totalLine}\n` +
     `Payment method: ${paymentLine}\n` +
-    `Delivery: ${deliveryLine}\n\n` +
+    `Delivery: ${deliveryLine}\n` +
+    (order.deliveryInstructions
+      ? `Customer's delivery instructions: ${order.deliveryInstructions}\n(Call the customer to agree the handover in Nairobi CBD. No shipping was charged.)\n`
+      : "") +
+    `\n` +
     `Items:\n${itemLines.map((line) => `- ${line}`).join("\n")}\n\n` +
     `Shipping:\n${customerName}\n${streetLines.join("\n")}\n${locality}\n${addr.country}\n`;
 

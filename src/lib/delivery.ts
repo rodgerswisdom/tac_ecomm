@@ -6,7 +6,27 @@ export type DeliveryMethod =
   | "kenya_express"
   | "international_standard"
   | "international_express"
-  | "pickup";
+  | "pickup"
+  | "customer_arranged";
+
+/**
+ * "Arrange your own delivery": the customer tells us how to send the parcel and pays their
+ * courier directly, so no shipping is charged at checkout. Kenya only. Edit copy here.
+ */
+export const CUSTOMER_ARRANGED_DELIVERY = {
+  label: "Arrange your own delivery",
+  priceLabel: "No charge",
+  summary: "You pay your courier directly",
+  responsibility:
+    "You pay your courier directly. Once we hand your parcel to your courier in Nairobi CBD, they're responsible for delivering it.",
+  handover: "We'll call you to agree the handover time and place in Nairobi CBD.",
+  instructionsMaxLength: 500,
+  suggestions: [
+    "My rider will collect from you in the CBD",
+    "Send it by bus/matatu parcel service to ",
+    "Send it via G4S / Wells Fargo to ",
+  ],
+} as const;
 
 /** Where "Pickup" orders are collected. Edit here to change what checkout, admin and emails show. */
 export const PICKUP_LOCATION = {
@@ -27,6 +47,7 @@ export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
   international_standard: 2500,
   international_express: 4500,
   pickup: 0,
+  customer_arranged: 0,
 };
 
 export const DELIVERY_OPTIONS: {
@@ -45,6 +66,12 @@ export const DELIVERY_OPTIONS: {
     id: "kenya_express",
     label: "Kenya Express (1-2 business days)",
     price: SHIPPING_RATES_KSH.kenya_express,
+    regions: "kenya",
+  },
+  {
+    id: "customer_arranged",
+    label: CUSTOMER_ARRANGED_DELIVERY.label,
+    price: SHIPPING_RATES_KSH.customer_arranged,
     regions: "kenya",
   },
   {
@@ -67,6 +94,7 @@ export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
   international_standard: "International Standard (3-7 business days)",
   international_express: "International Express (2-5 business days)",
   pickup: `Pickup — ${PICKUP_LOCATION.address}`,
+  customer_arranged: CUSTOMER_ARRANGED_DELIVERY.label,
 };
 
 export function isKenyaDestination(country: string | null | undefined): boolean {
@@ -167,6 +195,7 @@ export function getEstimatedDeliveryDays(method: DeliveryMethod): number {
     international_standard: 5,
     international_express: 3,
     pickup: 1,
+    customer_arranged: 2,
   };
   return estimates[method] ?? 5;
 }

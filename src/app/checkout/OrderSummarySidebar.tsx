@@ -202,6 +202,8 @@ export function OrderSummarySidebar({
           <dd className="tabular-nums">
             {!deliveryMethod ? (
               <span className="text-brand-umber/55">Enter shipping address</span>
+            ) : deliveryMethod === "customer_arranged" ? (
+              <span className="text-brand-umber/70">Arranged by you</span>
             ) : shippingCost === 0 ? (
               <span className="text-brand-teal">Free</span>
             ) : (

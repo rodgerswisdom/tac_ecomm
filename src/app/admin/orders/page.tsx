@@ -236,10 +236,17 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                         </span>
                       </td>
                       <td className="px-4 py-4">
-                        <StatusBadge
-                          label={order.paymentStatus.replace(/_/g, " ")}
-                          variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
-                        />
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <StatusBadge
+                            label={order.paymentStatus.replace(/_/g, " ")}
+                            variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
+                          />
+                          {order.shippingMethod === "customer_arranged" ? (
+                            <StatusBadge label="Own delivery" variant="warning" />
+                          ) : order.shippingMethod === "pickup" ? (
+                            <StatusBadge label="Pickup" variant="info" />
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-4 py-4">
                         <RowActions

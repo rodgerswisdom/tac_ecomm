@@ -15,6 +15,7 @@ import {
   loadGuestDetails,
   saveGuestDetails,
   validateCheckoutForm,
+  validateDeliveryInstructions,
   validateField,
   type CheckoutField,
   type CheckoutFieldErrors,
@@ -24,7 +25,7 @@ import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { trackBeginCheckout } from "@/lib/analytics";
-import { calculateShippingKsh } from "@/lib/delivery";
+import { calculateShippingKsh, CUSTOMER_ARRANGED_DELIVERY } from "@/lib/delivery";
 import { cn } from "@/lib/utils";
 
 type SavedShipping = Partial<Record<keyof CheckoutFormData, string>> & {
@@ -120,6 +121,13 @@ export default function ShopifyCheckout() {
   for (const field of Object.keys(validateCheckoutForm(effectiveForm)) as CheckoutField[]) {
     if (submitAttempted || touched.has(field)) errors[field] = validateField(field, effectiveForm);
   }
+  const isCustomerArranged = deliveryMethod === "customer_arranged";
+  const instructionsProblem = isCustomerArranged
+    ? validateDeliveryInstructions(form.deliveryInstructions, CUSTOMER_ARRANGED_DELIVERY.instructionsMaxLength)
+    : undefined;
+  if (instructionsProblem && (submitAttempted || touched.has("deliveryInstructions"))) {
+    errors.deliveryInstructions = instructionsProblem;
+  }
 
   function updateForm(patch: Partial<CheckoutFormData>) {
     setForm((prev) => ({ ...prev, ...patch }));
@@ -142,6 +150,11 @@ export default function ShopifyCheckout() {
     }
     if (!deliveryMethod) {
       setError("Please choose a shipping method.");
+      return;
+    }
+    if (instructionsProblem) {
+      setError("Please tell us how you'd like your order delivered.");
+      document.getElementById("deliveryInstructions")?.focus();
       return;
     }
 
@@ -262,6 +275,10 @@ export default function ShopifyCheckout() {
                   freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
                   value={shippingMethod}
                   onChange={handleShippingMethodChange}
+                  instructions={form.deliveryInstructions}
+                  instructionsError={errors.deliveryInstructions}
+                  onInstructionsChange={(deliveryInstructions) => updateForm({ deliveryInstructions })}
+                  onInstructionsBlur={() => markTouched("deliveryInstructions")}
                 />
               ) : null}
 
