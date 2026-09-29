@@ -52,7 +52,6 @@ function buildNavLinks(shopCategories: { slug: string; name: string }[]) {
       label: "Shop",
       submenu: shopSubmenu.length > 0 ? shopSubmenu : undefined,
     },
-    { href: "/toys", label: "Toys" },
     { href: "/corporate", label: "Corporate" },
     { href: "/bespoke", label: "Bespoke & Limited Edition" },
     { href: "/contact", label: "Contact" },

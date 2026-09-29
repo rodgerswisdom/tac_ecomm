@@ -66,7 +66,7 @@ export default async function MpesaPaymentPage({ searchParams }: PaymentPageProp
   const callbackWarning = callbackOrigin ? getTumaCallbackWarning(callbackOrigin) : null;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-hidden page-surface">
       <Navbar />
       <section className="nav-clearance section-spacing pb-16">
         <div className="gallery-container">

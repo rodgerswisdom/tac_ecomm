@@ -47,9 +47,9 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-hidden page-surface">
       <Navbar />
-      <section className="nav-clearance section-spacing pb-0">
+      <section className={`nav-clearance section-spacing ${hasItems ? "pb-28 lg:pb-0" : "pb-0"}`}>
         <div className="gallery-container flex flex-col gap-10">
           <motion.div
             initial={{ opacity: 0, y: 28 }}
@@ -81,21 +81,6 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 )}
               </div>
             </div>
-
-            <div className="relative hidden items-center justify-between rounded-full border border-brand-teal/30 bg-white/85 px-4 py-3 text-xs text-brand-umber/60 overflow-x-auto gap-3 sm:flex sm:px-6 sm:py-4">
-              <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
-                <ProgressPill step={1} label="Cart" active />
-                <ProgressPill step={2} label="Details" active={false} />
-                <ProgressPill step={3} label="Confirmation" active={false} />
-              </div>
-              <Image
-                src={patternAssets.adinkraGlyph}
-                alt="Adinkra"
-                width={36}
-                height={36}
-                className="hidden opacity-60 md:block"
-              />
-            </div>
           </motion.div>
 
           {hasItems ? (
@@ -104,11 +89,12 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                 initial={{ opacity: 0, y: 32 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1], delay: 0.1 }}
-                className="space-y-10"
+                className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:gap-10"
               >
-                <div className="flex flex-col gap-4">
+                <div className="space-y-6">
+                <div className="flex flex-col gap-2">
                   <h2 className="font-heading text-3xl text-brand-umber">
-                    Order Summary
+                    Your Items
                   </h2>
                   <p className="text-sm text-brand-umber/65">
                     {cart.length} piece{cart.length === 1 ? "" : "s"} in your cart
@@ -169,28 +155,37 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
                     </div>
                   ))}
                 </div>
-
-                <div className="mt-10 space-y-4 text-sm text-brand-umber/70">
-                  <Row label="Subtotal" value={formatPrice(subtotal)} />
                 </div>
 
-                <div className="mt-6 flex items-center justify-between rounded-2xl border border-brand-gold/40 bg-white/95 px-5 py-4">
-                  <span className="caps-spacing text-sm text-brand-umber/60">
-                    Total
-                  </span>
-                  <span className="text-3xl font-heading text-brand-coral">
-                    {formatPrice(total)}
-                  </span>
-                </div>
-
-                <div className="mt-10 flex flex-col gap-3">
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href="/checkout">Proceed to Checkout</Link>
-                  </Button>
-                  <p className="caps-spacing text-xs text-brand-umber/55">
-                    Secure payment · Artisan thank-you awaits
-                  </p>
-                </div>
+                {/* Summary sits beside the items on desktop so checkout is always in view. */}
+                <aside
+                  aria-labelledby="cart-summary-heading"
+                  className="space-y-5 rounded-2xl border border-brand-teal/20 bg-brand-beige/40 p-5 lg:sticky lg:top-24 lg:p-6"
+                >
+                  <h2 id="cart-summary-heading" className="font-heading text-2xl text-brand-umber">
+                    Order Summary
+                  </h2>
+                  <div className="space-y-3 text-sm text-brand-umber/70">
+                    <Row label="Subtotal" value={formatPrice(subtotal)} />
+                    <Row label="Shipping" value="Calculated at checkout" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-brand-gold/40 bg-white/95 px-5 py-4">
+                    <span className="caps-spacing text-sm text-brand-umber/60">
+                      Total
+                    </span>
+                    <span className="text-2xl font-heading text-brand-coral">
+                      {formatPrice(total)}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <Button size="lg" className="w-full" asChild>
+                      <Link href="/checkout">Proceed to Checkout</Link>
+                    </Button>
+                    <p className="caps-spacing text-center text-xs text-brand-umber/55">
+                      Secure payment · Artisan thank-you awaits
+                    </p>
+                  </div>
+                </aside>
               </motion.div>
 
               <motion.div
@@ -271,7 +266,21 @@ export function CartPageClient({ recommendations }: CartPageClientProps) {
           )}
         </div>
       </section>
-    </main >
+
+      {hasItems && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-brand-umber/10 bg-white/95 px-4 py-3 shadow-[0_-8px_24px_rgba(74,43,40,0.1)] backdrop-blur-xl lg:hidden">
+          <div className="mx-auto flex max-w-xl items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-brand-umber/60">Total</p>
+              <p className="truncate font-heading text-xl text-brand-coral">{formatPrice(total)}</p>
+            </div>
+            <Button size="lg" asChild className="shrink-0">
+              <Link href="/checkout">Checkout</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+    </main>
   );
 }
 
@@ -279,32 +288,5 @@ const Row = ({ label, value }: { label: string; value: string }) => (
   <div className="flex items-center justify-between text-sm text-brand-umber/70">
     <span>{label}</span>
     <span>{value}</span>
-  </div>
-);
-
-const ProgressPill = ({
-  step,
-  label,
-  active,
-}: {
-  step: number;
-  label: string;
-  active: boolean;
-}) => (
-  <div
-    className={`flex items-center gap-3 rounded-full border px-4 py-2 transition ${active
-      ? "border-brand-teal bg-white text-brand-umber"
-      : "border-brand-umber/15 text-brand-umber/50"
-      }`}
-  >
-    <span
-      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold ${active
-        ? "bg-gradient-to-r from-brand-teal to-brand-coral text-white"
-        : "bg-brand-jade/40 text-brand-umber/60"
-        }`}
-    >
-      {step}
-    </span>
-    <span className="caps-spacing text-xs">{label}</span>
   </div>
 );

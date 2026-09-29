@@ -52,7 +52,7 @@ function ForgotPasswordForm() {
     }
 
     return (
-        <div className="relative min-h-screen overflow-hidden bg-background pb-8">
+        <div className="relative min-h-screen overflow-hidden page-surface pb-8">
             {/* Background pattern — matches sign-in page */}
             <div className="absolute inset-0 opacity-5">
                 <div className="absolute inset-0 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/10" />

@@ -152,7 +152,7 @@ export function ContactPageClient() {
   ]
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-hidden page-surface">
       <Navbar />
 
       <section className="nav-clearance section-spacing pb-8">

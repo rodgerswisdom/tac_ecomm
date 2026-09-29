@@ -1,141 +1,177 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Lock } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { CheckoutStepper } from "./CheckoutStepper";
-import { ShippingStep, ShippingFormData } from "./steps/ShippingStep";
-import { DeliveryStep, DeliveryMethod } from "./steps/DeliveryStep";
-import { ReviewStep } from "./steps/ReviewStep";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  ShippingStep,
+  EMPTY_SHIPPING,
+  validateShipping,
+  type ShippingFieldErrors,
+  type ShippingFormData,
+} from "./steps/ShippingStep";
+import { DeliveryStep, type DeliveryMethod } from "./steps/DeliveryStep";
 import { OrderSummarySidebar } from "./OrderSummarySidebar";
 import { useCart } from "@/contexts/CartContext";
+import { useCurrency } from "@/contexts/CurrencyContext";
 import { trackBeginCheckout } from "@/lib/analytics";
-import { STK_PAYMENT_ENABLED } from "@/lib/manual-payment";
+import { calculateShippingKsh } from "@/lib/delivery";
 
-const TOTAL_STEPS = 2;
+type SavedShipping = Partial<ShippingFormData> & {
+  firstName?: string;
+  lastName?: string;
+  zipCode?: string;
+};
+
+function fromSavedShipping(saved: SavedShipping): ShippingFormData {
+  return {
+    name: saved.name || [saved.firstName, saved.lastName].filter(Boolean).join(" "),
+    email: saved.email ?? "",
+    phone: saved.phone ?? "",
+    address: saved.address ?? "",
+    city: saved.city ?? "",
+    postalCode: saved.postalCode ?? saved.zipCode ?? "",
+    country: saved.country || EMPTY_SHIPPING.country,
+  };
+}
 
 export default function ShopifyCheckout() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [shipping, setShipping] = useState<ShippingFormData | null>(null);
-  const [shippingDraft, setShippingDraft] = useState<ShippingFormData | null>(null);
+  const { cart, getCartTotal } = useCart();
+  const { formatPrice } = useCurrency();
+
+  const [shipping, setShipping] = useState<ShippingFormData>(EMPTY_SHIPPING);
+  const [fieldErrors, setFieldErrors] = useState<ShippingFieldErrors>({});
   const [shippingLoading, setShippingLoading] = useState(false);
-  useEffect(() => {
-    setShippingLoading(true);
-    fetch("/api/user/shipping")
-      .then(res => res.json())
-      .then(data => {
-        if (data.shipping) {
-          setShipping(data.shipping);
-          setShippingDraft(data.shipping);
-        }
-      })
-      .finally(() => setShippingLoading(false));
-  }, []);
+  const [saveAddress, setSaveAddress] = useState(true);
   const [delivery, setDelivery] = useState<DeliveryMethod | null>(null);
-  const pendingDeliveryRef = useRef<DeliveryMethod | null>(null);
-  const defaultPayment = {
-    method: (STK_PAYMENT_ENABLED ? "TUMA" : "BANK_TRANSFER") as "TUMA" | "BANK_TRANSFER",
-  };
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
-  const appliedCouponRef = useRef(appliedCoupon);
-  appliedCouponRef.current = appliedCoupon;
-  const [orderPlaced, setOrderPlaced] = useState(false);
-  const { cart, clearCart } = useCart();
   const [error, setError] = useState("");
-  const [placingOrder, setPlacingOrder] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [showSummaryMobile, setShowSummaryMobile] = useState(false);
 
   useEffect(() => {
-    if (cart.length === 0 && !orderPlaced) {
+    setShippingLoading(true);
+    fetch("/api/user/shipping")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.shipping) setShipping(fromSavedShipping(data.shipping));
+      })
+      .catch(() => {})
+      .finally(() => setShippingLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (cart.length === 0 && !redirecting) {
       router.replace("/cart");
     }
-  }, [cart.length, orderPlaced, router]);
+  }, [cart.length, redirecting, router]);
 
-  // Track begin_checkout event when checkout page loads with items
+  // Track begin_checkout once when the page loads with items.
   useEffect(() => {
     if (cart.length > 0) {
-      const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      trackBeginCheckout(cart, total, appliedCoupon?.code);
+      trackBeginCheckout(cart, getCartTotal(), appliedCoupon?.code);
     }
-  }, []); // Only fire once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleNextStep() {
-    setCurrentStep((s) => Math.min(TOTAL_STEPS, s + 1));
+  const handleDeliveryChange = useCallback((method: DeliveryMethod) => setDelivery(method), []);
+
+  const subtotal = getCartTotal();
+  const discount = appliedCoupon?.discount ?? 0;
+  const shippingCost = delivery
+    ? calculateShippingKsh({
+        country: shipping.country,
+        deliveryMethod: delivery,
+        merchandiseSubtotalKsh: subtotal,
+        freeShippingFromCoupon: appliedCoupon?.type === "FREE_SHIPPING",
+      }).shippingKsh
+    : 0;
+  const total = Math.max(0, subtotal - discount + shippingCost);
+
+  function handleShippingChange(next: ShippingFormData) {
+    setShipping(next);
+    // Clear a field's error as soon as the customer edits it.
+    if (Object.keys(fieldErrors).length > 0) {
+      setFieldErrors((prev) => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated) as (keyof ShippingFormData)[]) {
+          if (next[key] !== shipping[key]) delete updated[key];
+        }
+        return updated;
+      });
+    }
   }
-  function handlePrevStep() {
-    if (currentStep === 1) {
-      router.push("/cart");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const errors = validateShipping(shipping);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setError("Please fix the highlighted fields.");
+      document.getElementById(Object.keys(errors)[0])?.focus();
       return;
     }
-    setCurrentStep((s) => Math.max(1, s - 1));
-  }
-
-  async function handlePlaceOrder() {
-    if (!shipping || !delivery) {
-      setError("Please complete shipping and delivery before placing your order.");
+    if (!delivery) {
+      setError("Please select a delivery option.");
       return;
     }
+
     setError("");
-    setPlacingOrder(true);
-    const coupon = appliedCouponRef.current;
+    setSubmitting(true);
     try {
-      const body: Record<string, unknown> = {
-        ...shipping,
-        paymentMethod: STK_PAYMENT_ENABLED ? "TUMA" : "BANK_TRANSFER",
-        shippingMethod: delivery,
-        cartItems: cart,
-      };
-      if (coupon) {
-        body.couponCode = coupon.code;
-        body.couponDiscount = coupon.discount;
+      if (session?.user && saveAddress) {
+        // Best effort — never block payment on saving the address.
+        await fetch("/api/user/shipping", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(shipping),
+        }).catch(() => {});
       }
+
       const res = await fetch("/api/order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          ...shipping,
+          shippingMethod: delivery,
+          cartItems: cart,
+          couponCode: appliedCoupon?.code,
+        }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setError(data.error || "Failed to place order. Please try again.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.redirectUrl) {
+        setError(data.error || "We could not start the payment. Please try again.");
         return;
       }
-      setOrderPlaced(true);
-      clearCart();
-      if (data.thankYouUrl || data.redirectUrl) {
-        window.location.href = data.thankYouUrl || data.redirectUrl;
-        return;
-      }
+
+      // The cart is cleared on the thank-you page once Paystack confirms payment.
+      setRedirecting(true);
+      window.location.assign(data.redirectUrl);
     } catch {
-      setError("Failed to place order. Please try again.");
+      setError("We could not start the payment. Please try again.");
     } finally {
-      setPlacingOrder(false);
+      setSubmitting(false);
     }
   }
 
+  const busy = submitting || redirecting;
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-x-clip page-surface">
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
-        <div className="gallery-container flex flex-col gap-10">
+        <div className="gallery-container flex flex-col gap-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-3">
-              <span className="caps-spacing text-xs text-brand-teal">Secure Checkout</span>
-              <h1 className="font-heading mobile-page-title text-brand-umber md:text-6xl">
-                Checkout
-              </h1>
-              <p className="max-w-2xl text-sm text-brand-umber/70">
-                Complete your order with shipping, delivery, and payment. Your information is protected.
-              </p>
-            </div>
+            <h1 className="font-heading mobile-page-title text-brand-umber md:text-6xl">Checkout</h1>
             <div className="flex items-center gap-2 rounded-full border border-brand-teal/30 bg-white/85 px-4 py-2 text-xs text-brand-umber/70">
               <Lock className="h-4 w-4 text-brand-teal" aria-hidden />
-              <span>Secure checkout</span>
+              <span>Secure payment by Paystack</span>
             </div>
           </div>
 
@@ -144,15 +180,16 @@ export default function ShopifyCheckout() {
               variant="outline"
               className="w-full border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5"
               onClick={() => setShowSummaryMobile((prev) => !prev)}
+              aria-expanded={showSummaryMobile}
             >
-              {showSummaryMobile ? "Hide order summary" : "View order summary"}
+              {showSummaryMobile ? "Hide order summary" : `View order summary · ${formatPrice(total)}`}
             </Button>
             {showSummaryMobile && (
               <div className="mt-3">
                 <OrderSummarySidebar
                   appliedCoupon={appliedCoupon}
                   onAppliedCouponChange={setAppliedCoupon}
-                  country={shippingDraft?.country ?? shipping?.country}
+                  country={shipping.country}
                   deliveryMethod={delivery}
                   className="md:hidden"
                 />
@@ -161,104 +198,77 @@ export default function ShopifyCheckout() {
           </div>
 
           <div className="flex flex-col gap-8 md:flex-row">
-            <div className="flex-1">
-              <CheckoutStepper currentStep={currentStep} />
-              <div className="min-h-[400px] rounded-[2.5rem] border border-brand-teal/20 bg-white p-5 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm sm:p-8 md:p-10">
-                {orderPlaced ? (
-                  <div className="text-center py-16">
-                    <h2 className="font-heading text-3xl text-brand-umber mb-4">Thank you for your order</h2>
-                    <p className="text-brand-umber/70">
-                      Your order has been placed and you will receive a confirmation email soon.
-                    </p>
-                    <Button className="mt-8" asChild>
-                      <Link href="/collections">Continue shopping</Link>
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {currentStep === 1 && (
-                      <div className="space-y-8">
-                        <ShippingStep
-                          hideSubmit
-                          onChange={setShippingDraft}
-                          onNext={(data) => {
-                            const method = pendingDeliveryRef.current;
-                            if (!method) {
-                              setError("Please select a delivery method.");
-                              return;
-                            }
-                            setShipping(data);
-                            setShippingDraft(data);
-                            setDelivery(method);
-                            setError("");
-                            handleNextStep();
-                          }}
-                          initialData={shipping}
-                          loading={shippingLoading}
-                          canSaveAddress={!!session?.user}
-                          onSaveAddress={async (data) => {
-                            const res = await fetch("/api/user/shipping", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify(data),
-                            });
-                            if (!res.ok) {
-                              const err = await res.json().catch(() => ({}));
-                              throw new Error(err.error || "Failed to save address");
-                            }
-                          }}
-                        />
-                        <DeliveryStep
-                          country={shippingDraft?.country ?? shipping?.country ?? "KE"}
-                          merchandiseSubtotal={cart.reduce(
-                            (sum, item) => sum + item.price * item.quantity,
-                            0
-                          )}
-                          freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
-                          onNext={(method) => {
-                            pendingDeliveryRef.current = method;
-                            const form = document.getElementById(
-                              "checkout-shipping-form",
-                            ) as HTMLFormElement | null;
-                            form?.requestSubmit();
-                          }}
-                        />
-                      </div>
-                    )}
-                    {currentStep === 2 && shipping && delivery && (
-                      <ReviewStep
-                        shipping={shipping}
-                        delivery={delivery}
-                        payment={defaultPayment}
-                        appliedCoupon={appliedCoupon}
-                        onPlaceOrder={handlePlaceOrder}
-                        isSubmitting={placingOrder}
-                      />
-                    )}
-                    {error && (
-                      <div role="alert" aria-live="polite" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                        {error}
-                      </div>
-                    )}
-                    <div className="mt-8 flex justify-between">
-                      <Button
-                        variant="outline"
-                        onClick={handlePrevStep}
-                        disabled={orderPlaced}
-                        className="w-full border-brand-teal/30 text-brand-umber hover:bg-brand-teal/5 sm:w-auto"
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </>
-                )}
+            <form
+              noValidate
+              onSubmit={handleSubmit}
+              autoComplete="on"
+              className="flex-1 space-y-8 rounded-[2.5rem] border border-brand-teal/20 bg-white p-5 shadow-[0_35px_80px_rgba(74,43,40,0.14)] sm:p-8 md:p-10"
+            >
+              <ShippingStep
+                value={shipping}
+                onChange={handleShippingChange}
+                errors={fieldErrors}
+                disabled={shippingLoading || busy}
+              />
+
+              {session?.user && (
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="save-address"
+                    checked={saveAddress}
+                    onCheckedChange={(checked) => setSaveAddress(checked === true)}
+                    disabled={busy}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="save-address" className="cursor-pointer text-sm text-brand-umber/70">
+                    Save these details for next time
+                  </label>
+                </div>
+              )}
+
+              <DeliveryStep
+                country={shipping.country}
+                merchandiseSubtotal={subtotal}
+                freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
+                value={delivery}
+                onChange={handleDeliveryChange}
+              />
+
+              {error && (
+                <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <Button type="submit" disabled={busy || shippingLoading} className="h-12 w-full text-base">
+                  {redirecting
+                    ? "Redirecting to Paystack…"
+                    : submitting
+                      ? "Starting payment…"
+                      : `Pay ${formatPrice(total)}`}
+                </Button>
+                <p className="text-center text-xs text-brand-umber/60">
+                  You&apos;ll pay securely on Paystack with M-Pesa or card. Charged in KES.
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => router.push("/cart")}
+                  disabled={busy}
+                  className="w-full text-brand-umber/70"
+                >
+                  Back to cart
+                </Button>
               </div>
-            </div>
-            <div className="hidden md:block">
+            </form>
+
+            {/* Stretches to the form's height so the summary can stay pinned while the form scrolls. */}
+            <div className="hidden md:block md:self-stretch">
               <OrderSummarySidebar
                 appliedCoupon={appliedCoupon}
                 onAppliedCouponChange={setAppliedCoupon}
-                country={shippingDraft?.country ?? shipping?.country}
+                country={shipping.country}
                 deliveryMethod={delivery}
               />
             </div>

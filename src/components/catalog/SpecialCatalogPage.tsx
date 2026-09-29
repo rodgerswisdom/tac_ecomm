@@ -1,9 +1,6 @@
 import { Suspense } from "react"
 import { CollectionsPageClient } from "@/app/collections/CollectionsPageClient"
-import {
-  getCorporateProductCards,
-  getToyProductCards,
-} from "@/server/storefront/products"
+import { getCorporateProductCards } from "@/server/storefront/products"
 import type { ProductCardData } from "@/types/product"
 import type { CategoryOption } from "@/components/ProductFilters"
 import type { SpecialCatalogKind } from "@/lib/special-catalogs"
@@ -36,15 +33,6 @@ const CATALOGS: Record<
     emptyDescription: string
   }
 > = {
-  toys: {
-    fetch: getToyProductCards,
-    basePath: "/toys",
-    pageTitle: "Toys",
-    pageDescription:
-      "Handcrafted toys and play pieces made by African artisans — objects for curiosity, storytelling, and gift-giving.",
-    emptyTitle: "No toys yet",
-    emptyDescription: "Check back soon as we add handcrafted toys to this collection.",
-  },
   corporate: {
     fetch: getCorporateProductCards,
     basePath: "/corporate",

@@ -24,6 +24,7 @@ export async function GET() {
   const addr = user.addresses[0]
   return NextResponse.json({
     shipping: {
+      name: `${addr.firstName} ${addr.lastName}`.trim(),
       firstName: addr.firstName,
       lastName: addr.lastName,
       email: user.email,
@@ -55,18 +56,20 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const firstName = body.firstName?.trim()
-  const lastName = body.lastName?.trim()
+  // Checkout sends a single `name`; older callers send firstName/lastName.
+  const nameParts = typeof body.name === 'string' ? body.name.trim().split(/\s+/) : []
+  const firstName = (body.firstName?.trim() || nameParts.shift() || '') as string
+  const lastName = (body.lastName?.trim() || nameParts.join(' ')) as string
   const address = body.address?.trim()
   const city = body.city?.trim()
-  const state = body.state?.trim()
-  const zipCode = body.zipCode?.trim()
+  const state = body.state?.trim() || ''
+  const zipCode = (body.zipCode ?? body.postalCode)?.trim() || ''
   const country = body.country?.trim()
   const phone = body.phone?.trim() || null
 
-  if (!firstName || !lastName || !address || !city || !state || !zipCode || !country) {
+  if (!firstName || !address || !city || !country) {
     return NextResponse.json(
-      { error: 'Missing required fields: firstName, lastName, address, city, state, zipCode, country' },
+      { error: 'Missing required fields: name, address, city, country' },
       { status: 400 }
     )
   }

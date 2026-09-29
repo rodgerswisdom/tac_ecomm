@@ -154,7 +154,7 @@ export function ProductDetailClient({ product, related }: ProductDetailClientPro
 
   return (
     <ErrorBoundary>
-    <main className="relative overflow-x-hidden bg-brand-beige">
+    <main className="relative overflow-x-hidden page-surface">
       <Navbar />
       <section className="nav-clearance section-spacing pb-8 sm:pb-0">
         <div className="gallery-container">

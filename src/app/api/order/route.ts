@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CouponType, OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
-import { PaymentService, getPaymentConfig, normalizeKenyaPhone } from '@/lib/payments'
-import { assertProductionCallbackUrl, buildTumaPaymentCallbackUrl } from '@/lib/tuma-callback-url'
-import { convertFromUsd as convertFromBase, CurrencyCode } from '@/lib/currency'
 import {
   calculateShippingKsh,
   isDeliveryMethod,
@@ -12,9 +9,17 @@ import {
   type DeliveryMethod,
 } from '@/lib/delivery'
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
-import { EmailService, getEmailConfig } from '@/lib/email'
 import { formatProductImageLabel } from '@/lib/product-image-selection'
-import { STK_PAYMENT_ENABLED } from '@/lib/manual-payment'
+import { initializeTransaction } from '@/lib/paystack'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Address rows keep first/last name columns; checkout collects a single full name. */
+function splitFullName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/)
+  const firstName = parts.shift() ?? ''
+  return { firstName, lastName: parts.join(' ') }
+}
 
 type CheckoutCartItem = {
   id: string
@@ -47,19 +52,22 @@ export async function POST(req: NextRequest) {
   const session = await auth()
   const body = await req.json()
   const {
-    email, firstName, lastName, phone, address, city, state, zipCode, country,
-    paymentMethod, shippingMethod, cartItems: clientCartItems,
-    couponCode, couponDiscount
+    name, email, phone, address, city, postalCode, country,
+    shippingMethod, cartItems: clientCartItems,
+    couponCode
   } = body
 
-  // Require email and shipping fields (Order requires userId from user)
-  const required = { email, firstName, lastName, address, city, state, zipCode, country }
+  // Only what is needed to take payment and deliver the order.
+  const required = { name, email, phone, address, city, country }
   for (const [key, value] of Object.entries(required)) {
     if (value == null || String(value).trim() === '') {
       return NextResponse.json({ error: `Missing required field: ${key}` }, { status: 400 })
     }
   }
   const emailTrim = String(email).trim()
+  if (!EMAIL_PATTERN.test(emailTrim)) {
+    return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
+  }
   const rateLimit = checkCheckoutRateLimit(req, emailTrim)
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -68,12 +76,11 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const firstNameTrim = String(firstName).trim()
-  const lastNameTrim = String(lastName).trim()
+  const { firstName: firstNameTrim, lastName: lastNameTrim } = splitFullName(String(name))
+  const phoneTrim = String(phone).trim()
   const addressTrim = String(address).trim()
   const cityTrim = String(city).trim()
-  const stateTrim = String(state).trim()
-  const zipCodeTrim = String(zipCode).trim()
+  const postalCodeTrim = postalCode != null ? String(postalCode).trim() : ''
   const countryTrim = String(country).trim()
 
   // Fetch cart for logged-in user from DB, else use clientCartItems for guest
@@ -290,20 +297,11 @@ export async function POST(req: NextRequest) {
   const tax = 0
   const total = Math.max(0, subtotal - couponDiscountKsh + shipping)
   const orderCurrency = 'KSH' as const
-  const defaultPaymentCurrency = (process.env.DEFAULT_CURRENCY || 'KSH').toUpperCase()
-  // For Tuma M-Pesa we charge in KES (same as KSH base). For PayPal, convert KSH to USD.
-  const payCurrencyCode: CurrencyCode = defaultPaymentCurrency === 'KES' || defaultPaymentCurrency === 'KSH' ? 'KSH' : defaultPaymentCurrency === 'EUR' ? 'EUR' : 'USD'
-  const paymentAmount = payCurrencyCode === 'KSH' ? total : Math.round(convertFromBase(total, payCurrencyCode))
-  const paymentCurrency = payCurrencyCode === 'KSH' ? 'KES' : payCurrencyCode
-  const normalizedPaymentMethod = normalizePaymentMethod(paymentMethod)
-  // STK temporarily suspended: force manual M-Pesa / bank-transfer style pending payment.
-  const effectivePaymentMethod =
-    !STK_PAYMENT_ENABLED &&
-    (normalizedPaymentMethod === PaymentMethod.TUMA || normalizedPaymentMethod == null)
-      ? PaymentMethod.BANK_TRANSFER
-      : normalizedPaymentMethod
 
-  // Log order totals and payment amount so checkout display matches Tuma (amount in KES).
+  if (total <= 0) {
+    return NextResponse.json({ error: 'Order total must be greater than zero.' }, { status: 400 })
+  }
+
   console.info(
     '[order] subtotal (KSH):',
     subtotal,
@@ -313,14 +311,8 @@ export async function POST(req: NextRequest) {
     shipping,
     'total (KSH):',
     total,
-    '→ payment:',
-    paymentAmount,
-    paymentCurrency,
     appliedCoupon ? `(coupon: ${appliedCoupon.code})` : '(no coupon)'
   )
-
-  // Optionally: validate coupon here (not implemented)
-
 
   // Generate short unique order number: TAC-<base36 time>-<4 random>
   function generateOrderNumber() {
@@ -366,10 +358,10 @@ export async function POST(req: NextRequest) {
       lastName: lastNameTrim,
       address1: addressTrim,
       city: cityTrim,
-      state: stateTrim,
-      postalCode: zipCodeTrim,
+      state: '',
+      postalCode: postalCodeTrim,
       country: countryTrim,
-      phone: phone != null && String(phone).trim() !== '' ? String(phone).trim() : null,
+      phone: phoneTrim,
       userId: user.id
     }
   })
@@ -385,7 +377,7 @@ export async function POST(req: NextRequest) {
       shipping,
       total,
       currency: orderCurrency,
-      paymentMethod: effectivePaymentMethod ?? undefined,
+      paymentMethod: PaymentMethod.PAYSTACK,
       paymentStatus: PaymentStatus.PENDING,
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
@@ -405,190 +397,40 @@ export async function POST(req: NextRequest) {
     }
   })
 
-  let redirectUrl: string | undefined
-  let thankYouUrl: string | undefined
-  const opsEmails = [
-    "info@tacaccessories.co.ke",
-    "peter@tacaccessories.co.ke",
-    "mary@tacaccessories.co.ke",
-  ]
-  const sendOpsNotification = async () => {
-    const emailService = new EmailService(getEmailConfig())
-    const subject = `New order received: ${order.orderNumber}`
-    const itemLinesHtml = validatedItems
-      .map((item) => {
-        const label = item.selectedImageLabel ? ` — ${item.selectedImageLabel}` : ''
-        return `<li>${item.name}${label} × ${item.quantity}</li>`
-      })
-      .join('')
-    const itemLinesText = validatedItems
-      .map((item) => {
-        const label = item.selectedImageLabel ? ` — ${item.selectedImageLabel}` : ''
-        return `- ${item.name}${label} × ${item.quantity}`
-      })
-      .join('\n')
-    const html = `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2 style="margin: 0 0 12px 0;">New order received</h2>
-        <p style="margin: 0 0 12px 0;"><strong>Order #:</strong> ${order.orderNumber}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Customer:</strong> ${firstNameTrim} ${lastNameTrim}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Email:</strong> ${emailTrim}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Phone:</strong> ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Total:</strong> KES ${Math.round(total).toLocaleString()}</p>
-        <p style="margin: 0 0 12px 0;"><strong>Payment method:</strong> ${effectivePaymentMethod ?? "Not specified"}</p>
-        <p style="margin: 0 0 6px 0;"><strong>Items</strong></p>
-        <ul style="margin: 0 0 12px 0; padding-left: 18px;">${itemLinesHtml}</ul>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
-        <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
-        <p style="margin: 0;">
-          ${firstNameTrim} ${lastNameTrim}<br />
-          ${addressTrim}<br />
-          ${cityTrim}, ${stateTrim} ${zipCodeTrim}<br />
-          ${countryTrim}
-        </p>
-      </div>
-    `
-    const text =
-      `New order received\n\n` +
-      `Order #: ${order.orderNumber}\n` +
-      `Customer: ${firstNameTrim} ${lastNameTrim}\n` +
-      `Email: ${emailTrim}\n` +
-      `Phone: ${phone != null && String(phone).trim() !== "" ? String(phone).trim() : "Not provided"}\n` +
-      `Total: KES ${Math.round(total).toLocaleString()}\n` +
-      `Payment method: ${effectivePaymentMethod ?? "Not specified"}\n\n` +
-      `Items:\n${itemLinesText}\n\n` +
-      `Shipping:\n` +
-      `${firstNameTrim} ${lastNameTrim}\n` +
-      `${addressTrim}\n` +
-      `${cityTrim}, ${stateTrim} ${zipCodeTrim}\n` +
-      `${countryTrim}\n`
-
-    await Promise.all(
-      opsEmails.map((to) => emailService.sendEmail({ to, subject, html, text }))
+  const baseUrl = (process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin).replace(/\/$/, '')
+  let authorizationUrl: string
+  try {
+    const transaction = await initializeTransaction({
+      email: user.email,
+      amountKes: total,
+      reference: order.orderNumber,
+      callbackUrl: `${baseUrl}/api/payment/paystack/callback`,
+      cancelUrl: `${baseUrl}/checkout`,
+      metadata: {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
+        phone: phoneTrim,
+      },
+    })
+    authorizationUrl = transaction.authorization_url
+  } catch (error) {
+    console.error('[order] Paystack initialization failed', error)
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: OrderStatus.CANCELLED,
+        paymentStatus: PaymentStatus.FAILED
+      }
+    })
+    return NextResponse.json(
+      { error: 'We could not start the payment. Please try again.' },
+      { status: 502 }
     )
   }
 
-  if (STK_PAYMENT_ENABLED && effectivePaymentMethod === PaymentMethod.TUMA) {
-    const phoneRaw = phone != null ? String(phone).trim() : ''
-    const mpesaPhone = phoneRaw ? normalizeKenyaPhone(phoneRaw) : null
-    if (!mpesaPhone) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: OrderStatus.CANCELLED,
-          paymentStatus: PaymentStatus.FAILED
-        }
-      })
-      return NextResponse.json(
-        { error: 'A valid Kenyan M-Pesa phone number is required (e.g. 0712345678).' },
-        { status: 400 }
-      )
-    }
-
-    const paymentService = new PaymentService(getPaymentConfig())
-    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
-    const callbackUrl = buildTumaPaymentCallbackUrl(order.id, req.nextUrl.origin)
-    const callbackCheck = assertProductionCallbackUrl(callbackUrl)
-    if (!callbackCheck.ok) {
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: OrderStatus.CANCELLED,
-          paymentStatus: PaymentStatus.FAILED
-        }
-      })
-      return NextResponse.json({ error: callbackCheck.message }, { status: 400 })
-    }
-
-    console.info('[tuma/stk-push] initiating', {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      callback_url: callbackUrl
-    })
-
-    try {
-      const paymentResponse = await paymentService.createPayment('tuma', {
-        amount: paymentAmount,
-        currency: paymentCurrency,
-        orderId: order.orderNumber,
-        customerEmail: user.email,
-        customerName: `${firstNameTrim} ${lastNameTrim}`.trim(),
-        customerPhone: mpesaPhone,
-        description: `Order ${order.orderNumber}`,
-        returnUrl: callbackUrl,
-        cancelUrl: `${baseUrl}/checkout`,
-        billingAddress: {
-          line1: addressTrim,
-          city: cityTrim,
-          state: stateTrim,
-          postalCode: zipCodeTrim,
-          countryCode: countryTrim
-        }
-      })
-
-      if (!paymentResponse.success || !paymentResponse.paymentId) {
-        throw new Error(paymentResponse.error || 'Tuma did not accept the STK push request')
-      }
-
-      const paymentWait = new URL('/checkout/payment', baseUrl)
-      paymentWait.searchParams.set('orderId', order.id)
-      if (paymentResponse.message) {
-        paymentWait.searchParams.set('message', paymentResponse.message)
-      }
-      thankYouUrl = paymentWait.toString()
-
-      try {
-        await prisma.payment.create({
-          data: {
-            orderId: order.id,
-            amount: paymentAmount,
-            currency: 'KES',
-            method: PaymentMethod.TUMA,
-            status: PaymentStatus.PENDING,
-            transactionId: paymentResponse.paymentId,
-            gatewayResponse: JSON.stringify({
-              merchantRequestId: paymentResponse.merchantRequestId,
-              checkoutRequestId: paymentResponse.checkoutRequestId,
-              message: paymentResponse.message,
-              callback_url: callbackUrl
-            })
-          }
-        })
-      } catch (paymentRecordError) {
-        console.error(
-          'STK push sent but failed to save Payment row (run: npx prisma migrate deploy):',
-          paymentRecordError
-        )
-      }
-
-      await sendOpsNotification()
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Tuma payment failed'
-      console.error('Tuma payment initialization failed', error)
-      await prisma.order.update({
-        where: { id: order.id },
-        data: {
-          status: OrderStatus.CANCELLED,
-          paymentStatus: PaymentStatus.FAILED
-        }
-      })
-
-      return NextResponse.json(
-        { error: message || 'Failed to initiate M-Pesa payment. Please try again.' },
-        { status: 502 }
-      )
-    }
-  }
-  // Non-Tuma (or STK suspended): order is created and ready for manual payment confirmation.
-  if (!(STK_PAYMENT_ENABLED && effectivePaymentMethod === PaymentMethod.TUMA)) {
-    await sendOpsNotification()
-    const baseUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin
-    thankYouUrl = `${baseUrl}/checkout/thank-you?orderId=${encodeURIComponent(order.id)}&status=pending`
-  }
-
-  // Stock is decremented only when payment is confirmed:
-  // - Tuma: webhook callback handler
-  // - Other methods: admin transition to CONFIRMED
+  // Stock is decremented, and the ops team notified, only when Paystack confirms
+  // payment (callback redirect or webhook — see src/lib/paystack.ts).
 
   if (appliedCoupon) {
     try {
@@ -604,23 +446,6 @@ export async function POST(req: NextRequest) {
     success: true,
     orderId: order.id,
     orderNumber: order.orderNumber,
-    redirectUrl,
-    thankYouUrl
+    redirectUrl: authorizationUrl
   })
-}
-
-const methodMap: Record<string, PaymentMethod> = {
-  PAYPAL: PaymentMethod.PAYPAL,
-  TUMA: PaymentMethod.TUMA,
-  PESAPAL: PaymentMethod.TUMA,
-  MPESA: PaymentMethod.TUMA,
-  CREDIT_CARD: PaymentMethod.CREDIT_CARD,
-  CARD: PaymentMethod.CREDIT_CARD,
-  BANK_TRANSFER: PaymentMethod.BANK_TRANSFER
-}
-
-function normalizePaymentMethod(value: unknown): PaymentMethod | null {
-  if (typeof value !== 'string') return null
-  const upper = value.trim().toUpperCase()
-  return methodMap[upper] ?? null
 }

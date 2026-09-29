@@ -126,7 +126,7 @@ export default function ProfilePage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen page-surface flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     )
@@ -172,7 +172,7 @@ export default function ProfilePage() {
     new Date(isoDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen page-surface">
       <Navbar />
       <div className="gallery-container nav-clearance section-spacing max-w-4xl">
         <motion.div

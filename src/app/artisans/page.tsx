@@ -6,7 +6,7 @@ export default async function ArtisansPage() {
   const artisans = await getArtisanSpotlight();
 
   return (
-    <main className="relative overflow-hidden bg-brand-beige">
+    <main className="relative overflow-hidden page-surface">
       <Navbar />
       <ArtisanGallery artisans={artisans} />
     </main>

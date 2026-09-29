@@ -33,8 +33,21 @@ export type ProductCardQueryOptions = {
   corporateGiftsOnly?: boolean
   /** When true, only return isBespoke products. When false/undefined, exclude them. */
   bespokeOnly?: boolean
-  /** When true, only return toy catalog products. */
-  toysOnly?: boolean
+}
+
+/** Toys are no longer sold on the storefront; hide any product flagged as a toy. */
+const EXCLUDE_TOYS: Prisma.ProductWhereInput = {
+  NOT: {
+    OR: [
+      { isToy: true },
+      { productType: ProductType.TOY },
+      { category: { slug: "toys" } },
+    ],
+  },
+}
+
+function isToyProduct(product: ProductWithRelations) {
+  return product.isToy || product.productType === ProductType.TOY || product.category?.slug === "toys"
 }
 
 export async function getProductCardData(options: ProductCardQueryOptions = {}): Promise<ProductCardData[]> {
@@ -42,6 +55,7 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
     isDraft: options.includeDrafts ? undefined : false,
     isActive: options.includeDrafts ? undefined : true,
     isArchived: options.includeDrafts ? undefined : false,
+    AND: options.includeDrafts ? undefined : [EXCLUDE_TOYS],
   }
 
   if (options.bespokeOnly) {
@@ -65,18 +79,6 @@ export async function getProductCardData(options: ProductCardQueryOptions = {}):
 
   if (options.corporateGiftsOnly) {
     where.isCorporateGift = true
-  }
-
-  if (options.toysOnly) {
-    where.AND = [
-      {
-        OR: [
-          { isToy: true },
-          { productType: ProductType.TOY },
-          { category: { slug: "toys" } },
-        ],
-      },
-    ]
   }
 
   if (options.search?.trim()) {
@@ -115,10 +117,6 @@ export async function getBespokeProductCards() {
   return getProductCardData({ bespokeOnly: true })
 }
 
-export async function getToyProductCards() {
-  return getProductCardData({ toysOnly: true })
-}
-
 export async function getCorporateProductCards() {
   return getProductCardData({ corporateGiftsOnly: true })
 }
@@ -126,10 +124,6 @@ export async function getCorporateProductCards() {
 export async function getCollectionProductCards(slug: string) {
   if (slug === "corporate-gifts") {
     return getProductCardData({ corporateGiftsOnly: true })
-  }
-
-  if (slug === "toys") {
-    return getProductCardData({ toysOnly: true })
   }
 
   return getProductCardData({ categorySlug: slug })
@@ -148,7 +142,7 @@ export async function getProductCardBySlug(slug: string) {
     },
   })
 
-  if (!product || product.isArchived || product.isDraft || !product.isActive) {
+  if (!product || product.isArchived || product.isDraft || !product.isActive || isToyProduct(product)) {
     return null
   }
 
@@ -173,6 +167,7 @@ export async function getRelatedProductCards({
     isActive: true,
     isArchived: false,
     isBespoke: bespokeOnly === true,
+    AND: [EXCLUDE_TOYS],
   }
 
   if (categorySlug) {
@@ -205,6 +200,7 @@ export async function getRelatedProductCards({
       isActive: true,
       isArchived: false,
       isBespoke: bespokeOnly === true,
+      AND: [EXCLUDE_TOYS],
     },
     take: limit - related.length,
     orderBy: { createdAt: "desc" },

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen page-surface flex items-center justify-center">
         <p className="text-muted-foreground">Unable to load dashboard data</p>
       </div>
     )

@@ -2,6 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/Navbar"
 import { Button } from "@/components/ui/button"
+import { CheckoutStepper } from "../CheckoutStepper"
 import { ClearCartClient } from "./ClearCartClient"
 import { PaymentStatusWatcherClient } from "./PaymentStatusWatcherClient"
 import { PurchaseTracker } from "./PurchaseTracker"
@@ -123,7 +124,13 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
             body: "Check your phone to approve the M-Pesa STK push. You will receive an email as soon as payment clears.",
             tone: "pending" as const,
           }
-        : statusCopy[status] ?? statusCopy.pending
+        : status === "pending" && (!order || order.paymentMethod === PaymentMethod.PAYSTACK)
+          ? {
+              title: "Confirming your payment",
+              body: "We are waiting for Paystack to confirm your payment. This page updates automatically, and you will receive an email once it clears.",
+              tone: "pending" as const,
+            }
+          : statusCopy[status] ?? statusCopy.pending
   const isPaymentCompleted = status === "success"
   const displayOrderNumber = order?.orderNumber ?? orderNumberParam
 
@@ -159,7 +166,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-hidden page-surface">
       <ClearCartClient active={isPaymentCompleted || isManualPending} />
       <PaymentStatusWatcherClient
         enabled={
@@ -191,6 +198,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container flex flex-col items-center gap-10 text-center">
+          <CheckoutStepper currentStep={3} className="w-full max-w-2xl" />
           <p className="caps-spacing text-xs text-brand-teal">Order status</p>
           <h1 className="font-heading text-5xl text-brand-umber md:text-6xl">{copy.title}</h1>
           <p className="max-w-2xl text-base text-brand-umber/70">{message ?? copy.body}</p>

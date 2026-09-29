@@ -3,7 +3,7 @@ import { SearchBar } from "@/components/SearchBar";
 
 export default function SearchPage() {
   return (
-    <main className="min-h-screen bg-brand-beige bg-texture-linen">
+    <main className="min-h-screen page-surface">
       <Navbar />
       <section className="nav-clearance section-spacing pb-0">
         <div className="gallery-container">

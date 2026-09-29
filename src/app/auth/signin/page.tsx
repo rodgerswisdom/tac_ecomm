@@ -161,7 +161,7 @@ function SignInForm() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background pb-8">
+    <div className="relative min-h-screen overflow-hidden page-surface pb-8">
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-gradient-to-br from-gold/10 via-emerald/5 to-bronze/10"></div>
         <div className="absolute top-0 left-0 w-full h-full afro-pattern-stars"></div>

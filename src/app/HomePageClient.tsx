@@ -23,7 +23,7 @@ export function HomePageClient({
   const secondCategoryRow = mainCategories.slice(3, 6);
 
   return (
-    <main className="relative overflow-hidden bg-brand-beige">
+    <main className="relative overflow-hidden page-surface">
       <Navbar />
       <Hero hero={hero} offerOfTheMonth={offerOfTheMonth} />
 

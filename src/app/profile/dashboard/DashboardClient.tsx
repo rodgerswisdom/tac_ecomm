@@ -101,7 +101,7 @@ export function DashboardClient({
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen page-surface">
       <Navbar />
       <div className="gallery-container nav-clearance section-spacing max-w-7xl">
         <motion.div

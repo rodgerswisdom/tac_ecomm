@@ -237,7 +237,7 @@ export function CollectionsPageClient({
 
   return (
     <ErrorBoundary>
-    <main className="relative overflow-hidden bg-brand-beige">
+    <main className="relative overflow-hidden page-surface">
       <Navbar />
 
       <section className="nav-clearance section-spacing">

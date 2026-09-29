@@ -314,7 +314,6 @@ export async function toggleProductFlagAction(formData: FormData): Promise<Actio
         revalidatePath("/admin/products")
         revalidatePath("/admin/bespoke")
         revalidatePath("/bespoke")
-        revalidatePath("/toys")
         revalidatePath("/corporate")
         revalidatePath("/collections")
         return { success: true }

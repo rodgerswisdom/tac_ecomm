@@ -1,11 +1,13 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import Image from "next/image";
 import { useCart } from "@/contexts/CartContext";
 import { useCurrency } from "@/contexts/CurrencyContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { calculateShippingKsh, type DeliveryMethod } from "@/lib/delivery";
+import { patternAssets } from "@/lib/patterns";
 
 export type AppliedCoupon = { code: string; discount: number; type: string };
 
@@ -86,103 +88,132 @@ export function OrderSummarySidebar({
     setApplyError("");
   }
 
+  const itemCount = getCartItemCount();
+
   return (
-    <aside className={`w-full md:w-80 shrink-0 rounded-[2.5rem] border border-brand-teal/20 bg-white p-5 sm:p-6 shadow-[0_35px_80px_rgba(74,43,40,0.14)] backdrop-blur-sm md:sticky md:top-24 md:self-start ${className}`}>
-      <h3 className="caps-spacing text-xs text-brand-teal mb-4">Order Summary</h3>
-      <ul className="mb-4 space-y-2 text-sm text-brand-umber">
-        {cart.map(item => (
-          <li key={item.cartLineKey} className="flex justify-between gap-2">
-            <span className="truncate">
-              {item.name} ×{item.quantity}
-              {item.selectedImageLabel ? ` (${item.selectedImageLabel})` : ""}
+    <aside
+      aria-labelledby="order-summary-heading"
+      className={`w-full shrink-0 rounded-[2rem] border border-brand-teal/20 bg-white p-5 shadow-[0_35px_80px_rgba(74,43,40,0.14)] sm:p-7 md:sticky md:top-24 md:w-[340px] md:self-start lg:w-[420px] xl:w-[460px] ${className}`}
+    >
+      <div className="mb-5 flex items-baseline justify-between gap-3">
+        <h2 id="order-summary-heading" className="font-heading text-2xl text-brand-umber">
+          Order summary
+        </h2>
+        <span className="text-sm text-brand-umber/60">
+          {itemCount} {itemCount === 1 ? "item" : "items"}
+        </span>
+      </div>
+
+      <ul className="max-h-[45vh] space-y-4 overflow-y-auto pr-1 pt-2">
+        {cart.map((item) => (
+          <li key={item.cartLineKey} className="flex items-center gap-4">
+            <div className="relative shrink-0">
+              <div className="relative h-16 w-16 overflow-hidden rounded-xl border border-brand-umber/10 bg-brand-beige/30">
+                <Image
+                  src={item.image || patternAssets.kubaGrid}
+                  alt=""
+                  fill
+                  sizes="64px"
+                  className="object-cover"
+                />
+              </div>
+              <span
+                className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-brand-umber/80 px-1.5 text-xs font-semibold text-white"
+                aria-label={`Quantity ${item.quantity}`}
+              >
+                {item.quantity}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-2 text-sm font-medium text-brand-umber">{item.name}</p>
+              {item.selectedImageLabel ? (
+                <p className="truncate text-xs text-brand-umber/60">{item.selectedImageLabel}</p>
+              ) : null}
+            </div>
+            <span className="shrink-0 text-sm font-medium tabular-nums text-brand-umber">
+              {formatPrice(item.price * item.quantity)}
             </span>
-            <span className="shrink-0">{formatPrice(item.price * item.quantity)}</span>
           </li>
         ))}
       </ul>
 
       {onAppliedCouponChange ? (
-        <div className="mb-4 space-y-2 border-t border-brand-teal/20 pt-4">
+        <div className="mt-6 space-y-2 border-t border-brand-teal/20 pt-5">
           {appliedCoupon ? (
-            <div className="flex items-center justify-between gap-2 text-sm">
-              <span className="text-brand-teal font-medium">
-                Discount ({appliedCoupon.code})
-              </span>
-              <span className="flex items-center gap-2 shrink-0">
-                <span className="text-brand-teal">-{formatPrice(appliedCoupon.discount)}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs text-brand-umber/70 hover:text-brand-umber"
-                  onClick={handleRemove}
-                >
-                  Remove
-                </Button>
-              </span>
+            <div className="flex items-center justify-between gap-2 rounded-xl bg-brand-teal/5 px-3 py-2 text-sm">
+              <span className="font-medium text-brand-teal">Code {appliedCoupon.code} applied</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs text-brand-umber/70 hover:text-brand-umber"
+                onClick={handleRemove}
+              >
+                Remove
+              </Button>
             </div>
           ) : (
             <>
               <div className="flex gap-2">
                 <Input
                   placeholder="Discount code"
+                  aria-label="Discount code"
                   value={codeInput}
-                  onChange={e => {
+                  onChange={(e) => {
                     setCodeInput(e.target.value);
                     setApplyError("");
                   }}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), handleApply())}
-                  className="h-9 rounded-full border-brand-umber/20 text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleApply())}
+                  aria-invalid={applyError ? true : undefined}
+                  className="h-11 rounded-xl border-brand-umber/20 text-sm"
                 />
                 <Button
                   type="button"
-                  size="sm"
-                  className="h-9 shrink-0 rounded-full bg-brand-teal text-white hover:bg-brand-teal/90"
+                  className="h-11 shrink-0 rounded-xl bg-brand-teal px-5 text-white hover:bg-brand-teal/90"
                   onClick={handleApply}
-                  disabled={applying}
+                  disabled={applying || !codeInput.trim()}
                 >
-                  {applying ? "…" : "Apply"}
+                  {applying ? "Applying…" : "Apply"}
                 </Button>
               </div>
               {applyError ? (
-                <p className="text-xs text-brand-coral">{applyError}</p>
+                <p role="alert" className="text-xs text-brand-coral">
+                  {applyError}
+                </p>
               ) : null}
             </>
           )}
         </div>
       ) : null}
 
-      <div className="space-y-2 border-t border-brand-teal/20 pt-4 text-sm">
+      <dl className="mt-6 space-y-3 border-t border-brand-teal/20 pt-5 text-sm">
         <div className="flex justify-between text-brand-umber/80">
-          <span>Subtotal</span>
-          <span>{formatPrice(subtotal)}</span>
+          <dt>Subtotal</dt>
+          <dd className="tabular-nums">{formatPrice(subtotal)}</dd>
         </div>
         {discount > 0 && (
           <div className="flex justify-between text-brand-teal">
-            <span>Discount</span>
-            <span>-{formatPrice(discount)}</span>
+            <dt>Discount{appliedCoupon ? ` (${appliedCoupon.code})` : ""}</dt>
+            <dd className="tabular-nums">-{formatPrice(discount)}</dd>
           </div>
         )}
-        {deliveryMethod && (
-          <div className="flex justify-between text-brand-umber/80">
-            <span>Shipping</span>
-            <span>
-              {shippingCost === 0 ? (
-                <span className="text-brand-teal">Free</span>
-              ) : (
-                formatPrice(shippingCost)
-              )}
-            </span>
-          </div>
-        )}
-        <div className="flex justify-between font-semibold text-brand-umber pt-2">
-          <span>Total</span>
-          <span>{formatPrice(total)}</span>
+        <div className="flex justify-between text-brand-umber/80">
+          <dt>Shipping</dt>
+          <dd className="tabular-nums">
+            {!deliveryMethod ? (
+              <span className="text-brand-umber/55">Select delivery</span>
+            ) : shippingCost === 0 ? (
+              <span className="text-brand-teal">Free</span>
+            ) : (
+              formatPrice(shippingCost)
+            )}
+          </dd>
         </div>
-      </div>
-      <p className="mt-4 text-xs text-brand-umber/60">
-        {getCartItemCount()} {getCartItemCount() === 1 ? "item" : "items"}
-      </p>
+        <div className="flex items-baseline justify-between border-t border-brand-teal/20 pt-4 text-brand-umber">
+          <dt className="text-base font-semibold">Total</dt>
+          <dd className="font-heading text-2xl font-semibold tabular-nums">{formatPrice(total)}</dd>
+        </div>
+      </dl>
     </aside>
   );
 }

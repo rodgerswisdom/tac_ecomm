@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { SHOP_NAV_EXCLUDED_SLUGS } from "@/lib/special-catalogs"
+import { SHOP_NAV_EXCLUDED_SLUGS, TOYS_CATEGORY_SLUG } from "@/lib/special-catalogs"
 import { TOP_LEVEL_CATEGORY_SLUGS } from "@/lib/category-taxonomy"
 import { getProductCardData, type ProductCardQueryOptions } from "@/server/storefront/products"
 import type { CollectionSummary, CollectionHighlight, CollectionSpotlight, CollectionCta } from "@/types/collection"
@@ -19,7 +19,7 @@ export type HomePageCategoryCard = Pick<CollectionSummary, "id" | "name" | "slug
 /** Main shop categories selected in admin for the home page Curated Collections section. */
 export async function getHomePageMainCategories(): Promise<HomePageCategoryCard[]> {
   const dbCategories = await prisma.category.findMany({
-    where: { showOnHomepage: true },
+    where: { showOnHomepage: true, slug: { not: TOYS_CATEGORY_SLUG } },
     orderBy: [{ homepageOrder: "asc" }, { name: "asc" }],
     select: {
       id: true,
@@ -71,6 +71,8 @@ export async function getCollectionSummaries(options: CollectionSummaryOptions =
   const builtSummaries: CollectionSummary[] = []
 
   for (const category of categories) {
+    if (category.slug === TOYS_CATEGORY_SLUG) continue
+
     const products = allProducts.filter(
       (product) => product.category === category.slug
     )
@@ -117,15 +119,6 @@ export async function getCollectionSummaryBySlug(slug: string) {
       name: "Corporate Gifts",
       description: "Professional gifting programs that center artisan impact.",
       query: { corporateGiftsOnly: true },
-    })
-  }
-
-  if (slug === "toys") {
-    return buildVirtualCollectionSummary({
-      slug,
-      name: "Toys",
-      description: "Handcrafted toys and play pieces from African artisans.",
-      query: { toysOnly: true },
     })
   }
 

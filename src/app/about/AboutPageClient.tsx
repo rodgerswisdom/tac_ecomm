@@ -94,7 +94,7 @@ const faqs = [
 
 export function AboutPageClient() {
   return (
-    <main className="relative overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative overflow-hidden page-surface">
       <Navbar />
 
       {/* Section 1 — Intro */}

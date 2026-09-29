@@ -8,9 +8,9 @@ import { patternAssets } from "@/lib/patterns";
 import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 import { getCollectionsHref } from "@/lib/collections-url";
+import { SHOP_NAV_EXCLUDED_SLUGS } from "@/lib/special-catalogs";
 
 const discoverLinks = [
-  { key: "toys", label: "Toys", href: "/toys" },
   { key: "corporate", label: "Corporate", href: "/corporate" },
   { key: "bespoke", label: "Bespoke & Limited Edition", href: "/bespoke" },
   { key: "about", label: "About TAC", href: "/about" },
@@ -39,7 +39,7 @@ export const Footer = () => {
           label: category.name,
           href: getCollectionsHref(category.slug),
         }))
-      : CATEGORY_TAXONOMY.map((category) => ({
+      : CATEGORY_TAXONOMY.filter((category) => !SHOP_NAV_EXCLUDED_SLUGS.has(category.slug)).map((category) => ({
           key: category.slug,
           label: category.name,
           href: getCollectionsHref(category.slug),

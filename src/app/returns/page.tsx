@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ReturnsPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-brand-beige bg-texture-linen">
+    <main className="relative min-h-screen overflow-hidden page-surface">
       <section className="nav-clearance section-spacing">
         <div className="gallery-container space-y-8">
           <div className="space-y-3">

@@ -6,7 +6,8 @@
 @layer base {
   :root {
     --radius: 0.75rem;
-    --nav-clearance: clamp(6.25rem, 11vw, 9rem);
+    /* Fixed navbar height (~57px mobile, ~65px desktop) plus a small gap. */
+    --nav-clearance: clamp(4.5rem, 3.75rem + 2vw, 5.75rem);
 
     --background: 38.4 50.3% 70.8%;
     --foreground: 5.3 29.8% 22.4%;
@@ -263,6 +264,11 @@
 
   .nav-clearance {
     padding-top: var(--nav-clearance);
+  }
+
+  /* Shared page background — the homepage's brand beige (#dabf8f). Use on every storefront page root. */
+  .page-surface {
+    @apply bg-brand-beige;
   }
 
   .floating-safe-offset {
