@@ -6,11 +6,12 @@ import { ClearCartClient } from "./ClearCartClient"
 import { PaymentStatusWatcherClient } from "./PaymentStatusWatcherClient"
 import { PurchaseTracker } from "./PurchaseTracker"
 import { RetryPaystackPaymentButton } from "./RetryPaystackPaymentButton"
+import { MpesaCodeForm } from "./MpesaCodeForm"
 import { ManualPaymentDetails } from "@/components/checkout/ManualPaymentDetails"
 import { OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-import { MANUAL_PAYMENT, STK_PAYMENT_ENABLED } from "@/lib/manual-payment"
+import { MANUAL_PAYMENT, STK_PAYMENT_ENABLED, parseManualPaymentMeta } from "@/lib/manual-payment"
 import { parsePaystackMeta, paystackReviewReason, reconcilePaystackOrder } from "@/lib/paystack"
 import { CUSTOMER_ARRANGED_DELIVERY, PICKUP_LOCATION } from "@/lib/delivery"
 
@@ -34,7 +35,7 @@ const statusCopy: Record<StatusKind, { title: string; body: string; tone: Tone }
   },
   pending: {
     title: "Order placed — complete payment",
-    body: "Your order is reserved. Pay with M-Pesa using the details below, then we will confirm your order.",
+    body: "Pay with M-Pesa using the details below, then enter the confirmation code from your M-Pesa message so we can confirm your order.",
     tone: "pending",
   },
   review: {
@@ -67,6 +68,12 @@ const statusCopy: Record<StatusKind, { title: string; body: string; tone: Tone }
     body: "This order has been refunded. Refunds usually reach your M-Pesa or card within a few working days.",
     tone: "error",
   },
+}
+
+const MANUAL_VERIFYING_COPY = {
+  title: "We're verifying your payment",
+  body: "Thanks — we've received your M-Pesa code and your items are held for you. Our team is matching it with our bank statement, and you'll get an email as soon as your order is confirmed (usually within one working day). Please don't pay again.",
+  tone: "pending" as const,
 }
 
 const PAYSTACK_PENDING_COPY = {
@@ -109,7 +116,12 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
     orderNumber: string
     total: number
     shippingMethod: string | null
-    payments: { method: PaymentMethod; gatewayResponse: string | null }[]
+    payments: {
+      method: PaymentMethod
+      status: PaymentStatus
+      transactionId: string | null
+      gatewayResponse: string | null
+    }[]
   } | null = null
 
   if (orderWhere) {
@@ -128,7 +140,7 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
           shippingMethod: true,
           payments: {
             orderBy: { createdAt: "desc" },
-            select: { method: true, gatewayResponse: true },
+            select: { method: true, status: true, transactionId: true, gatewayResponse: true },
           },
         },
       })
@@ -139,9 +151,14 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   const orderId = order?.id ?? params.orderId
   const isPaystack = order?.paymentMethod === PaymentMethod.PAYSTACK
 
-  const isManualPending =
-    order?.paymentStatus === PaymentStatus.PENDING &&
-    order.paymentMethod === PaymentMethod.BANK_TRANSFER
+  // M-Pesa Paybill (see src/lib/manual-payment-server.ts): the customer pays, then submits
+  // their M-Pesa code here; staff confirm it in admin.
+  const isManual = order?.paymentMethod === PaymentMethod.BANK_TRANSFER
+  const isManualPending = isManual && order?.paymentStatus === PaymentStatus.PENDING
+  const manualPayments = isManual ? order!.payments.filter((p) => p.method === PaymentMethod.BANK_TRANSFER) : []
+  const manualAwaiting = manualPayments.find((p) => p.status === PaymentStatus.PENDING) ?? null
+  const manualRejected =
+    !manualAwaiting && manualPayments[0]?.status === PaymentStatus.FAILED ? manualPayments[0] : null
 
   // Only redirect into the STK waiting UI when automatic STK is enabled.
   if (
@@ -157,7 +174,9 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
   const status: StatusKind = resolveStatus(order, reviewReason, params.status)
 
   const copy =
-    isManualPending
+    isManualPending && manualAwaiting
+      ? MANUAL_VERIFYING_COPY
+      : isManualPending
       ? statusCopy.pending
       : status === "pending" && order?.paymentMethod === PaymentMethod.TUMA
         ? {
@@ -277,13 +296,31 @@ export default async function ThankYouPage({ searchParams }: ThankYouPageProps) 
             ) : null}
           </div>
 
-          {isManualPending && order ? (
-            <div className="w-full max-w-xl">
+          {isManualPending && order && manualAwaiting ? (
+            <div className="rounded-full border border-brand-teal/30 bg-white/90 px-5 py-2 text-sm text-brand-umber/70 shadow">
+              M-Pesa code <span className="font-mono font-semibold text-brand-umber">{manualAwaiting.transactionId}</span>
+            </div>
+          ) : null}
+
+          {isManualPending && order && !manualAwaiting ? (
+            <div className="w-full max-w-xl space-y-4">
               <ManualPaymentDetails
                 amountKes={order.total}
                 orderNumber={order.orderNumber}
                 variant="thankyou"
               />
+              <MpesaCodeForm
+                orderId={order.id}
+                rejectedCode={manualRejected?.transactionId}
+                rejectionReason={parseManualPaymentMeta(manualRejected?.gatewayResponse).rejectionReason}
+              />
+            </div>
+          ) : null}
+
+          {isManual && order && status === "expired" ? (
+            <div className="w-full max-w-xl">
+              {/* Money may still arrive after the window closes — let the customer tell us. */}
+              <MpesaCodeForm orderId={order.id} />
             </div>
           ) : null}
 

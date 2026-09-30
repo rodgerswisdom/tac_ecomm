@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { OrderStatus, PaymentStatus } from "@prisma/client"
+import { OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client"
 import { CheckCircle, Clock, HelpCircle, Mail, Phone, Search, XCircle, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,8 +25,11 @@ function parseParam(value: string | string[] | undefined) {
 }
 
 const statusOptions = Object.values(OrderStatus)
+/** Not an OrderStatus: pending M-Pesa Paybill orders whose code needs checking. */
+const AWAITING_VERIFICATION = "AWAITING_VERIFICATION"
 const statusFilterOptions = [
   { label: "All statuses", value: "" },
+  { label: "awaiting m-pesa verification", value: AWAITING_VERIFICATION },
   ...statusOptions.map((option) => ({
     label: option.replace(/_/g, " ").toLowerCase(),
     value: option,
@@ -79,7 +82,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const orders = await getOrders({
     page,
     pageSize,
-    status: status as OrderStatus | undefined,
+    status: status === AWAITING_VERIFICATION ? undefined : (status as OrderStatus | undefined),
+    awaitingVerification: status === AWAITING_VERIFICATION,
     search: search ?? undefined,
   })
 
@@ -241,6 +245,11 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                             label={order.paymentStatus.replace(/_/g, " ")}
                             variant={paymentStatusVariantMap[order.paymentStatus] ?? "info"}
                           />
+                          {order.paymentMethod === PaymentMethod.BANK_TRANSFER &&
+                          order.status === OrderStatus.PENDING &&
+                          order.payments[0]?.status === PaymentStatus.PENDING ? (
+                            <StatusBadge label="Verify M-Pesa" variant="danger" />
+                          ) : null}
                           {order.shippingMethod === "customer_arranged" ? (
                             <StatusBadge label="Own delivery" variant="warning" />
                           ) : order.shippingMethod === "pickup" ? (

@@ -13,6 +13,7 @@ import {
 import { checkCheckoutRateLimit, passesCsrfProtection } from '@/lib/request-security'
 import { formatProductImageLabel } from '@/lib/product-image-selection'
 import { PAYMENT_WINDOW_MS, startPaystackPayment } from '@/lib/paystack'
+import { MANUAL_PAYMENT_WINDOW_MS } from '@/lib/manual-payment'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -49,8 +50,12 @@ export async function POST(req: NextRequest) {
   const {
     firstName, lastName, email, phone, address, apartment, city, postalCode, country,
     shippingMethod, cartItems: clientCartItems,
-    couponCode, marketingOptIn, deliveryInstructions
+    couponCode, marketingOptIn, deliveryInstructions, paymentMethod
   } = body
+
+  // "mpesa_paybill": the customer pays TAC's Paybill themselves and staff verify it
+  // (src/lib/manual-payment-server.ts). Anything else goes to Paystack.
+  const isPaybill = paymentMethod === 'mpesa_paybill'
 
   // "Arrange your own delivery" needs the customer's instructions; other methods ignore them.
   const isCustomerArranged = shippingMethod === 'customer_arranged'
@@ -97,6 +102,9 @@ export async function POST(req: NextRequest) {
   const cityTrim = isPickup ? PICKUP_LOCATION.city : String(city).trim()
   const postalCodeTrim = isPickup ? '' : optionalTrim(postalCode)
   const countryTrim = isPickup ? PICKUP_LOCATION.country : String(country).trim()
+  if (isPaybill && countryTrim !== 'KE') {
+    return NextResponse.json({ error: 'M-Pesa Paybill is only available for orders in Kenya.' }, { status: 400 })
+  }
 
   // Fetch cart for logged-in user from DB, else use clientCartItems for guest
   let cartItems: CheckoutCartItem[] = []
@@ -404,10 +412,10 @@ export async function POST(req: NextRequest) {
       shipping,
       total,
       currency: orderCurrency,
-      paymentMethod: PaymentMethod.PAYSTACK,
+      paymentMethod: isPaybill ? PaymentMethod.BANK_TRANSFER : PaymentMethod.PAYSTACK,
       paymentStatus: PaymentStatus.PENDING,
       paymentAttempt: 1,
-      paymentExpiresAt: new Date(Date.now() + PAYMENT_WINDOW_MS),
+      paymentExpiresAt: new Date(Date.now() + (isPaybill ? MANUAL_PAYMENT_WINDOW_MS : PAYMENT_WINDOW_MS)),
       status: OrderStatus.PENDING,
       shippingMethod: deliveryMethod,
       deliveryInstructions: deliveryInstructionsTrim || null,
@@ -428,6 +436,17 @@ export async function POST(req: NextRequest) {
       }
     }
   })
+
+  if (isPaybill) {
+    // Nothing to redirect to: the thank-you page shows the Paybill details and takes the
+    // customer's M-Pesa code, which reserves the stock until staff confirm the payment.
+    return NextResponse.json({
+      success: true,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      redirectUrl: `/checkout/thank-you?orderId=${encodeURIComponent(order.id)}`
+    })
+  }
 
   const baseUrl = (process.env.APP_URL || process.env.NEXTAUTH_URL || req.nextUrl.origin).replace(/\/$/, '')
   let authorizationUrl: string

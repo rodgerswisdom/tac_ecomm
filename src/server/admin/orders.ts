@@ -1,6 +1,6 @@
 "use server"
 
-import { Prisma, OrderStatus, PaymentStatus } from "@prisma/client"
+import { Prisma, OrderStatus, PaymentMethod, PaymentStatus } from "@prisma/client"
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
@@ -8,6 +8,7 @@ import { assertAdmin } from "./auth"
 import { reconcilePaystackOrder, syncPaystackRefundsForOrder } from "@/lib/paystack"
 import { InsufficientStockError, releaseOrderStock, takeOrderStock } from "@/lib/stock"
 import { scheduleBackInStockNotifications } from "@/lib/stock-notify"
+import { confirmManualPayment, rejectManualPayment } from "@/lib/manual-payment-server"
 
 /** Order statuses where the items have been taken out of stock. */
 const STOCK_TAKEN_STATUSES = new Set<OrderStatus>([
@@ -27,6 +28,8 @@ import type { ActionResult } from "@/lib/admin/action-result"
 
 export type OrderFilters = {
     status?: OrderStatus
+    /** M-Pesa Paybill orders whose code is waiting for staff to check the bank statement. */
+    awaitingVerification?: boolean
     search?: string
     page?: number
     pageSize?: number
@@ -40,6 +43,14 @@ export async function getOrders(filters: OrderFilters = {}) {
 
     if (filters.status) {
         whereFilters.push({ status: filters.status })
+    }
+
+    if (filters.awaitingVerification) {
+        whereFilters.push({
+            paymentMethod: PaymentMethod.BANK_TRANSFER,
+            status: OrderStatus.PENDING,
+            payments: { some: { method: PaymentMethod.BANK_TRANSFER, status: PaymentStatus.PENDING } },
+        })
     }
 
     if (filters.search) {
@@ -266,4 +277,53 @@ export async function recheckPaystackPaymentAction(formData: FormData): Promise<
 
     revalidatePath("/admin/orders")
     revalidatePath(`/admin/orders/${orderId}`)
+}
+
+export type ManualPaymentReviewState = UpdateOrderStatusFormState
+
+const manualPaymentReviewSchema = z.object({
+    orderId: z.string().cuid(),
+    paymentId: z.string().cuid(),
+    decision: z.enum(["confirm", "reject"]),
+    reason: z.string().trim().max(300).optional(),
+})
+
+/** Staff confirm or reject an M-Pesa Paybill payment after checking the bank statement. */
+export async function reviewManualPaymentAction(
+    _prevState: ManualPaymentReviewState,
+    formData: FormData,
+): Promise<ManualPaymentReviewState> {
+    let adminEmail: string
+    try {
+        const session = await assertAdmin()
+        adminEmail = session.user?.email ?? "admin"
+    } catch {
+        return { status: "error", message: "Unauthorized" }
+    }
+
+    const parsed = manualPaymentReviewSchema.safeParse({
+        orderId: formData.get("orderId")?.toString(),
+        paymentId: formData.get("paymentId")?.toString(),
+        decision: formData.get("decision")?.toString(),
+        reason: formData.get("reason")?.toString() || undefined,
+    })
+    if (!parsed.success) {
+        return { status: "error", message: parsed.error.issues[0]?.message ?? "Invalid request" }
+    }
+
+    const { orderId, paymentId, decision, reason } = parsed.data
+    try {
+        const result =
+            decision === "confirm"
+                ? await confirmManualPayment(orderId, paymentId, adminEmail)
+                : await rejectManualPayment(orderId, paymentId, reason ?? "", adminEmail)
+        if (!result.ok) return { status: "error", message: result.error }
+
+        revalidatePath("/admin/orders")
+        revalidatePath(`/admin/orders/${orderId}`)
+        return { status: "success", message: result.message }
+    } catch (error) {
+        console.error("[admin] manual payment review failed:", error)
+        return { status: "error", message: "Could not update the payment. Please try again." }
+    }
 }

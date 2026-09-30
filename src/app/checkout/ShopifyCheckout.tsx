@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ContactSection } from "./steps/ContactSection";
 import { DeliverySection } from "./steps/DeliverySection";
 import { DeliveryStep, type DeliveryMethod } from "./steps/DeliveryStep";
-import { PaymentSection } from "./steps/PaymentSection";
+import { PaymentSection, type CheckoutPaymentMethod } from "./steps/PaymentSection";
 import {
   EMPTY_CHECKOUT_FORM,
   loadGuestDetails,
@@ -61,6 +61,7 @@ export default function ShopifyCheckout() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [saveDetails, setSaveDetails] = useState(true);
   const [shippingMethod, setShippingMethod] = useState<DeliveryMethod | null>(null);
+  const [paymentChoice, setPaymentChoice] = useState<CheckoutPaymentMethod>("paystack");
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number; type: string } | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -103,6 +104,10 @@ export default function ShopifyCheckout() {
   const deliveryMethod: DeliveryMethod | null = isPickup ? "pickup" : shippingMethod;
   // Signed-in customers pay with their account email (the API uses the session's email).
   const effectiveForm: CheckoutFormData = signedInEmail ? { ...form, email: signedInEmail } : form;
+  // M-Pesa Paybill is Kenya-only (pickup is always in Nairobi).
+  const paybillAvailable = isPickup || form.country === "KE";
+  const paymentMethod: CheckoutPaymentMethod = paybillAvailable ? paymentChoice : "paystack";
+  const isPaybill = paymentMethod === "mpesa_paybill";
 
   const subtotal = getCartTotal();
   const discount = appliedCoupon?.discount ?? 0;
@@ -178,20 +183,22 @@ export default function ShopifyCheckout() {
           shippingMethod: deliveryMethod,
           cartItems: cart,
           couponCode: appliedCoupon?.code,
+          paymentMethod,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success || !data.redirectUrl) {
-        setError(data.error || "We could not start the payment. Please try again.");
+        setError(data.error || (isPaybill ? "We could not place your order. Please try again." : "We could not start the payment. Please try again."));
         return;
       }
 
       if (!signedInEmail) saveGuestDetails(effectiveForm);
-      // The cart is cleared on the thank-you page once Paystack confirms payment.
+      // The cart is cleared on the thank-you page once Paystack confirms payment, or right
+      // away for Paybill orders (that page shows how to pay).
       setRedirecting(true);
       window.location.assign(data.redirectUrl);
     } catch {
-      setError("We could not start the payment. Please try again.");
+      setError(isPaybill ? "We could not place your order. Please try again." : "We could not start the payment. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -282,7 +289,12 @@ export default function ShopifyCheckout() {
                 />
               ) : null}
 
-              <PaymentSection />
+              <PaymentSection
+                value={paymentMethod}
+                onChange={setPaymentChoice}
+                paybillAvailable={paybillAvailable}
+                disabled={busy}
+              />
 
               <div className="space-y-3">
                 {error && (
@@ -291,7 +303,9 @@ export default function ShopifyCheckout() {
                   </div>
                 )}
                 <Button type="submit" disabled={busy || detailsLoading} className="h-14 w-full text-base font-semibold">
-                  {redirecting ? "Redirecting to Paystack…" : submitting ? "Starting payment…" : "Pay now"}
+                  {isPaybill
+                    ? redirecting || submitting ? "Placing order…" : "Place order"
+                    : redirecting ? "Redirecting to Paystack…" : submitting ? "Starting payment…" : "Pay now"}
                 </Button>
                 <Button
                   type="button"

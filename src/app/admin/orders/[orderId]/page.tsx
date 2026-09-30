@@ -11,6 +11,8 @@ import { getOrderDetail } from "@/server/admin/orders"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
 import { getOrderItemProductName, getOrderItemProductSku } from "@/lib/order-item-display"
 import { StatusUpdateForm } from "./StatusUpdateForm"
+import { ManualPaymentReview } from "./ManualPaymentReview"
+import { MANUAL_PAYMENT, parseManualPaymentMeta } from "@/lib/manual-payment"
 import { recheckPaystackPaymentAction } from "@/server/admin/orders"
 import { parsePaystackMeta } from "@/lib/paystack"
 import { DELIVERY_LABELS, type DeliveryMethod } from "@/lib/delivery"
@@ -64,6 +66,10 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
   const address = order.shippingAddress
   // Order amounts (subtotal, total, line items) are stored in KSH. Payment amount can be in payment currency (e.g. KES).
   const orderCurrency = order.currency === "KSH" ? undefined : order.currency
+  const isPaybill = order.paymentMethod === PaymentMethod.BANK_TRANSFER
+  const awaitingPaybill = isPaybill
+    ? order.payments.find((p) => p.method === PaymentMethod.BANK_TRANSFER && p.status === PaymentStatus.PENDING && p.transactionId)
+    : undefined
   const customerName = [address?.firstName, address?.lastName].filter(Boolean).join(" ") || order.user?.name || "Customer"
 
   return (
@@ -122,7 +128,9 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
               </div>
               <div>
                 <p className="text-muted-foreground">Payment method</p>
-                <p className="font-semibold">{order.paymentMethod ?? "Unspecified"}</p>
+                <p className="font-semibold">
+                  {isPaybill ? MANUAL_PAYMENT.methodLabel : order.paymentMethod ?? "Unspecified"}
+                </p>
               </div>
             </div>
 
@@ -144,6 +152,21 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 <p className="text-base font-semibold"><AdminFormattedPrice amount={order.total} amountCurrency={orderCurrency ?? undefined} /></p>
               </div>
             </div>
+
+            {awaitingPaybill?.transactionId ? (
+              <ManualPaymentReview
+                orderId={order.id}
+                paymentId={awaitingPaybill.id}
+                code={awaitingPaybill.transactionId}
+                amountLabel={`KES ${Math.round(order.total).toLocaleString("en-KE")}`}
+                submittedAtLabel={formatOrderDate(awaitingPaybill.createdAt)}
+                stockReserved={parseManualPaymentMeta(awaitingPaybill.gatewayResponse).stockReserved}
+              />
+            ) : isPaybill && order.status === OrderStatus.PENDING ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                M-Pesa Paybill order — waiting for the customer to pay and submit their M-Pesa code.
+              </div>
+            ) : null}
 
             {order.deliveryInstructions ? (
               <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
@@ -228,14 +251,26 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                 {order.payments.length > 0 ? (
                   order.payments.map((payment) => {
                     const paystack = payment.method === PaymentMethod.PAYSTACK ? parsePaystackMeta(payment.gatewayResponse) : null
+                    const paybill = payment.method === PaymentMethod.BANK_TRANSFER ? parseManualPaymentMeta(payment.gatewayResponse) : null
                     return (
                     <div key={payment.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border p-3 text-sm">
                       <div className="min-w-0 space-y-0.5">
                         <p className="font-semibold capitalize">
-                          {payment.method.toLowerCase()} · {payment.status.toLowerCase()}
+                          {paybill ? MANUAL_PAYMENT.methodLabel : payment.method.toLowerCase()} ·{" "}
+                          {paybill && payment.status === PaymentStatus.PENDING ? "awaiting verification" : paybill && payment.status === PaymentStatus.FAILED ? "rejected" : payment.status.toLowerCase()}
                           {paystack?.channel ? ` · ${paystack.channel.replace(/_/g, " ")}` : ""}
                         </p>
                         <p className="text-xs text-muted-foreground">{formatOrderDate(payment.createdAt)}</p>
+                        {paybill && payment.transactionId ? (
+                          <p className="text-xs text-muted-foreground">
+                            M-Pesa code <span className="font-mono">{payment.transactionId}</span>
+                            {paybill.verifiedBy ? ` · confirmed by ${paybill.verifiedBy}` : ""}
+                            {paybill.rejectedBy ? ` · rejected by ${paybill.rejectedBy}` : ""}
+                          </p>
+                        ) : null}
+                        {paybill?.rejectionReason ? (
+                          <p className="text-xs text-muted-foreground">Note to customer: {paybill.rejectionReason}</p>
+                        ) : null}
                         {paystack?.reference ? (
                           <p className="text-xs text-muted-foreground">
                             Ref <span className="font-mono">{paystack.reference}</span>

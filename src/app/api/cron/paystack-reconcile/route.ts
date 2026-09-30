@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { reconcileAndExpirePaystackOrders } from "@/lib/paystack"
+import { expireUnpaidManualOrders } from "@/lib/manual-payment-server"
 
 // Vercel Cron (daily on the Hobby plan). It is safe to also call this more often from an
 // external scheduler with `Authorization: Bearer $CRON_SECRET` to catch missed webhooks sooner.
@@ -14,7 +15,11 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        const result = await reconcileAndExpirePaystackOrders()
+        const result = {
+            ...(await reconcileAndExpirePaystackOrders()),
+            // M-Pesa Paybill orders that never got a code (orders awaiting staff are kept).
+            paybillExpired: (await expireUnpaidManualOrders()).expired,
+        }
         console.info("[cron/paystack-reconcile]", result)
         return NextResponse.json(result)
     } catch (error) {

@@ -79,7 +79,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
   PESAPAL: 'M-Pesa',
   TUMA: 'M-Pesa',
   CREDIT_CARD: 'Credit / Debit Card',
-  BANK_TRANSFER: 'Bank Transfer',
+  BANK_TRANSFER: 'M-Pesa Paybill',
 }
 
 function mapPaymentStatusTone(status: PaymentStatus): InvoicePaymentInfo['statusTone'] {

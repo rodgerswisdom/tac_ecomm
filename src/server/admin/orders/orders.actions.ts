@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
-import { decrementStock, restoreStock, toStockLineItems } from "@/lib/stock"
+import { InsufficientStockError, releaseOrderStock, takeOrderStock } from "@/lib/stock"
 import { scheduleBackInStockNotifications } from "@/lib/stock-notify"
 import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
 import type { ActionResult } from "@/lib/admin/action-result"
@@ -23,6 +23,20 @@ const updateStatusSchema = z.object({
     estimatedDelivery: z.string().max(100).optional().nullable(),
     note: z.string().max(500).optional().nullable(),
 })
+
+/** Order statuses where the items have been taken out of stock. */
+const STOCK_TAKEN_STATUSES = new Set<OrderStatus>([
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.SHIPPED,
+    OrderStatus.DELIVERED,
+])
+/** Statuses that back an order out — its stock goes back unless it already shipped. */
+const STOCK_RETURNED_STATUSES = new Set<OrderStatus>([
+    OrderStatus.CANCELLED,
+    OrderStatus.REFUNDED,
+    OrderStatus.EXPIRED,
+])
 
 // ─────────────────────────────────────────────
 // Types
@@ -82,39 +96,48 @@ export async function updateOrderStatusAction(
 
     let restockedProductIds: string[] = []
 
-    const didUpdate = await prisma.$transaction(async (tx) => {
-        const transition = await tx.order.updateMany({
-            where: { id: orderId, status: previousOrder.status },
-            data: {
-                status,
-                paymentStatus: paymentStatus ?? undefined,
-                trackingNumber: trackingNumber ?? undefined,
-                notes: note ?? undefined,
-            },
-        })
-
-        if (transition.count === 0) {
-            return false
-        }
-
-        const nowConfirmed = status === OrderStatus.CONFIRMED
-        const wasConfirmed = previousOrder.status === OrderStatus.CONFIRMED
-        const nowCancelledOrRefunded = status === OrderStatus.CANCELLED || status === OrderStatus.REFUNDED
-
-        if (!wasConfirmed && nowConfirmed) {
-            const items = await tx.orderItem.findMany({
-                where: { orderId },
-                select: { productId: true, variantId: true, quantity: true },
+    let didUpdate: boolean
+    try {
+        didUpdate = await prisma.$transaction(async (tx) => {
+            const transition = await tx.order.updateMany({
+                where: { id: orderId, status: previousOrder.status },
+                data: {
+                    status,
+                    paymentStatus: paymentStatus ?? undefined,
+                    trackingNumber: trackingNumber ?? undefined,
+                    notes: note ?? undefined,
+                },
             })
-            await decrementStock(toStockLineItems(items), tx)
-        }
 
-        if (wasConfirmed && nowCancelledOrRefunded) {
-            restockedProductIds = await restoreStock(orderId, tx)
-        }
+            if (transition.count === 0) {
+                return false
+            }
 
-        return true
-    })
+            // Order.stockReserved makes these idempotent, and keeps stock that an M-Pesa Paybill
+            // order reserved while PENDING from being taken twice or leaked when it's cancelled.
+            const wasTaken = STOCK_TAKEN_STATUSES.has(previousOrder.status)
+            const wasShipped =
+                previousOrder.status === OrderStatus.SHIPPED || previousOrder.status === OrderStatus.DELIVERED
+
+            if (!wasTaken && STOCK_TAKEN_STATUSES.has(status)) {
+                await takeOrderStock(orderId, tx)
+            }
+
+            if (!wasShipped && STOCK_RETURNED_STATUSES.has(status) && previousOrder.status !== status) {
+                restockedProductIds = await releaseOrderStock(orderId, tx)
+            }
+
+            return true
+        })
+    } catch (error) {
+        if (error instanceof InsufficientStockError) {
+            return {
+                status: "error",
+                message: "Not enough stock to confirm this order. Restock the items (or refund the customer) first.",
+            }
+        }
+        throw error
+    }
 
     if (restockedProductIds.length > 0) {
         scheduleBackInStockNotifications(restockedProductIds)
