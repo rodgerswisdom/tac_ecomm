@@ -30,8 +30,8 @@ export const CUSTOMER_ARRANGED_DELIVERY = {
 
 /** Where "Pickup" orders are collected. Edit here to change what checkout, admin and emails show. */
 export const PICKUP_LOCATION = {
-  name: "City Market",
-  address: "City Market, Nairobi",
+  name: "Reinsurance Plaza",
+  address: "Reinsurance Plaza, Nairobi",
   city: "Nairobi",
   country: "KE",
   instructions: "We'll call or email you when your order is ready for collection.",
