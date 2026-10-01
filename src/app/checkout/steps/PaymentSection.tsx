@@ -38,17 +38,12 @@ export function PaymentSection({ value, onChange, paybillAvailable, disabled }: 
       label: "M-Pesa Paybill (pay TAC directly)",
       badges: <Badge icon={<Building2 className="h-3.5 w-3.5" aria-hidden />}>Paybill {MANUAL_PAYMENT.paybillNumber}</Badge>,
       details: (
-        <div className="space-y-1.5">
-          <p>
-            After you place your order we&apos;ll show you how to pay: M-Pesa → Paybill{" "}
-            <strong className="tabular-nums text-brand-umber">{MANUAL_PAYMENT.paybillNumber}</strong> → account{" "}
-            <strong className="tabular-nums text-brand-umber">{MANUAL_PAYMENT.accountNumber}</strong>.
-          </p>
-          <p>
-            Then enter the confirmation code from your M-Pesa message. Your items are held while our team checks the
-            payment, and your order is confirmed once it clears, usually within one working day.
-          </p>
-        </div>
+        <p>
+          Pay through M-Pesa Paybill{" "}
+          <strong className="tabular-nums text-brand-umber">{MANUAL_PAYMENT.paybillNumber}</strong>, account number{" "}
+          <strong className="tabular-nums text-brand-umber">{MANUAL_PAYMENT.accountNumber}</strong>. Your order will be
+          confirmed upon payment receipt.
+        </p>
       ),
     },
   ];
