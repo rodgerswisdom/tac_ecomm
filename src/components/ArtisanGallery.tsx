@@ -84,20 +84,6 @@ const ArtisanGalleryComponent = ({ artisans }: ArtisanGalleryProps) => {
                     </span>
                   </div>
 
-                  <div className="relative h-48 overflow-hidden rounded-[2rem]">
-                    <video
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      poster={artisan.portrait}
-                      className="absolute inset-0 h-full w-full object-cover opacity-75 transition group-hover:opacity-100"
-                    >
-                      <source src={artisan.video} type="video/webm" />
-                    </video>
-                    <div className="absolute inset-0 bg-gradient-to-t from-brand-umber/60 via-transparent to-transparent" />
-                  </div>
-
                   <div className="space-y-4 text-left text-brand-beige">
                     <h3 className="font-heading text-3xl">{artisan.name}</h3>
                     <blockquote className="relative text-sm leading-relaxed text-brand-beige/80">

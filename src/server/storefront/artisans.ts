@@ -1,8 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import type { ArtisanProfile } from "@/types/artisan"
 
-const FALLBACK_VIDEO = "/videos/artisans/default.webm"
-
 export async function getArtisanSpotlight(): Promise<ArtisanProfile[]> {
   const artisans = await prisma.artisan.findMany({
     orderBy: { createdAt: "desc" },
@@ -20,6 +18,5 @@ export async function getArtisanSpotlight(): Promise<ArtisanProfile[]> {
     craft: artisan.craft,
     quote: artisan.quote,
     portrait: artisan.portrait,
-    video: artisan.video ?? FALLBACK_VIDEO,
   }))
 }

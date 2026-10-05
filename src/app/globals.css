@@ -170,12 +170,6 @@
     }
   }
 
-  .bg-texture-linen {
-    background-image: url("/textures/linen.png");
-    background-size: 240px;
-    background-repeat: repeat;
-  }
-
   .pattern-divider {
     position: relative;
     display: inline-flex;
@@ -203,9 +197,7 @@
   .golden-glow {
     background-image: linear-gradient(145deg,
         rgba(223, 160, 83, 0.18),
-        rgba(171, 205, 193, 0.18)),
-      url("/textures/linen.png");
-    background-size: cover, 240px;
+        rgba(171, 205, 193, 0.18));
     box-shadow:
       0 20px 60px var(--shadow-strong),
       inset 0 1px 0 rgba(255, 255, 255, 0.25);

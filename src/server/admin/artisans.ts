@@ -15,7 +15,6 @@ const artisanSchema = z.object({
     craft: z.string().min(2, "Craft is required"),
     quote: z.string().min(10, "Quote is required"),
     portrait: z.string().url("Portrait URL is required"),
-    video: z.string().url().optional().nullable().or(z.literal("")),
     bio: z.string().min(20, "Bio is required"),
     community: z.string().optional().nullable(),
 })
@@ -33,7 +32,6 @@ export async function createArtisanAction(
         craft: formData.get("craft"),
         quote: formData.get("quote"),
         portrait: formData.get("portrait"),
-        video: formData.get("video"),
         bio: formData.get("bio"),
         community: formData.get("community"),
     })
@@ -44,10 +42,7 @@ export async function createArtisanAction(
 
     try {
         const artisan = await prisma.artisan.create({
-            data: {
-                ...parsed.data,
-                video: parsed.data.video || null,
-            },
+            data: parsed.data,
         })
 
         await logAdminAction("CREATE_ARTISAN", "Artisan", artisan.id, `Created artisan: ${artisan.name}`)
@@ -76,7 +71,6 @@ export async function updateArtisanAction(
         craft: formData.get("craft"),
         quote: formData.get("quote"),
         portrait: formData.get("portrait"),
-        video: formData.get("video"),
         bio: formData.get("bio"),
         community: formData.get("community"),
     })
@@ -88,10 +82,7 @@ export async function updateArtisanAction(
     try {
         const artisan = await prisma.artisan.update({
             where: { id },
-            data: {
-                ...parsed.data,
-                video: parsed.data.video || null,
-            },
+            data: parsed.data,
         })
 
         await logAdminAction("UPDATE_ARTISAN", "Artisan", artisan.id, `Updated artisan: ${artisan.name}`)

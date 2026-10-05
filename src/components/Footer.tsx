@@ -2,9 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { patternAssets } from "@/lib/patterns";
 import { CATEGORY_TAXONOMY } from "@/lib/category-taxonomy";
 import { useNavbarCategories } from "@/contexts/NavbarCategoriesContext";
 import { getCollectionsHref } from "@/lib/collections-url";
@@ -53,14 +51,6 @@ export const Footer = () => {
 
   return (
     <footer className="relative mt-24 overflow-hidden border-t border-brand-umber/50 bg-brand-umber text-white/85">
-      <Image
-        src={patternAssets.mudclothWeave}
-        alt="Mudcloth pattern"
-        fill
-        sizes="100vw"
-        className="absolute inset-0 object-cover opacity-25"
-      />
-      <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(26,17,15,0.95),rgba(26,17,15,0.9)_40%,transparent)]" />
 
       <div className="relative gallery-container py-10 sm:py-16">
         <div className="grid gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-[2fr_1fr_1fr_1fr] lg:gap-12">

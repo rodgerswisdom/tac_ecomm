@@ -5,7 +5,6 @@ export interface ArtisanProfile {
   region: "kenya" | "ghana" | "mali" | "southAfrica" | "zimbabwe" | "morocco" | string;
   craft: string;
   quote: string;
-  video: string;
   portrait: string;
 }
 import { LegacyMilestone } from "@/components/LegacyTimeline";
@@ -249,7 +248,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Bronze Smith · Nairobi",
     quote:
       "We pour stories of the savannah into every molten collar we cast.",
-    video: "/videos/artisans/kenya.webm",
     portrait:
       "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=320&q=80",
   },
@@ -260,7 +258,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Goldsmith · Accra",
     quote:
       "The Sankofa reminds us to reach back — I carve it so future generations remember.",
-    video: "/videos/artisans/ghana.webm",
     portrait:
       "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=320&q=80",
   },
@@ -271,7 +268,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Tuareg Metalwork · Bamako",
     quote:
       "Indigo-stained hands carry the constellations of the Sahara.",
-    video: "/videos/artisans/mali.webm",
     portrait:
       "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=320&q=80",
   },
@@ -282,7 +278,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Glasswork Artist · KwaZulu",
     quote:
       "Colour is a rhythm; every bead sings a note from home.",
-    video: "/videos/artisans/south-africa.webm",
     portrait:
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=320&q=80",
   },
@@ -293,7 +288,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Metal Artisan · Harare",
     quote:
       "I translate the murals from our village walls into wearable architecture.",
-    video: "/videos/artisans/zimbabwe.webm",
     portrait:
       "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=320&q=80",
   },
@@ -304,7 +298,6 @@ export const artisanSpotlight: ArtisanProfile[] = [
     craft: "Textile Weaver · Marrakech",
     quote:
       "We weave warmth for the desert nights and brilliance for the ceremonies at dawn.",
-    video: "/videos/artisans/morocco.webm",
     portrait:
       "https://images.unsplash.com/photo-1530023367847-a683933f4177?auto=format&fit=crop&w=320&q=80",
   },

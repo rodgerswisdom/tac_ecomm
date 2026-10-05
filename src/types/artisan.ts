@@ -6,5 +6,4 @@ export interface ArtisanProfile {
   craft: string
   quote: string
   portrait: string
-  video?: string
 }

@@ -4,6 +4,8 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   calculateShippingKsh,
   CUSTOMER_ARRANGED_DELIVERY,
+  formatFreeShippingThreshold,
+  FREE_SHIPPING_KENYA_KSH_THRESHOLD,
   getDeliveryOptionsForCountry,
   isKenyaDestination,
   type DeliveryMethod,
@@ -15,6 +17,7 @@ export type { DeliveryMethod };
 
 type ShippingMethodSectionProps = {
   country: string;
+  merchandiseSubtotal: number;
   freeShippingFromCoupon?: boolean;
   value: DeliveryMethod | null;
   onChange: (method: DeliveryMethod | null) => void;
@@ -28,6 +31,7 @@ type ShippingMethodSectionProps = {
 /** Shopify-style "Shipping method" list for the chosen destination. */
 export function DeliveryStep({
   country,
+  merchandiseSubtotal,
   freeShippingFromCoupon = false,
   value,
   onChange,
@@ -68,6 +72,9 @@ export function DeliveryStep({
       {isKenya && (
         <p className="text-sm text-brand-umber/70">
           Choose the area we&apos;re delivering to. Prefer to collect? Choose Pickup above — it&apos;s free.
+          {merchandiseSubtotal < FREE_SHIPPING_KENYA_KSH_THRESHOLD
+            ? ` Delivery is free on orders over ${formatFreeShippingThreshold(formatPrice)}.`
+            : null}
         </p>
       )}
       <fieldset>
@@ -78,6 +85,7 @@ export function DeliveryStep({
             const selected = value === opt.id;
             const quote = calculateShippingKsh({
               deliveryMethod: opt.id,
+              merchandiseSubtotalKsh: merchandiseSubtotal,
               freeShippingFromCoupon,
             });
             return (

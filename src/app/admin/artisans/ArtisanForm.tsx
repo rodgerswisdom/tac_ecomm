@@ -69,11 +69,6 @@ export function ArtisanForm({ artisan, action, title }: ArtisanFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="video">Introduction Video URL (Optional)</Label>
-            <Input id="video" name="video" defaultValue={artisan?.video ?? ""} placeholder="https://youtube.com/..." />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="quote">Personal Quote</Label>
             <Textarea
               id="quote"

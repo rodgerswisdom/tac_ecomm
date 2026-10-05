@@ -12,7 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MANUAL_PAYMENT } from "@/lib/manual-payment";
-import { KENYA_DELIVERY_BANDS, PICKUP_LOCATION, SHIPPING_RATES_KSH } from "@/lib/delivery";
+import { FREE_SHIPPING_KENYA_KSH_THRESHOLD, KENYA_DELIVERY_BANDS, PICKUP_LOCATION, SHIPPING_RATES_KSH } from "@/lib/delivery";
 
 const pillars = [
   {
@@ -61,7 +61,7 @@ const faqs = [
     question: "How much is shipping in Kenya?",
     answer: `Pickup from ${PICKUP_LOCATION.address} is free. Delivery is priced by area: ${KENYA_DELIVERY_BANDS.map(
       (band) => `${band.label.toLowerCase()} KSh ${SHIPPING_RATES_KSH[band.id].toLocaleString("en-KE")}`
-    ).join("; ")}.`,
+    ).join("; ")}. Delivery within Kenya is free on orders above KSh ${FREE_SHIPPING_KENYA_KSH_THRESHOLD.toLocaleString("en-KE")}.`,
   },
   {
     id: "delivery-time",

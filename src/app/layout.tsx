@@ -124,7 +124,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar bg-texture-linen`}
+        className={`${kumbhSans.variable} ${cormorantGaramond.variable} antialiased bead-scrollbar`}
       >
         <a
           href="#main-content"

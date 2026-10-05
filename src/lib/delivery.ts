@@ -50,6 +50,9 @@ export const KENYA_DELIVERY_BANDS = [
   { id: "kenya_upcountry", label: "Outside Nairobi", areas: "Mombasa, Kisumu, Eldoret, Nakuru and other towns" },
 ] as const satisfies readonly { id: DeliveryMethod; label: string; areas: string }[];
 
+/** Kenya delivery is free when the merchandise subtotal (KSH) reaches this. */
+export const FREE_SHIPPING_KENYA_KSH_THRESHOLD = 5000;
+
 /** Base shipping fees stored in KSH (same base unit as product prices). */
 export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
   nairobi_cbd: 300,
@@ -144,23 +147,38 @@ export function isDeliveryMethodValidForCountry(
 export type ShippingQuote = {
   shippingKsh: number;
   baseRateKsh: number;
+  qualifiesForFreeShipping: boolean;
   freeShippingFromCoupon: boolean;
 };
 
-/** Shipping is the method's flat rate; only a FREE_SHIPPING coupon waives it. */
+const KENYA_DELIVERY_METHODS = new Set<DeliveryMethod>(KENYA_DELIVERY_BANDS.map((band) => band.id));
+
+/** Flat rate per method, waived by a FREE_SHIPPING coupon or (Kenya bands) a big enough order. */
 export function calculateShippingKsh({
   deliveryMethod,
+  merchandiseSubtotalKsh,
   freeShippingFromCoupon = false,
 }: {
   deliveryMethod: DeliveryMethod;
+  merchandiseSubtotalKsh: number;
   freeShippingFromCoupon?: boolean;
 }): ShippingQuote {
   const baseRateKsh = SHIPPING_RATES_KSH[deliveryMethod] ?? 0;
+  const qualifiesForFreeShipping =
+    !freeShippingFromCoupon &&
+    KENYA_DELIVERY_METHODS.has(deliveryMethod) &&
+    merchandiseSubtotalKsh >= FREE_SHIPPING_KENYA_KSH_THRESHOLD;
   return {
-    shippingKsh: freeShippingFromCoupon ? 0 : baseRateKsh,
+    shippingKsh: freeShippingFromCoupon || qualifiesForFreeShipping ? 0 : baseRateKsh,
     baseRateKsh,
+    qualifiesForFreeShipping,
     freeShippingFromCoupon,
   };
+}
+
+/** Format the Kenya free-shipping threshold in the shopper's selected currency. */
+export function formatFreeShippingThreshold(formatPrice: (amountKsh: number) => string): string {
+  return formatPrice(FREE_SHIPPING_KENYA_KSH_THRESHOLD);
 }
 
 export function getEstimatedDeliveryDays(method: DeliveryMethod): number {

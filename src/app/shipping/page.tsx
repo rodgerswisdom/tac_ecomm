@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FreeShippingNote } from "@/components/FreeShippingNote";
 import { KENYA_DELIVERY_BANDS, PICKUP_LOCATION, SHIPPING_RATES_KSH } from "@/lib/delivery";
 
 export const metadata: Metadata = {
@@ -64,6 +65,11 @@ export default function ShippingPage() {
                 2-5 business days plus customs processing where applicable.
               </p>
             </article>
+          </div>
+
+          <div className="rounded-3xl border border-brand-gold/30 bg-brand-gold/5 p-6 text-sm text-brand-umber/75">
+            <p className="font-medium text-brand-umber">Free shipping</p>
+            <FreeShippingNote className="mt-2" />
           </div>
 
           <div className="rounded-3xl border border-brand-teal/20 bg-white/90 p-6 text-sm text-brand-umber/75">

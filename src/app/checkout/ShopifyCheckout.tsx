@@ -114,6 +114,7 @@ export default function ShopifyCheckout() {
   const shippingCost = deliveryMethod
     ? calculateShippingKsh({
         deliveryMethod,
+        merchandiseSubtotalKsh: subtotal,
         freeShippingFromCoupon: appliedCoupon?.type === "FREE_SHIPPING",
       }).shippingKsh
     : 0;
@@ -276,6 +277,7 @@ export default function ShopifyCheckout() {
               {!isPickup ? (
                 <DeliveryStep
                   country={form.country}
+                  merchandiseSubtotal={subtotal}
                   freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
                   value={shippingMethod}
                   onChange={handleShippingMethodChange}

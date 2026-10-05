@@ -7,7 +7,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { patternDividerIcon } from "@/lib/patterns";
 import { useCurrency } from "@/contexts/CurrencyContext";
-import { PICKUP_LOCATION } from "@/lib/delivery";
+import { formatFreeShippingThreshold } from "@/lib/delivery";
 import { ArrowRight, Sparkles, Pause, Play } from "lucide-react";
 import type { OfferOfTheMonth } from "@/types/offer";
 import type { HeroContent } from "@/server/storefront/settings";
@@ -212,8 +212,9 @@ const HeroComponent = ({ hero, offerOfTheMonth }: HeroProps) => {
                 />
               </div>
               <p>
-                Delivered with care from our atelier to you &mdash; or collect
-                free from {PICKUP_LOCATION.address}.
+                Free shipping on Kenya orders over{" "}
+                {formatFreeShippingThreshold(formatPrice)} &mdash; delivered with
+                care from our atelier to you.
               </p>
             </motion.div>
           </div>
