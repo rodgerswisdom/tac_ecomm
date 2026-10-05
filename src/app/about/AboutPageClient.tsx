@@ -12,7 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { MANUAL_PAYMENT } from "@/lib/manual-payment";
-import { FREE_SHIPPING_KENYA_KSH_THRESHOLD, SHIPPING_RATES_KSH } from "@/lib/delivery";
+import { KENYA_DELIVERY_BANDS, PICKUP_LOCATION, SHIPPING_RATES_KSH } from "@/lib/delivery";
 
 const pillars = [
   {
@@ -59,7 +59,9 @@ const faqs = [
   {
     id: "shipping",
     question: "How much is shipping in Kenya?",
-    answer: `Kenya Standard is KSh ${SHIPPING_RATES_KSH.kenya_standard.toLocaleString("en-KE")} (1–3 business days). Kenya Express is KSh ${SHIPPING_RATES_KSH.kenya_express.toLocaleString("en-KE")} (1–2 business days). Orders within Kenya may qualify for free shipping above KSh ${FREE_SHIPPING_KENYA_KSH_THRESHOLD.toLocaleString("en-KE")}.`,
+    answer: `Pickup from ${PICKUP_LOCATION.address} is free. Delivery is priced by area: ${KENYA_DELIVERY_BANDS.map(
+      (band) => `${band.label.toLowerCase()} KSh ${SHIPPING_RATES_KSH[band.id].toLocaleString("en-KE")}`
+    ).join("; ")}.`,
   },
   {
     id: "delivery-time",

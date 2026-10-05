@@ -311,9 +311,7 @@ export async function POST(req: NextRequest) {
   }
 
   const shippingQuote = calculateShippingKsh({
-    country: countryTrim,
     deliveryMethod,
-    merchandiseSubtotalKsh: subtotal,
     freeShippingFromCoupon: couponGrantsFreeShipping,
   })
   const shipping = shippingQuote.shippingKsh

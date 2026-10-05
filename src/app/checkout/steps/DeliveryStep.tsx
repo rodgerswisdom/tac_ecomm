@@ -4,8 +4,6 @@ import { useCurrency } from "@/contexts/CurrencyContext";
 import {
   calculateShippingKsh,
   CUSTOMER_ARRANGED_DELIVERY,
-  formatFreeShippingThreshold,
-  FREE_SHIPPING_KENYA_KSH_THRESHOLD,
   getDeliveryOptionsForCountry,
   isKenyaDestination,
   type DeliveryMethod,
@@ -17,10 +15,9 @@ export type { DeliveryMethod };
 
 type ShippingMethodSectionProps = {
   country: string;
-  merchandiseSubtotal: number;
   freeShippingFromCoupon?: boolean;
   value: DeliveryMethod | null;
-  onChange: (method: DeliveryMethod) => void;
+  onChange: (method: DeliveryMethod | null) => void;
   /** "Arrange your own delivery" instructions. */
   instructions: string;
   instructionsError?: string;
@@ -31,7 +28,6 @@ type ShippingMethodSectionProps = {
 /** Shopify-style "Shipping method" list for the chosen destination. */
 export function DeliveryStep({
   country,
-  merchandiseSubtotal,
   freeShippingFromCoupon = false,
   value,
   onChange,
@@ -44,17 +40,14 @@ export function DeliveryStep({
   const options = useMemo(() => getDeliveryOptionsForCountry(country), [country]);
   const instructionsRef = useRef<HTMLTextAreaElement>(null);
 
-  // Keep a valid selection when the country (and so the available options) changes.
+  // Kenya prices depend on where the customer is, so they must pick their band themselves;
+  // elsewhere the first (standard) option is a safe default.
+  const isKenya = isKenyaDestination(country);
   useEffect(() => {
-    if (options.length > 0 && !options.some((option) => option.id === value)) {
-      onChange(options[0].id);
-    }
-  }, [options, value, onChange]);
-
-  const showFreeShippingHint =
-    isKenyaDestination(country) &&
-    merchandiseSubtotal < FREE_SHIPPING_KENYA_KSH_THRESHOLD &&
-    value !== "customer_arranged";
+    if (options.some((option) => option.id === value)) return;
+    const next = isKenya || options.length === 0 ? null : options[0].id;
+    if (next !== value) onChange(next);
+  }, [options, value, onChange, isKenya]);
 
   function applySuggestion(text: string) {
     onInstructionsChange(text);
@@ -72,9 +65,9 @@ export function DeliveryStep({
       <div id="checkout-shipping-method">
         <CheckoutSectionHeading>Shipping method</CheckoutSectionHeading>
       </div>
-      {showFreeShippingHint && (
+      {isKenya && (
         <p className="text-sm text-brand-umber/70">
-          Free shipping on Kenya orders over {formatFreeShippingThreshold(formatPrice)}.
+          Choose the area we&apos;re delivering to. Prefer to collect? Choose Pickup above — it&apos;s free.
         </p>
       )}
       <fieldset>
@@ -84,9 +77,7 @@ export function DeliveryStep({
             const isCustomerArranged = opt.id === "customer_arranged";
             const selected = value === opt.id;
             const quote = calculateShippingKsh({
-              country,
               deliveryMethod: opt.id,
-              merchandiseSubtotalKsh: merchandiseSubtotal,
               freeShippingFromCoupon,
             });
             return (
@@ -108,8 +99,8 @@ export function DeliveryStep({
                   />
                   <span className="flex-1 text-brand-umber">
                     {opt.label}
-                    {isCustomerArranged ? (
-                      <span className="block text-xs text-brand-umber/60">{CUSTOMER_ARRANGED_DELIVERY.summary}</span>
+                    {opt.description ? (
+                      <span className="block text-xs text-brand-umber/60">{opt.description}</span>
                     ) : null}
                   </span>
                   <span className="ml-auto shrink-0 font-semibold text-brand-umber">

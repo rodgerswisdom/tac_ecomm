@@ -98,7 +98,7 @@ export default function ShopifyCheckout() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleShippingMethodChange = useCallback((method: DeliveryMethod) => setShippingMethod(method), []);
+  const handleShippingMethodChange = useCallback((method: DeliveryMethod | null) => setShippingMethod(method), []);
 
   const isPickup = form.deliveryType === "pickup";
   const deliveryMethod: DeliveryMethod | null = isPickup ? "pickup" : shippingMethod;
@@ -113,9 +113,7 @@ export default function ShopifyCheckout() {
   const discount = appliedCoupon?.discount ?? 0;
   const shippingCost = deliveryMethod
     ? calculateShippingKsh({
-        country: isPickup ? "KE" : form.country,
         deliveryMethod,
-        merchandiseSubtotalKsh: subtotal,
         freeShippingFromCoupon: appliedCoupon?.type === "FREE_SHIPPING",
       }).shippingKsh
     : 0;
@@ -278,7 +276,6 @@ export default function ShopifyCheckout() {
               {!isPickup ? (
                 <DeliveryStep
                   country={form.country}
-                  merchandiseSubtotal={subtotal}
                   freeShippingFromCoupon={appliedCoupon?.type === "FREE_SHIPPING"}
                   value={shippingMethod}
                   onChange={handleShippingMethodChange}

@@ -1,7 +1,9 @@
-import type { CurrencyCode } from "@/lib/currency";
-import { convertFromBase } from "@/lib/currency";
-
 export type DeliveryMethod =
+  | "nairobi_cbd"
+  | "nairobi_near_cbd"
+  | "nairobi_outer"
+  | "kenya_upcountry"
+  // Legacy Kenya methods, replaced by the bands above. Kept so older orders still display.
   | "kenya_standard"
   | "kenya_express"
   | "international_standard"
@@ -37,11 +39,23 @@ export const PICKUP_LOCATION = {
   instructions: "We'll call or email you when your order is ready for collection.",
 } as const;
 
-/** Kenya-only free shipping when merchandise subtotal (KSH) meets this threshold. */
-export const FREE_SHIPPING_KENYA_KSH_THRESHOLD = 5000;
+/**
+ * Kenya delivery bands. The customer picks the band their address falls in; ops check it
+ * against the address when they dispatch. Edit areas/prices here.
+ */
+export const KENYA_DELIVERY_BANDS = [
+  { id: "nairobi_cbd", label: "Within Nairobi CBD", areas: "Delivered anywhere in the CBD" },
+  { id: "nairobi_near_cbd", label: "Around the CBD", areas: "Upper Hill, Parklands, Westlands, Nairobi West" },
+  { id: "nairobi_outer", label: "Outside the CBD, within Nairobi", areas: "Athi River, Kitengela, Kikuyu, Ruaka and similar" },
+  { id: "kenya_upcountry", label: "Outside Nairobi", areas: "Mombasa, Kisumu, Eldoret, Nakuru and other towns" },
+] as const satisfies readonly { id: DeliveryMethod; label: string; areas: string }[];
 
 /** Base shipping fees stored in KSH (same base unit as product prices). */
 export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
+  nairobi_cbd: 300,
+  nairobi_near_cbd: 300,
+  nairobi_outer: 600,
+  kenya_upcountry: 700,
   kenya_standard: 300,
   kenya_express: 500,
   international_standard: 2500,
@@ -53,24 +67,22 @@ export const SHIPPING_RATES_KSH: Record<DeliveryMethod, number> = {
 export const DELIVERY_OPTIONS: {
   id: DeliveryMethod;
   label: string;
+  /** Shown under the label at checkout. */
+  description?: string;
   price: number;
   regions: "kenya" | "international" | "all";
 }[] = [
-  {
-    id: "kenya_standard",
-    label: "Kenya Standard (1-3 business days)",
-    price: SHIPPING_RATES_KSH.kenya_standard,
-    regions: "kenya",
-  },
-  {
-    id: "kenya_express",
-    label: "Kenya Express (1-2 business days)",
-    price: SHIPPING_RATES_KSH.kenya_express,
-    regions: "kenya",
-  },
+  ...KENYA_DELIVERY_BANDS.map((band) => ({
+    id: band.id,
+    label: band.label,
+    description: band.areas,
+    price: SHIPPING_RATES_KSH[band.id],
+    regions: "kenya" as const,
+  })),
   {
     id: "customer_arranged",
     label: CUSTOMER_ARRANGED_DELIVERY.label,
+    description: CUSTOMER_ARRANGED_DELIVERY.summary,
     price: SHIPPING_RATES_KSH.customer_arranged,
     regions: "kenya",
   },
@@ -89,6 +101,10 @@ export const DELIVERY_OPTIONS: {
 ];
 
 export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
+  nairobi_cbd: "Delivery — within Nairobi CBD",
+  nairobi_near_cbd: "Delivery — around the CBD (Upper Hill, Parklands, Westlands, Nairobi West)",
+  nairobi_outer: "Delivery — outside the CBD, within Nairobi",
+  kenya_upcountry: "Delivery — outside Nairobi",
   kenya_standard: "Kenya Standard (1-3 business days)",
   kenya_express: "Kenya Express (1-2 business days)",
   international_standard: "International Standard (3-7 business days)",
@@ -128,68 +144,31 @@ export function isDeliveryMethodValidForCountry(
 export type ShippingQuote = {
   shippingKsh: number;
   baseRateKsh: number;
-  qualifiesForFreeShipping: boolean;
   freeShippingFromCoupon: boolean;
 };
 
+/** Shipping is the method's flat rate; only a FREE_SHIPPING coupon waives it. */
 export function calculateShippingKsh({
-  country,
   deliveryMethod,
-  merchandiseSubtotalKsh,
   freeShippingFromCoupon = false,
 }: {
-  country: string | null | undefined;
   deliveryMethod: DeliveryMethod;
-  merchandiseSubtotalKsh: number;
   freeShippingFromCoupon?: boolean;
 }): ShippingQuote {
   const baseRateKsh = SHIPPING_RATES_KSH[deliveryMethod] ?? 0;
-
-  if (freeShippingFromCoupon) {
-    return {
-      shippingKsh: 0,
-      baseRateKsh,
-      qualifiesForFreeShipping: false,
-      freeShippingFromCoupon,
-    };
-  }
-
-  const qualifiesForFreeShipping =
-    isKenyaDestination(country) &&
-    merchandiseSubtotalKsh >= FREE_SHIPPING_KENYA_KSH_THRESHOLD &&
-    (deliveryMethod === "kenya_standard" || deliveryMethod === "kenya_express");
-
-  if (qualifiesForFreeShipping) {
-    return {
-      shippingKsh: 0,
-      baseRateKsh,
-      qualifiesForFreeShipping: true,
-      freeShippingFromCoupon: false,
-    };
-  }
-
   return {
-    shippingKsh: baseRateKsh,
+    shippingKsh: freeShippingFromCoupon ? 0 : baseRateKsh,
     baseRateKsh,
-    qualifiesForFreeShipping: false,
-    freeShippingFromCoupon: false,
+    freeShippingFromCoupon,
   };
-}
-
-/** Format the Kenya free-shipping threshold in the shopper's selected currency. */
-export function formatFreeShippingThreshold(
-  formatPrice: (amountKsh: number) => string
-): string {
-  return formatPrice(FREE_SHIPPING_KENYA_KSH_THRESHOLD);
-}
-
-/** Numeric threshold in a display currency (for labels/tooltips). */
-export function freeShippingThresholdInCurrency(currency: CurrencyCode): number {
-  return convertFromBase(FREE_SHIPPING_KENYA_KSH_THRESHOLD, currency);
 }
 
 export function getEstimatedDeliveryDays(method: DeliveryMethod): number {
   const estimates: Record<DeliveryMethod, number> = {
+    nairobi_cbd: 1,
+    nairobi_near_cbd: 1,
+    nairobi_outer: 2,
+    kenya_upcountry: 3,
     kenya_standard: 2,
     kenya_express: 1,
     international_standard: 5,

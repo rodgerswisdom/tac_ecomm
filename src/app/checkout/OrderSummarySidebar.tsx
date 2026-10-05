@@ -37,12 +37,10 @@ export function OrderSummarySidebar({
       return { shippingKsh: 0 };
     }
     return calculateShippingKsh({
-      country,
       deliveryMethod,
-      merchandiseSubtotalKsh: subtotal,
       freeShippingFromCoupon,
     });
-  }, [country, deliveryMethod, subtotal, freeShippingFromCoupon]);
+  }, [country, deliveryMethod, freeShippingFromCoupon]);
   const shippingCost = shippingQuote.shippingKsh;
   const total = Math.max(0, subtotal - discount + shippingCost);
 
