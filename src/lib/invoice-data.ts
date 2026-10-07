@@ -1,5 +1,6 @@
 import type { PaymentMethod, PaymentStatus } from '@prisma/client'
 import { getStoreContactDetails } from '@/lib/store-contact'
+import { getOrderItemProductName, getOrderItemProductSku } from '@/lib/order-item-display'
 
 const dateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',
@@ -207,8 +208,8 @@ export function buildInvoiceDocumentData(
     },
     lineItems: order.items.map((item, index) => ({
       index: index + 1,
-      description: item.product?.name ?? 'Product',
-      sku: item.product?.sku?.trim() || '—',
+      description: getOrderItemProductName(item),
+      sku: getOrderItemProductSku(item),
       quantity: item.quantity,
       unitPrice: formatInvoiceKes(item.price),
       lineTotal: formatInvoiceKes(item.price * item.quantity),

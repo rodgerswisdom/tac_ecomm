@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { ProductMediaFields } from "./ProductMediaFields"
 import { createProductInitialState, type CreateProductFormState } from "@/lib/admin/create-product-form-state"
-import { buildSkuBaseFromName } from "@/lib/sku"
 import { useAdminActionFeedback } from "@/hooks/use-admin-action-feedback"
 import { createProductAction, generateSkuAction } from "@/server/admin/product-actions"
 
@@ -72,7 +71,6 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
   })
   const [hasInteracted, setHasInteracted] = useState(false)
   const [hasEditedProductType, setHasEditedProductType] = useState(bespokeMode)
-  const [hasEditedSku, setHasEditedSku] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [autosaveState, setAutosaveState] = useState<AutosaveState>({ status: "idle" })
   const [hasPendingMediaUploads, setHasPendingMediaUploads] = useState(false)
@@ -260,19 +258,10 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
           next.productType = derived
         }
       }
-      if (field === "name" && !hasEditedSku) {
-        const generatedSku = buildSkuBaseFromName(value)
-        if (generatedSku) {
-          next.sku = generatedSku
-        }
-      }
       return next
     })
     if (field === "productType") {
       setHasEditedProductType(true)
-    }
-    if (field === "sku") {
-      setHasEditedSku(true)
     }
     if (field === "categoryId" && typeof window !== "undefined") {
       window.localStorage.setItem(LAST_CATEGORY_STORAGE_KEY, value)
@@ -283,16 +272,16 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
   }
 
   const handleGenerateSku = async () => {
-    const name = formValues.name.trim()
-    if (!name) {
-      setSkuGenerateError("Enter a product name to generate a SKU.")
+    const categoryId = formValues.categoryId
+    if (!categoryId) {
+      setSkuGenerateError("Choose a category first — codes start with the category (e.g. EAR-0042).")
       return
     }
 
     setIsGeneratingSku(true)
     setSkuGenerateError(null)
     try {
-      const result = await generateSkuAction(name)
+      const result = await generateSkuAction(categoryId)
       if ("error" in result) {
         setSkuGenerateError(result.error)
         return
@@ -301,7 +290,6 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
         ...prev,
         sku: result.sku,
       }))
-      setHasEditedSku(false)
       if (!hasInteracted) {
         setHasInteracted(true)
       }
@@ -373,10 +361,7 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <label htmlFor="sku" className="text-sm font-semibold text-foreground">
-                      <span className="flex items-center gap-1">
-                        SKU
-                        <RequiredMark />
-                      </span>
+                      Product code
                     </label>
                     <button
                       type="button"
@@ -393,8 +378,11 @@ export function CreateProductForm({ categories, bespokeMode = false }: CreatePro
                     value={formValues.sku}
                     onChange={handleFieldChange("sku")}
                     className="h-10 text-sm uppercase tracking-[0.2em]"
-                    placeholder="ARC-2024-GOLD"
+                    placeholder="Assigned automatically, e.g. EAR-0042"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Leave blank to get the next code for the category. Write it on the item&apos;s label for packing.
+                  </p>
                   {fieldError("sku") ? <p className="text-xs text-rose-600">{fieldError("sku")}</p> : null}
                   {skuGenerateError ? <p className="text-xs text-rose-600">{skuGenerateError}</p> : null}
                 </div>

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { EmailService, getEmailConfig } from "@/lib/email";
 import { DELIVERY_LABELS, type DeliveryMethod } from "@/lib/delivery";
+import { getEmailBaseUrl, toOrderEmailItems } from "@/lib/order-item-display";
 
 const OPS_EMAILS = [
   "info@tacaccessories.co.ke",
@@ -43,8 +44,15 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
       items: {
         select: {
           quantity: true,
+          price: true,
           productName: true,
+          productSku: true,
+          selectedImageUrl: true,
           selectedImageLabel: true,
+          productImage: { select: { url: true } },
+          product: {
+            select: { name: true, sku: true, images: { orderBy: { order: "asc" }, take: 1, select: { url: true } } },
+          },
         },
       },
     },
@@ -56,10 +64,28 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
   const customerName = `${addr.firstName} ${addr.lastName}`.trim();
   const phone = addr.phone?.trim() || "Not provided";
   const locality = [addr.city, addr.state, addr.postalCode].filter(Boolean).join(", ");
-  const itemLines = order.items.map((item) => {
-    const label = item.selectedImageLabel ? ` — ${item.selectedImageLabel}` : "";
-    return `${item.productName ?? "Product"}${label} × ${item.quantity}`;
-  });
+  const emailItems = toOrderEmailItems(order.items, getEmailBaseUrl());
+  // Code first: it's what the packer looks for on the stock label.
+  const itemLines = emailItems.map(
+    (item) => `${item.sku ? `${item.sku} — ` : ""}${item.name}${item.design ? ` (${item.design})` : ""} × ${item.quantity}`,
+  );
+  const itemRowsHtml = emailItems
+    .map(
+      (item) => `
+        <tr>
+          <td width="64" style="padding: 6px 8px 6px 0; vertical-align: top;">${
+            item.imageUrl
+              ? `<img src="${escapeHtml(item.imageUrl)}" alt="" width="56" height="56" style="display: block; width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid #eee;" />`
+              : ""
+          }</td>
+          <td style="padding: 6px 0; vertical-align: top;">
+            ${item.sku ? `<strong style="font-size: 16px;">${escapeHtml(item.sku)}</strong><br />` : ""}
+            ${escapeHtml(item.name)}${item.design ? ` &middot; ${escapeHtml(item.design)}` : ""}<br />
+            Qty <strong>${item.quantity}</strong>
+          </td>
+        </tr>`,
+    )
+    .join("");
   const totalLine = `KES ${Math.round(order.total).toLocaleString()}`;
   const paymentLine = order.paymentMethod ?? "Not specified";
   const deliveryLine = order.shippingMethod
@@ -84,9 +110,7 @@ export async function sendNewOrderOpsEmail(orderId: string): Promise<void> {
           : ""
       }
       <p style="margin: 0 0 6px 0;"><strong>Items</strong></p>
-      <ul style="margin: 0 0 12px 0; padding-left: 18px;">${itemLines
-        .map((line) => `<li>${escapeHtml(line)}</li>`)
-        .join("")}</ul>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 0 12px 0; border-collapse: collapse;">${itemRowsHtml}</table>
       <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
       <p style="margin: 0 0 6px 0;"><strong>Shipping address</strong></p>
       <p style="margin: 0;">

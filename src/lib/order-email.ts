@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { EmailService, getEmailConfig } from "@/lib/email";
+import { getEmailBaseUrl, toOrderEmailItems } from "@/lib/order-item-display";
 
 export async function sendPaidOrderConfirmedEmail(orderId: string): Promise<boolean> {
   const order = await prisma.order.findUnique({
@@ -33,8 +34,13 @@ export async function sendPaidOrderConfirmedEmail(orderId: string): Promise<bool
         select: {
           quantity: true,
           price: true,
+          productName: true,
+          productSku: true,
+          selectedImageUrl: true,
+          selectedImageLabel: true,
+          productImage: { select: { url: true } },
           product: {
-            select: { name: true },
+            select: { name: true, sku: true, images: { orderBy: { order: "asc" }, take: 1, select: { url: true } } },
           },
         },
       },
@@ -59,11 +65,7 @@ export async function sendPaidOrderConfirmedEmail(orderId: string): Promise<bool
       month: "short",
       year: "numeric",
     }),
-    items: order.items.map((item) => ({
-      name: item.product?.name ?? "Product",
-      quantity: item.quantity,
-      price: item.price,
-    })),
+    items: toOrderEmailItems(order.items, getEmailBaseUrl()),
     subtotal: order.subtotal,
     tax: order.tax,
     shipping: order.shipping,

@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { prisma } from "@/lib/prisma"
 import { assertAdmin } from "../auth"
 import { EmailService, getEmailConfig } from "@/lib/email"
+import { getEmailBaseUrl, toOrderEmailItems } from "@/lib/order-item-display"
 import { InsufficientStockError, releaseOrderStock, takeOrderStock } from "@/lib/stock"
 import { scheduleBackInStockNotifications } from "@/lib/stock-notify"
 import { queueOrderSync, queueInvoiceCreation, queuePaymentRecording } from "@/lib/zoho"
@@ -205,7 +206,14 @@ export async function updateOrderStatusAction(
                 shippingAddress: true,
                 items: {
                     include: {
-                        product: { select: { name: true } },
+                        productImage: { select: { url: true } },
+                        product: {
+                            select: {
+                                name: true,
+                                sku: true,
+                                images: { orderBy: { order: "asc" }, take: 1, select: { url: true } },
+                            },
+                        },
                     },
                 },
             },
@@ -228,11 +236,7 @@ export async function updateOrderStatusAction(
                     month: "short",
                     year: "numeric",
                 }),
-                items: order.items.map((item) => ({
-                    name: item.product?.name ?? "Product",
-                    quantity: item.quantity,
-                    price: item.price,
-                })),
+                items: toOrderEmailItems(order.items, getEmailBaseUrl()),
                 subtotal: order.subtotal,
                 tax: order.tax,
                 shipping: order.shipping,

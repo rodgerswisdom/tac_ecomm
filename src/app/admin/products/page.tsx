@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import { getProductList } from "@/server/admin/products"
+import { countProductsWithoutCodes, getProductList } from "@/server/admin/products"
 import { AutoSubmitSelect } from "./AutoSubmitSelect"
 import { AdminPageHeader } from "@/components/admin/page-header"
 import { ProductTable } from "./ProductTable"
+import { AssignProductCodesBanner } from "./AssignProductCodesBanner"
 
 interface ProductsPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -72,13 +73,16 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const tab = parseTab(parseParam(params.tab))
   const isArchivedTab = tab === "archived"
 
-  const products = await getProductList({
-    page,
-    search,
-    sort,
-    pageSize,
-    archived: isArchivedTab,
-  })
+  const [products, productsWithoutCodes] = await Promise.all([
+    getProductList({
+      page,
+      search,
+      sort,
+      pageSize,
+      archived: isArchivedTab,
+    }),
+    countProductsWithoutCodes(),
+  ])
   const items = products.items as ProductListItem[]
 
   const baseParams = new URLSearchParams()
@@ -106,6 +110,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
   return (
     <div className="space-y-8">
+      {productsWithoutCodes > 0 ? <AssignProductCodesBanner count={productsWithoutCodes} /> : null}
       <AdminPageHeader
         title={isArchivedTab ? "Archived products" : "All products"}
         breadcrumb={[{ label: "products", href: "/admin/products" }]}
@@ -129,7 +134,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
               <Input
                 name="q"
                 defaultValue={search}
-                placeholder="Search by name or SKU"
+                placeholder="Search by name or product code"
                 className="pl-10"
               />
               <input type="hidden" name="sort" value={sort} />

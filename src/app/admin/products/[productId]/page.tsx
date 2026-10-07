@@ -79,7 +79,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   <Input name="name" defaultValue={product.name} required />
                 </label>
                 <label className="space-y-1">
-                  <span className={fieldLabel}>SKU</span>
+                  <span className={fieldLabel}>Product code</span>
                   <Input name="sku" defaultValue={product.sku} required />
                 </label>
                 <label className="space-y-1">

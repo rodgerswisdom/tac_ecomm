@@ -13,7 +13,7 @@ import { RowActions } from "@/components/admin/row-actions"
 import { formatPrice } from "@/lib/utils"
 import { CopyToClipboardButton } from "@/components/admin/CopyToClipboardButton"
 import { getOrderItemImageLabel, getOrderItemImageUrl } from "@/lib/product-image-selection"
-import { getOrderItemProductName } from "@/lib/order-item-display"
+import { getOrderItemProductName, getOrderItemProductSku } from "@/lib/order-item-display"
 
 interface OrdersPageProps {
   searchParams?: Promise<Record<string, string | string[]>>
@@ -313,6 +313,7 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
                                         )}
                                       </div>
                                       <div className="flex-1 min-w-0 mr-4">
+                                        <p className="font-mono text-xs font-bold text-slate-900">{getOrderItemProductSku(item)}</p>
                                         <p className="font-bold text-slate-900 truncate">{getOrderItemProductName(item)}</p>
                                         {imageLabel ? (
                                           <p className="text-[10px] text-brand-umber/70">{imageLabel}</p>

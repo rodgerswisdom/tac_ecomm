@@ -31,6 +31,12 @@ export interface OrderEmailData {
     name: string
     quantity: number
     price: number
+    /** Product code (e.g. EAR-0042), so the line can be matched to the right item. */
+    sku?: string | null
+    /** The design the customer picked, e.g. "Design 2". */
+    design?: string | null
+    /** Absolute URL of the item's photo. */
+    imageUrl?: string | null
   }>
   subtotal: number
   tax: number
@@ -49,6 +55,10 @@ export interface OrderEmailData {
   couponCode?: string
   couponDiscount?: number
   currency?: string
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 export class EmailService {
@@ -301,12 +311,7 @@ export class EmailService {
               <p><strong>Order Date:</strong> ${data.orderDate}</p>
               
               <h4>Items Ordered:</h4>
-              ${data.items.map(item => `
-                <div class="item">
-                  <span>${item.name} (Qty: ${item.quantity})</span>
-                  <span>${this.formatOrderPrice(item.price * item.quantity, data.currency)}</span>
-                </div>
-              `).join('')}
+              ${this.renderOrderItems(data)}
               <div class="item">
                 <span>Subtotal:</span>
                 <span>${this.formatOrderPrice(data.subtotal, data.currency)}</span>
@@ -367,7 +372,7 @@ export class EmailService {
       - Order Date: ${data.orderDate}
       
       Items:
-      ${data.items.map(item => `- ${item.name} (Qty: ${item.quantity}) - ${this.formatOrderPrice(item.price * item.quantity, data.currency)}`).join('\n')}
+      ${this.renderOrderItemsText(data)}
       
       Subtotal: ${this.formatOrderPrice(data.subtotal, data.currency)}
       Total: ${this.formatOrderPrice(data.total, data.currency)}
@@ -526,6 +531,39 @@ export class EmailService {
     return { subject, html, text }
   }
 
+  /** Item lines with photo, code and design, as a table so they render in every mail client. */
+  private renderOrderItems(data: OrderEmailData): string {
+    const rows = data.items
+      .map((item) => {
+        const details = [item.sku ? `Code: <strong>${escapeHtml(item.sku)}</strong>` : '', item.design ? escapeHtml(item.design) : '', `Qty ${item.quantity}`]
+          .filter(Boolean)
+          .join(' &middot; ')
+        const photo = item.imageUrl
+          ? `<img src="${escapeHtml(item.imageUrl)}" alt="" width="56" height="56" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid #e9ecef;" />`
+          : ''
+        return `
+          <tr>
+            <td width="64" style="padding:10px 8px 10px 0;border-bottom:1px solid #e9ecef;vertical-align:top;">${photo}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #e9ecef;vertical-align:top;">
+              <div style="font-weight:600;">${escapeHtml(item.name)}</div>
+              <div style="font-size:13px;color:#555;">${details}</div>
+            </td>
+            <td align="right" style="padding:10px 0;border-bottom:1px solid #e9ecef;vertical-align:top;white-space:nowrap;">${this.formatOrderPrice(item.price * item.quantity, data.currency)}</td>
+          </tr>`
+      })
+      .join('')
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:8px;">${rows}</table>`
+  }
+
+  private renderOrderItemsText(data: OrderEmailData): string {
+    return data.items
+      .map((item) => {
+        const extra = [item.sku, item.design].filter(Boolean).join(', ')
+        return `- ${item.name}${extra ? ` [${extra}]` : ''} (Qty: ${item.quantity}) - ${this.formatOrderPrice(item.price * item.quantity, data.currency)}`
+      })
+      .join('\n')
+  }
+
   private getOrderConfirmedTemplate(data: OrderEmailData): EmailTemplate {
     const subject = `Order Confirmed - ${data.orderNumber} | TAC Accessories`
     const html = `
@@ -562,7 +600,7 @@ export class EmailService {
               <p><strong>Order #:</strong> ${data.orderNumber}</p>
               <p><strong>Date:</strong> ${data.orderDate}</p>
               <h4>Items:</h4>
-              ${data.items.map((item) => `<div class="item"><span>${item.name} (x${item.quantity})</span><span>${this.formatOrderPrice(item.price * item.quantity, data.currency)}</span></div>`).join('')}
+              ${this.renderOrderItems(data)}
               <div class="item"><span>Subtotal:</span><span>${this.formatOrderPrice(data.subtotal, data.currency)}</span></div>
               <div class="item total"><span>Total:</span><span>${this.formatOrderPrice(data.total, data.currency)}</span></div>
             </div>
@@ -576,7 +614,7 @@ export class EmailService {
       </body>
       </html>
     `
-    const text = `Order Confirmed - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour order ${data.orderNumber} has been confirmed. Payment received. We will notify you when your order ships.\n\nThank you for choosing TAC Accessories!`
+    const text = `Order Confirmed - ${data.orderNumber}\n\nHello ${data.customerName},\n\nYour order ${data.orderNumber} has been confirmed. Payment received.\n\nItems:\n${this.renderOrderItemsText(data)}\n\nTotal: ${this.formatOrderPrice(data.total, data.currency)}\n\nWe will notify you when your order ships.\n\nThank you for choosing TAC Accessories!`
     return { subject, html, text }
   }
 

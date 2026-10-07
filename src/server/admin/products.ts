@@ -1,7 +1,7 @@
 import { Prisma, ProductType } from "@prisma/client"
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { buildSkuBaseFromName, normalizeSku } from "@/lib/sku"
+import { formatProductCode, normalizeSku, PRODUCT_CODE_PATTERN, productCodeNumber, productCodePrefix } from "@/lib/sku"
 import { generateSlug } from "@/lib/utils"
 import { getCloudinaryConfig } from "@/lib/cloudinary"
 
@@ -235,8 +235,26 @@ export async function isSkuAvailable(sku: string, excludeProductId?: string): Pr
     return false
 }
 
+/** Highest running number already used with this code prefix. */
+async function highestProductCodeNumber(prefix: string): Promise<number> {
+    const existing = await prisma.product.findMany({
+        where: { sku: { startsWith: `${prefix}-` } },
+        select: { sku: true },
+    })
+    return existing.reduce((max, { sku }) => Math.max(max, productCodeNumber(sku, prefix)), 0)
+}
+
+/** The next free product code for a category, e.g. EAR-0042. */
+export async function nextProductCode(categoryId: string): Promise<string> {
+    const category = await prisma.category.findUnique({ where: { id: categoryId }, select: { slug: true } })
+    if (!category) throw new Error("Choose a category to generate a product code")
+    const prefix = productCodePrefix(category.slug)
+    return formatProductCode(prefix, (await highestProductCodeNumber(prefix)) + 1)
+}
+
+/** Use the code the admin typed (must be unique), or assign the category's next code. */
 export async function resolveProductSku(
-    name: string,
+    categoryId: string,
     proposedSku?: string,
     excludeProductId?: string
 ): Promise<string> {
@@ -248,41 +266,39 @@ export async function resolveProductSku(
         }
         return normalized
     }
-
-    const base = buildSkuBaseFromName(name)
-    if (!base) {
-        throw new Error("Unable to generate product SKU")
-    }
-
-    let suffix = 0
-    let candidate = base
-
-    while (true) {
-        if (await isSkuAvailable(candidate, excludeProductId)) {
-            return candidate
-        }
-        suffix += 1
-        candidate = `${base}-${suffix}`
-        if (suffix > 1000) {
-            return `${base}-${Date.now().toString(36).toUpperCase()}`
-        }
-    }
+    return nextProductCode(categoryId)
 }
 
-export async function generateDuplicateSku(baseSku: string) {
-    const sanitized = baseSku.replace(/\s+/g, "-").toUpperCase()
-    let attempt = 0
+/** Products still on the old name-based codes (e.g. MULTI-26-3). */
+export async function countProductsWithoutCodes(): Promise<number> {
+    const products = await prisma.product.findMany({ select: { sku: true } })
+    return products.filter(({ sku }) => !PRODUCT_CODE_PATTERN.test(sku)).length
+}
 
-    while (attempt < 5) {
-        const suffix = Math.random().toString(36).slice(2, 6).toUpperCase()
-        const candidate = `${sanitized}-COPY-${suffix}`
-        if (await isSkuAvailable(candidate)) {
-            return candidate
-        }
-        attempt += 1
+/**
+ * One-off: give every product on an old-style SKU a category code, oldest first. Products
+ * that already have a code keep it. Past orders keep the code they were placed with.
+ */
+export async function assignProductCodes(): Promise<number> {
+    const products = await prisma.product.findMany({
+        orderBy: { createdAt: "asc" },
+        select: { id: true, sku: true, category: { select: { slug: true } } },
+    })
+    const highest = new Map<string, number>()
+    for (const { sku, category } of products) {
+        const prefix = productCodePrefix(category.slug)
+        highest.set(prefix, Math.max(highest.get(prefix) ?? 0, productCodeNumber(sku, prefix)))
     }
 
-    return `${sanitized}-COPY-${Date.now().toString(36).toUpperCase()}`
+    const updates = products.flatMap(({ id, sku, category }) => {
+        if (PRODUCT_CODE_PATTERN.test(sku)) return []
+        const prefix = productCodePrefix(category.slug)
+        const next = (highest.get(prefix) ?? 0) + 1
+        highest.set(prefix, next)
+        return [prisma.product.update({ where: { id }, data: { sku: formatProductCode(prefix, next) } })]
+    })
+    if (updates.length > 0) await prisma.$transaction(updates)
+    return updates.length
 }
 
 export function booleanFromForm(value: FormDataEntryValue | null) {

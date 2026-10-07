@@ -51,7 +51,7 @@ export function getDefaultGalleryImage(images: ProductGalleryImage[]): ProductGa
   return images[0] ?? { id: "", url: "", order: 0 }
 }
 
-type OrderItemImageSource = {
+export type OrderItemImageSource = {
   selectedImageUrl?: string | null
   productImage?: { url: string } | null
   product?: { images?: Array<{ url: string } | string> } | null

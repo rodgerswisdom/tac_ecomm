@@ -207,11 +207,11 @@ export default async function OrderDetailPage({ params }: OrderDetailPageProps) 
                           </div>
                         ) : null}
                         <div>
+                        <p className="font-mono text-sm font-bold tracking-wide">{getOrderItemProductSku(item)}</p>
                         <p className="font-semibold">{getOrderItemProductName(item)}</p>
                         {imageLabel ? (
                           <p className="text-xs text-brand-umber/70">{imageLabel}</p>
                         ) : null}
-                        <p className="text-xs text-muted-foreground">SKU {getOrderItemProductSku(item)}</p>
                         <p className="text-xs text-muted-foreground">Qty {item.quantity}</p>
                         </div>
                       </div>

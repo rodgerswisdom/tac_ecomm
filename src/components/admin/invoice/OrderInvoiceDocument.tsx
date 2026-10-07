@@ -136,7 +136,7 @@ export function OrderInvoiceDocument({ data }: OrderInvoiceDocumentProps) {
               </th>
               <th scope="col">Description</th>
               <th scope="col" className="invoice-table__col-sku">
-                SKU
+                Code
               </th>
               <th scope="col" className="invoice-table__col-qty">
                 Qty

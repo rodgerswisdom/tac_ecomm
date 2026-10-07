@@ -18,7 +18,8 @@ import {
   resolveProductSlug,
   resolveProductSku,
   SkuConflictError,
-  generateDuplicateSku,
+  nextProductCode,
+  assignProductCodes,
   variantSchema,
   imageSchema,
   updateImageSchema,
@@ -94,7 +95,7 @@ export async function createProductAction(
 
   let sku: string
   try {
-    sku = await resolveProductSku(parsed.data.name, parsed.data.sku.trim() || undefined)
+    sku = await resolveProductSku(parsed.data.categoryId, parsed.data.sku.trim() || undefined)
   } catch (error) {
     if (error instanceof SkuConflictError) {
       return {
@@ -104,11 +105,11 @@ export async function createProductAction(
         values: formValues,
       }
     }
-    if (error instanceof Error && error.message === "Unable to generate product SKU") {
+    if (error instanceof Error && error.message === "Choose a category to generate a product code") {
       return {
         status: "error",
         message: error.message,
-        fieldErrors: { sku: "Enter a product name or SKU to continue." },
+        fieldErrors: { categoryId: error.message },
         values: formValues,
       }
     }
@@ -214,13 +215,13 @@ export async function updateProductAction(formData: FormData): Promise<ActionRes
 
   let sku: string
   try {
-    sku = await resolveProductSku(parsed.data.name, parsed.data.sku, parsed.data.id)
+    sku = await resolveProductSku(parsed.data.categoryId, parsed.data.sku, parsed.data.id)
   } catch (error) {
     if (error instanceof SkuConflictError) {
       return { error: error.message }
     }
-    if (error instanceof Error && error.message === "Unable to generate product SKU") {
-      return { error: "Enter a product name or SKU to continue." }
+    if (error instanceof Error && error.message === "Choose a category to generate a product code") {
+      return { error: error.message }
     }
     throw error
   }
@@ -346,7 +347,7 @@ export async function duplicateProductAction(formData: FormData): Promise<Action
   try {
     const duplicateName = `${product.name} Copy`
     const slug = await resolveProductSlug(duplicateName)
-    const sku = await generateDuplicateSku(product.sku)
+    const sku = await nextProductCode(product.categoryId)
 
     const duplicated = await prisma.product.create({
       data: {
@@ -769,21 +770,35 @@ function revalidateProductRoute(productId?: string) {
   }
 }
 
-export async function generateSkuAction(name: string): Promise<{ sku: string } | { error: string }> {
+/** Preview the code a new product in this category will get (e.g. EAR-0042). */
+export async function generateSkuAction(categoryId: string): Promise<{ sku: string } | { error: string }> {
   await assertAdmin()
 
-  const trimmedName = name.trim()
-  if (!trimmedName) {
-    return { error: "Enter a product name to generate a SKU." }
+  if (!categoryId.trim()) {
+    return { error: "Choose a category to generate a product code." }
   }
-
   try {
-    const sku = await resolveProductSku(trimmedName)
-    return { sku }
+    return { sku: await nextProductCode(categoryId) }
   } catch (error) {
-    if (error instanceof Error && error.message === "Unable to generate product SKU") {
-      return { error: error.message }
-    }
+    if (error instanceof Error) return { error: error.message }
     throw error
+  }
+}
+
+/** One-off: replace old name-based SKUs with category product codes. */
+export async function assignProductCodesAction(): Promise<ActionResult> {
+  try {
+    await assertAdmin()
+  } catch {
+    return { error: "Unauthorized" }
+  }
+  try {
+    const updated = await assignProductCodes()
+    await logAdminAction("ASSIGN_PRODUCT_CODES", "Product", "bulk", `Assigned product codes to ${updated} products`)
+    revalidatePath("/admin/products")
+    return { success: true, message: `Assigned codes to ${updated} products.` }
+  } catch (error) {
+    console.error("Failed to assign product codes:", error)
+    return { error: "Could not assign product codes. Nothing was changed." }
   }
 }
